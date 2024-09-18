@@ -33,16 +33,10 @@ test = [
     "pytest-env==1.1.3"
 ]
 
-scripts = [
-    "faker==26.0.0",
-    "requests==2.32.3"
-]
-
 dev = [
     "object-storage-api[code-analysis]",
     "object-storage-api[formatting]",
     "object-storage-api[test]",
-    "object-storage-api[scripts]"
 ]
 
 [tool.setuptools]
