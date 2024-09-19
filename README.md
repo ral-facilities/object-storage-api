@@ -134,4 +134,4 @@ Listed below are the environment variables supported by the application.
 | `API__ROOT_PATH`            | (If using a proxy) The path prefix handled by a proxy that is not seen by the app. | No        | ` `                                              |
 | `API__ALLOWED_CORS_HEADERS` | The list of headers that are allowed to be included in cross-origin requests.      | Yes       |                                                  |
 | `API__ALLOWED_CORS_ORIGINS` | The list of origins (domains) that are allowed to make cross-origin requests.      | Yes       |                                                  |
-| `API__ALLOWED_CORS_METHODS` | The list of methods that are allowed to be used to make cross-origin               |
+| `API__ALLOWED_CORS_METHODS` | The list of methods that are allowed to be used to make cross-origin requests.     | Yes       |
