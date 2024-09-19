@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from object_storage_api.core.config import config
 from object_storage_api.core.logger_setup import setup_logger
+from object_storage_api.core.object_store import s3_client
 
 app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
 
@@ -65,4 +66,5 @@ def read_root():
     """
     Root endpoint for the API.
     """
-    return {"title": config.api.title}
+    s3_client.create_bucket(Bucket="test-bucket")
+    return {"title": config.api.title, "test": s3_client.meta.config}

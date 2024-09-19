@@ -36,6 +36,18 @@ class DatabaseConfig(BaseModel):
     model_config = ConfigDict(hide_input_in_errors=True)
 
 
+class ObjectStorageConfig(BaseModel):
+    """
+    Configuration model for the S3 object storage.
+    """
+
+    endpoint_url: SecretStr
+    access_key: SecretStr
+    secret_access_key: SecretStr
+
+    model_config = ConfigDict(hide_input_in_errors=True)
+
+
 class Config(BaseSettings):
     """
     Overall configuration model for the application.
@@ -47,6 +59,7 @@ class Config(BaseSettings):
 
     api: APIConfig
     database: DatabaseConfig
+    object_storage: ObjectStorageConfig
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent / ".env",
