@@ -10,6 +10,7 @@ dependencies = [
     "fastapi[all]",
     "PyJWT",
     "pymongo",
+    "boto3"
 ]
 
 [project.urls]
