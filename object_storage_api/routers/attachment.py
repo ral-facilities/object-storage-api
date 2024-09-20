@@ -25,4 +25,6 @@ def create_attachment(attachment: AttachmentPostSchema) -> AttachmentPostRespons
     logger.debug("Attachment data: %s", attachment)
 
     # TODO: Implement
-    return AttachmentPostResponseSchema(**attachment.model_dump(), id=str(ObjectId()), url="http://www.example.com")
+    return AttachmentPostResponseSchema(
+        **attachment.model_dump(), id=str(ObjectId()), upload_url="http://www.example.com"
+    )

@@ -1,5 +1,5 @@
 """
-Module for defining the API schema models for representing Attachments
+Module for defining the API schema models for representing attachments
 """
 
 from typing import Optional
@@ -13,9 +13,9 @@ class AttachmentPostSchema(BaseModel):
     """
 
     entity_id: str = Field(description="ID of the entity the attachment relates to")
+    file_name: str = Field(description="File name of the attachment")
     title: Optional[str] = Field(default=None, description="Title of the attachment")
     description: Optional[str] = Field(default=None, description="Description of the attachment")
-    file_name: str = Field(description="File name of the attachment")
 
 
 class AttachmentPostResponseSchema(AttachmentPostSchema):
