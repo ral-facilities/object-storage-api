@@ -10,7 +10,7 @@ This microservice requires a MongoDB and S3 object storage instance to run again
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.12 and MongoDB 7.0 installed on your machine (if you are not using Docker)
+- Python 3.12, MongoDB 7.0 and MinIO installed on your machine (if you are not using Docker)
 - Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorization is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
   a GUI)
@@ -37,8 +37,13 @@ Ensure that Docker is installed and running on your machine before proceeding.
 #### Using `docker-compose.yml`
 
 The easiest way to run the application with Docker for local development is using the `docker-compose.yml` file. It is
-configured to spin up a MongoDB instance that can be accessed at `localhost:27018` using `root` as the username and
-`example` as the password. It also starts the application in a reload mode using the `Dockerfile`.
+configured to start
+
+- A MongoDB instance that can be accessed at `localhost:27018` using `root` as the username and
+  `example` as the password
+- A MinIO instance at `localhost:9000` with a console that can be accessed at `localhost:9001` using `root` as the
+  username and `example_password` as the password
+- The application in a reload mode using the `Dockerfile`.
 
 1. Build and start the Docker containers:
 

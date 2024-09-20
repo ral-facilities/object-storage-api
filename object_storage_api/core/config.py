@@ -44,6 +44,7 @@ class ObjectStorageConfig(BaseModel):
     endpoint_url: SecretStr
     access_key: SecretStr
     secret_access_key: SecretStr
+    bucket_name: SecretStr
 
     model_config = ConfigDict(hide_input_in_errors=True)
 
