@@ -10,18 +10,18 @@ services:
 
   mongo-db:
     image: mongo:7.0-jammy
-    container_name: mongodb_container
+    container_name: object_storage_api_mongodb_container
     volumes:
       - ./mongodb/data:/data/db
     restart: always
     ports:
-      - 27017:27017
+      - 27018:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
       MONGO_INITDB_ROOT_PASSWORD: example
 
   minio:
-    image: quay.io/minio/minio:RELEASE.2024-09-13T20-26-02Z
+    image: minio/minio:RELEASE.2024-09-13T20-26-02Z
     command: minio server /data
     volumes:
       - ./minio/data:/data
@@ -33,3 +33,15 @@ services:
       MINIO_ROOT_PASSWORD: example_password
       MINIO_ADDRESS: ":9000"
       MINIO_CONSOLE_ADDRESS: ":9001"
+
+  # From https://stackoverflow.com/questions/66412289/minio-add-a-public-bucket-with-docker-compose
+  minio_create_buckets:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set object-storage http://minio:9000 root example_password;
+      /usr/bin/mc mb object-storage/object-storage;
+      exit 0;
+      "
