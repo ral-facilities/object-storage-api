@@ -1,3 +1,7 @@
+"""
+Module for connecting to an S3 object store.
+"""
+
 import boto3
 
 from object_storage_api.core.config import config
