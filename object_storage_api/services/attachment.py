@@ -6,9 +6,9 @@ store.
 import logging
 from typing import Annotated
 
-from bson import ObjectId
 from fastapi import Depends
 
+from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
 from object_storage_api.stores.attachment import AttachmentStore
@@ -44,6 +44,9 @@ class AttachmentService:
         :return: Created attachment with an pre-signed upload URL.
         """
 
-        return AttachmentPostResponseSchema(
-            **attachment.model_dump(), id=str(ObjectId()), upload_url="http://www.example.com"
-        )
+        # TODO: Use a database transaction here? Depends whether URL generated first or second
+        # and what happens with duplicates
+        attachment_out = self._attachment_repository.create(AttachmentIn(**attachment.model_dump()))
+        upload_url = self._attachment_store.generate_presigned_upload_url(attachment)
+
+        return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_url=upload_url)

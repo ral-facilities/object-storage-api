@@ -11,7 +11,7 @@ from object_storage_api.models.custom_object_id_data_types import CustomObjectId
 
 class AttachmentIn(BaseModel):
     """
-    Input database model for an attachment
+    Input database model for an attachment.
     """
 
     entity_id: CustomObjectIdField
@@ -22,9 +22,10 @@ class AttachmentIn(BaseModel):
 
 class AttachmentOut(AttachmentIn):
     """
-    Output database model for an attachment
+    Output database model for an attachment.
     """
 
     id: StringObjectIdField = Field(alias="_id")
+    entity_id: StringObjectIdField
 
     model_config = ConfigDict(populate_by_name=True)
