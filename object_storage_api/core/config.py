@@ -53,7 +53,7 @@ class Config(BaseSettings):
     """
     Overall configuration model for the application.
 
-    It includes attributes for the API, authentication, database, and Object Storage server configurations. The class
+    It includes attributes for the API, authentication, database, and object storage configurations. The class
     inherits from `BaseSettings` and automatically reads environment variables. If values are not passed in form of
     system environment variables at runtime, it will attempt to read them from the .env file.
     """
