@@ -12,6 +12,7 @@ from fastapi.responses import JSONResponse
 
 from object_storage_api.core.config import config
 from object_storage_api.core.logger_setup import setup_logger
+from object_storage_api.routers import attachment
 
 app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
 
@@ -58,6 +59,8 @@ app.add_middleware(
     allow_methods=config.api.allowed_cors_methods,
     allow_headers=config.api.allowed_cors_headers,
 )
+
+app.include_router(attachment.router)
 
 
 @app.get("/")
