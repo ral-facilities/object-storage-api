@@ -45,6 +45,7 @@ class ObjectStorageConfig(BaseModel):
     access_key: SecretStr
     secret_access_key: SecretStr
     bucket_name: SecretStr
+    presigned_url_expiry: int
 
     model_config = ConfigDict(hide_input_in_errors=True)
 

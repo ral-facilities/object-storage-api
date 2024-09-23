@@ -27,10 +27,9 @@ class AttachmentStore:
                  - Presigned upload url to upload the attachment file to.
         """
 
-        # Should id be entity, or rather the attachment id... - effects the order of operations
+        # TODO: Should id be entity, or rather the attachment id...? - effects the order of operations
         object_key = f"attachments/{attachment.entity_id}/{attachment.file_name}"
 
-        # TODO: Configure the expiry from config
         logger.info("Generating a presigned URL for uploading the attachment")
         url = s3_client.generate_presigned_url(
             "put_object",
@@ -38,6 +37,6 @@ class AttachmentStore:
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": object_key,
             },
-            ExpiresIn=1000,
+            ExpiresIn=object_storage_config.presigned_url_expiry,
         )
         return AttachmentIn(**attachment.model_dump(), object_key=object_key), url

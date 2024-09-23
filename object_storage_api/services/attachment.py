@@ -8,7 +8,6 @@ from typing import Annotated
 
 from fastapi import Depends
 
-from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
 from object_storage_api.stores.attachment import AttachmentStore
@@ -44,8 +43,6 @@ class AttachmentService:
         :return: Created attachment with an pre-signed upload URL.
         """
 
-        # TODO: Use a database transaction here? Depends whether URL generated first or second
-        # and what happens with duplicates
         attachment_in, upload_url = self._attachment_store.generate_presigned_upload_url(attachment)
         attachment_out = self._attachment_repository.create(attachment_in)
 
