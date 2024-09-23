@@ -11,24 +11,24 @@ class BaseAPIException(Exception):
     Base exception for API errors.
     """
 
+    # Status code to return if this exception is raised
     status_code: int
-    detail: str
+
+    # Generic detail of the exception (That may be returned in a response)
     response_detail: str
 
-    def __init__(self, status_code: int, detail: str, response_detail: str):
+    detail: str
+
+    def __init__(self, detail: str):
         """
         Initialise the exception.
 
-        :param status_code: Status code to return if this exception is raised.
         :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
                        and not returned in a response).
-        :param response_detail: General response detail to return in the response if this exception is raised.
         """
         super().__init__(detail)
 
-        self.status_code = status_code
         self.detail = detail
-        self.response_detail = response_detail
 
 
 class DatabaseError(BaseAPIException):
@@ -42,5 +42,5 @@ class InvalidObjectIdError(DatabaseError):
     The provided value is not a valid ObjectId.
     """
 
-    def __init__(self, detail: str):
-        super().__init__(status_code=422, detail=detail, response_detail="Invalid ID given")
+    status_code = 422
+    response_detail = "Invalid ID given"
