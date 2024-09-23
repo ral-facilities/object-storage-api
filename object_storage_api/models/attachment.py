@@ -16,6 +16,7 @@ class AttachmentIn(BaseModel):
 
     entity_id: CustomObjectIdField
     file_name: str
+    object_key: str
     title: Optional[str] = None
     description: Optional[str] = None
 

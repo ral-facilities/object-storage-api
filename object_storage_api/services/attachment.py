@@ -46,7 +46,7 @@ class AttachmentService:
 
         # TODO: Use a database transaction here? Depends whether URL generated first or second
         # and what happens with duplicates
-        attachment_out = self._attachment_repository.create(AttachmentIn(**attachment.model_dump()))
-        upload_url = self._attachment_store.generate_presigned_upload_url(attachment)
+        attachment_in, upload_url = self._attachment_store.generate_presigned_upload_url(attachment)
+        attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_url=upload_url)
