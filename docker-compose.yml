@@ -4,9 +4,14 @@ services:
     build: .
     volumes:
       - ./object_storage_api:/object-storage-api-run/object_storage_api
+    restart: on-failure
     ports:
       - 8000:8000
-    restart: on-failure
+    depends_on:
+      - mongo-db
+      - minio
+    environment:
+      DATABASE__HOST_AND_OPTIONS: object_storage_api_mongodb_container:27017/?authMechanism=SCRAM-SHA-256&authSource=admin
 
   mongo-db:
     image: mongo:7.0-jammy
