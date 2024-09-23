@@ -38,10 +38,8 @@ class AttachmentRepo:
         :return: Created attachment.
         """
 
-        # TODO: Prevent duplicate attachments?
-
         logger.info("Inserting the new attachment into the database")
-        result = self._attachments_collection.insert_one(attachment.model_dump(), session=session)
+        result = self._attachments_collection.insert_one(attachment.model_dump(by_alias=True), session=session)
         return self.get(str(result.inserted_id), session=session)
 
     def get(self, attachment_id: str, session: ClientSession = None) -> Optional[AttachmentOut]:

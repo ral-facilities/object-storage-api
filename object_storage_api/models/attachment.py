@@ -14,6 +14,9 @@ class AttachmentIn(BaseModel):
     Input database model for an attachment.
     """
 
+    # Because we need to generate an id before insertion into the database (to ensure we can store the correct
+    # `object_key``) we must manually specify the id rather than relying on MongoDB to do it.
+    id: CustomObjectIdField = Field(serialization_alias="_id")
     entity_id: CustomObjectIdField
     file_name: str
     object_key: str

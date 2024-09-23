@@ -34,7 +34,6 @@ class AttachmentService:
         self._attachment_repository = attachment_repository
         self._attachment_store = attachment_store
 
-    # TODO: In inventory_management_system we return the output model here, should it have been schema?
     def create(self, attachment: AttachmentPostSchema) -> AttachmentPostResponseSchema:
         """
         Create a new attachment.
