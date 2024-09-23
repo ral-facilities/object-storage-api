@@ -2,6 +2,7 @@
 Module for providing a custom implementation of the `ObjectId` class.
 """
 
+# pylint:disable=fixme
 # TODO: This file is identical to the one in inventory-management-system-api - Use common repo?
 
 

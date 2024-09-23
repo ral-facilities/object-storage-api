@@ -2,6 +2,7 @@
 Unit tests for the `CustomObjectId` class.
 """
 
+# pylint:disable=fixme
 # TODO: This file is identical to the one in inventory-management-system-api - Use common repo?
 
 import pytest

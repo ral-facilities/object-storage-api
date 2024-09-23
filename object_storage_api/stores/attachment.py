@@ -6,6 +6,7 @@ import logging
 
 from bson import ObjectId
 
+from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.object_store import object_storage_config, s3_client
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.schemas.attachment import AttachmentPostSchema
@@ -26,6 +27,7 @@ class AttachmentStore:
         :return: Tuple with
                  - Attachment model to insert into the database (includes its location in the object storage).
                  - Presigned upload url to upload the attachment file to.
+        :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         """
 
         # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database
@@ -43,4 +45,12 @@ class AttachmentStore:
             },
             ExpiresIn=object_storage_config.presigned_url_expiry,
         )
-        return AttachmentIn(**attachment.model_dump(), id=attachment_id, object_key=object_key), url
+
+        try:
+            attachment_in = AttachmentIn(**attachment.model_dump(), id=attachment_id, object_key=object_key)
+        except InvalidObjectIdError as exc:
+            # Provide more specific detail
+            exc.response_detail = "Invalid `entity_id` given"
+            raise exc
+
+        return attachment_in, url

@@ -6,9 +6,8 @@ service.
 import logging
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
 from object_storage_api.services.attachment import AttachmentService
 
@@ -33,9 +32,4 @@ def create_attachment(
     logger.info("Creating a new attachment")
     logger.debug("Attachment data: %s", attachment)
 
-    try:
-        return attachment_service.create(attachment)
-    except InvalidObjectIdError as exc:
-        message = "Invalid entity_id"
-        logger.exception(message)
-        raise HTTPException(status_code=status.HTTP_422_UNPROCESSABLE_ENTITY, detail=message) from exc
+    return attachment_service.create(attachment)

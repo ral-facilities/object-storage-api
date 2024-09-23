@@ -2,6 +2,7 @@
 Module for defining custom `ObjectId` data type classes used by Pydantic models.
 """
 
+# pylint:disable=fixme
 # TODO: This file is identical to the one in inventory-management-system-api - Use common repo?
 
 from typing import Any
