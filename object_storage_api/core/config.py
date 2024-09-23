@@ -5,7 +5,7 @@ Module for the overall configuration for the application.
 from pathlib import Path
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -22,16 +22,45 @@ class APIConfig(BaseModel):
     allowed_cors_methods: List[str]
 
 
+class DatabaseConfig(BaseModel):
+    """
+    Configuration model for the database.
+    """
+
+    protocol: SecretStr
+    username: SecretStr
+    password: SecretStr
+    host_and_options: SecretStr
+    name: SecretStr
+
+    model_config = ConfigDict(hide_input_in_errors=True)
+
+
+class ObjectStorageConfig(BaseModel):
+    """
+    Configuration model for the S3 object storage.
+    """
+
+    endpoint_url: SecretStr
+    access_key: SecretStr
+    secret_access_key: SecretStr
+    bucket_name: SecretStr
+
+    model_config = ConfigDict(hide_input_in_errors=True)
+
+
 class Config(BaseSettings):
     """
     Overall configuration model for the application.
 
-    It includes attributes for the API, authentication, and Object Storage server configurations. The class inherits
-    from `BaseSettings` and automatically reads environment variables. If values are not passed in form of system
-    environment variables at runtime, it will attempt to read them from the .env file.
+    It includes attributes for the API, authentication, database, and object storage configurations. The class
+    inherits from `BaseSettings` and automatically reads environment variables. If values are not passed in form of
+    system environment variables at runtime, it will attempt to read them from the .env file.
     """
 
     api: APIConfig
+    database: DatabaseConfig
+    object_storage: ObjectStorageConfig
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent / ".env",
