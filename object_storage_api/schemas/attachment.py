@@ -6,6 +6,8 @@ from typing import Optional
 
 from pydantic import BaseModel, Field, HttpUrl
 
+from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
+
 
 class AttachmentPostSchema(BaseModel):
     """
@@ -18,7 +20,7 @@ class AttachmentPostSchema(BaseModel):
     description: Optional[str] = Field(default=None, description="Description of the attachment")
 
 
-class AttachmentPostResponseSchema(AttachmentPostSchema):
+class AttachmentPostResponseSchema(CreatedModifiedSchemaMixin, AttachmentPostSchema):
     """
     Schema model for the response to an attachment creation request
     """

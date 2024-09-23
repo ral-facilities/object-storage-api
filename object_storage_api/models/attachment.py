@@ -1,5 +1,5 @@
 """
-Module for defining the database models for representing attachments
+Module for defining the database models for representing attachments.
 """
 
 from typing import Optional
@@ -7,9 +7,21 @@ from typing import Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 from object_storage_api.models.custom_object_id_data_types import CustomObjectIdField, StringObjectIdField
+from object_storage_api.models.mixins import CreatedModifiedTimeInMixin, CreatedModifiedTimeOutMixin
 
 
-class AttachmentIn(BaseModel):
+class AttachmentBase(BaseModel):
+    """
+    Base database model for an attachment.
+    """
+
+    file_name: str
+    object_key: str
+    title: Optional[str] = None
+    description: Optional[str] = None
+
+
+class AttachmentIn(CreatedModifiedTimeInMixin, AttachmentBase):
     """
     Input database model for an attachment.
     """
@@ -18,13 +30,9 @@ class AttachmentIn(BaseModel):
     # `object_key``) we must manually specify the id rather than relying on MongoDB to do it.
     id: CustomObjectIdField = Field(serialization_alias="_id")
     entity_id: CustomObjectIdField
-    file_name: str
-    object_key: str
-    title: Optional[str] = None
-    description: Optional[str] = None
 
 
-class AttachmentOut(AttachmentIn):
+class AttachmentOut(CreatedModifiedTimeOutMixin, AttachmentBase):
     """
     Output database model for an attachment.
     """
