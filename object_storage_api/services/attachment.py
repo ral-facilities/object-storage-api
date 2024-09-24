@@ -42,7 +42,7 @@ class AttachmentService:
         :return: Created attachment with an pre-signed upload URL.
         """
 
-        attachment_in, upload_url = self._attachment_store.generate_presigned_upload_url(attachment)
+        attachment_in, upload_url = self._attachment_store.create(attachment)
         attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_url=upload_url)

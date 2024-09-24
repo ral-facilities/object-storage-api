@@ -19,9 +19,10 @@ class AttachmentStore:
     Store for managing attachments in an S3 object store.
     """
 
-    def generate_presigned_upload_url(self, attachment: AttachmentPostSchema) -> tuple[AttachmentIn, str]:
+    def create(self, attachment: AttachmentPostSchema) -> tuple[AttachmentIn, str]:
         """
-        Generates a presigned URL for uploading an attachment.
+        Creates an `AttachmentIn` database model with the file object key and generates a presigned URL for uploading
+        it.
 
         :param attachment: Attachment to generate the URL for.
         :return: Tuple with
