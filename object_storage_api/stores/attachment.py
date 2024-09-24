@@ -43,6 +43,9 @@ class AttachmentStore:
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": object_key,
+                # To not have a signature mismatch the content type must be assigned and any requests using it must use
+                # the same type in the headers as well
+                "ContentType": "multipart/form-data",
             },
             ExpiresIn=object_storage_config.presigned_url_expiry,
         )

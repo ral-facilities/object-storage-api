@@ -98,6 +98,7 @@ class CreateDSL(AttachmentStoreDSL):
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": self._expected_attachment_in.object_key,
+                "ContentType": "multipart/form-data",
             },
             ExpiresIn=object_storage_config.presigned_url_expiry,
         )
