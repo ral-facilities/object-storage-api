@@ -55,3 +55,46 @@ jobs:
 
       - name: Run unit tests
         run: pytest -c test/pytest.ini test/unit/ --cov
+
+  e2e-tests:
+    needs: [unit-tests]
+    name: End-to-End Tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@692973e3d937129bcbf40652eb9f2f61becf3332 # v4.1.7
+
+      - name: Set up Python
+        uses: actions/setup-python@f677139bbe7f9c59b41e40162b753c062f5d49a3 # v5.2.0
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .[test]
+          python -m pip install -r requirements.txt
+
+      - name: Create logging configuration file
+        run: cp object_storage_api/logging.example.ini object_storage_api/logging.ini
+
+      # Sleep 10 seconds to give time for containers to start
+      - name: Start MongoDB and MinIO
+        run: |
+          docker compose up -d mongo-db minio minio_create_buckets
+          sleep 10
+      - name: Create MinIO buckets
+        run: |
+          docker compose up minio_create_buckets
+
+      - name: Run e2e tests
+        run: pytest -c test/pytest.ini test/e2e/ --cov
+
+      - name: Output docker logs (mongodb)
+        if: failure()
+        run: docker logs object_storage_api_mongodb_container
+
+      - name: Output docker logs (minio)
+        if: failure()
+        run: docker logs object-storage-api-minio-1

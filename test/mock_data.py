@@ -26,7 +26,7 @@ CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
 ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY = {
     "entity_id": str(ObjectId()),
-    "file_name": "report.pdf",
+    "file_name": "report.txt",
 }
 
 ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
@@ -42,7 +42,7 @@ ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
 
 ATTACHMENT_POST_DATA_ALL_VALUES = {
     "entity_id": str(ObjectId()),
-    "file_name": "report.pdf",
+    "file_name": "report.txt",
     "title": "Report Title",
     "description": "A damage report.",
 }
