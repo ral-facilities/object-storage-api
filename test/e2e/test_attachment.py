@@ -2,7 +2,12 @@
 End-to-End tests for the attachment router.
 """
 
-from test.mock_data import ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY
+from test.mock_data import (
+    ATTACHMENT_POST_DATA_ALL_VALUES,
+    ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
+    ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES,
+    ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY,
+)
 from typing import Optional
 
 import pytest
@@ -91,3 +96,17 @@ class TestCreate(CreateDSL):
         self.check_post_attachment_success(ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY)
         self.upload_attachment()
         self.check_upload_attachment_success()
+
+    def test_create_with_all_values_provided(self):
+        """Test creating an attachment with all values provided."""
+
+        self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
+        self.check_post_attachment_success(ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES)
+        self.upload_attachment()
+        self.check_upload_attachment_success()
+
+    def test_create_with_invalid_entity_id(self):
+        """Test creating an attachment with an invalid `entity_id`."""
+
+        self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": "invalid-id"})
+        self.check_post_attachment_failed_with_detail(422, "Invalid `entity_id` given")
