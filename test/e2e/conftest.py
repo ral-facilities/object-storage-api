@@ -40,4 +40,6 @@ def fixture_cleanup_object_storage_bucket():
     # If nothing uploaded there is no contents (Could happen if there are errors or if a test doesn't upload anything)
     if "Contents" in objects:
         objects = list(map(lambda x: {"Key": x["Key"]}, objects["Contents"]))
-    s3_client.delete_objects(Bucket=object_storage_config.bucket_name.get_secret_value(), Delete={"Objects": objects})
+        s3_client.delete_objects(
+            Bucket=object_storage_config.bucket_name.get_secret_value(), Delete={"Objects": objects}
+        )

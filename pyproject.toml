@@ -18,14 +18,10 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
+    "black==24.8.0",
     "pylint==3.2.7",
     "object-storage-api[test]"
 ]
-
-formatting = [
-    "black==24.8.0"
-]
-
 test = [
     "pytest==8.3.3",
     "pytest-asyncio==0.24.0",
@@ -36,7 +32,6 @@ test = [
 
 dev = [
     "object-storage-api[code-analysis]",
-    "object-storage-api[formatting]",
     "object-storage-api[test]",
 ]
 
