@@ -43,7 +43,7 @@ class AttachmentStore:
                 ["content-length-range", 0, object_storage_config.attachment_max_size_bytes],
                 ["eq", "$Content-Type", "multipart/form-data"],
             ],
-            ExpiresIn=object_storage_config.presigned_url_expiry,
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
 
         return object_key, AttachmentPostUploadInfoSchema(**presigned_post_response)
