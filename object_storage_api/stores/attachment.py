@@ -49,7 +49,6 @@ class AttachmentStore:
             },
             Conditions=[
                 ["content-length-range", 0, object_storage_config.attachment_max_size_bytes],
-                # TODO: For images can use this ["starts-with", "$Content-Type", "image/"]
                 ["eq", "$Content-Type", "multipart/form-data"],
             ],
             ExpiresIn=object_storage_config.presigned_url_expiry,

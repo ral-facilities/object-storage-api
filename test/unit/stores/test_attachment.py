@@ -11,7 +11,7 @@ from bson import ObjectId
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.object_store import object_storage_config
 from object_storage_api.models.attachment import AttachmentIn
-from object_storage_api.schemas.attachment import AttachmentPostSchema
+from object_storage_api.schemas.attachment import AttachmentPostSchema, AttachmentPostUploadInfoSchema
 from object_storage_api.stores.attachment import AttachmentStore
 
 
@@ -44,9 +44,9 @@ class CreateDSL(AttachmentStoreDSL):
 
     _attachment_post: AttachmentPostSchema
     _expected_attachment_in: AttachmentIn
-    _expected_url: str
+    _expected_attachment_upload_info: AttachmentPostUploadInfoSchema
     _created_attachment_in: AttachmentIn
-    _generated_url: str
+    _created_attachment_upload_info: str
     _create_exception: pytest.ExceptionInfo
 
     def mock_create(self, attachment_post_data: dict) -> None:
@@ -63,9 +63,10 @@ class CreateDSL(AttachmentStoreDSL):
 
         expected_object_key = f"attachments/{self._attachment_post.entity_id}/{attachment_id}"
 
-        # Mock presigned url generation
-        self._expected_url = "http://test-url.com"
-        self.mock_s3_client.generate_presigned_url.return_value = self._expected_url
+        # Mock presigned post generation
+        expected_presigned_post_response = {"url": "http://example-upload-url", "fields": {"some": "fields"}}
+        self._expected_attachment_upload_info = AttachmentPostUploadInfoSchema(**expected_presigned_post_response)
+        self.mock_s3_client.generate_presigned_post.return_value = expected_presigned_post_response
 
         # Expected model data with the object key defined (Ignore if invalid to avoid a premature error)
         if self._attachment_post.entity_id != "invalid-id":
@@ -76,7 +77,9 @@ class CreateDSL(AttachmentStoreDSL):
     def call_create(self) -> None:
         """Calls the `AttachmentStore` `create` method with the appropriate data from a prior call to `mock_create`."""
 
-        self._created_attachment_in, self._generated_url = self.attachment_store.create(self._attachment_post)
+        self._created_attachment_in, self._created_attachment_upload_info = self.attachment_store.create(
+            self._attachment_post
+        )
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """
@@ -93,19 +96,20 @@ class CreateDSL(AttachmentStoreDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        self.mock_s3_client.generate_presigned_url.assert_called_once_with(
-            "put_object",
-            Params={
-                "Bucket": object_storage_config.bucket_name.get_secret_value(),
-                "Key": self._expected_attachment_in.object_key,
-                "ContentType": "multipart/form-data",
-            },
+        self.mock_s3_client.generate_presigned_post.assert_called_once_with(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=self._expected_attachment_in.object_key,
+            Fields={"Content-Type": "multipart/form-data"},
+            Conditions=[
+                ["content-length-range", 0, object_storage_config.attachment_max_size_bytes],
+                ["eq", "$Content-Type", "multipart/form-data"],
+            ],
             ExpiresIn=object_storage_config.presigned_url_expiry,
         )
 
         # Cannot know the expected creation and modified time here, so ignore in comparison
         assert self._created_attachment_in == self._expected_attachment_in
-        assert self._generated_url == self._expected_url
+        assert self._created_attachment_upload_info == self._expected_attachment_upload_info
 
     def check_create_failed_with_exception(self, message: str) -> None:
         """

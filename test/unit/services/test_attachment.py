@@ -9,7 +9,11 @@ import pytest
 from bson import ObjectId
 
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
-from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
+from object_storage_api.schemas.attachment import (
+    AttachmentPostResponseSchema,
+    AttachmentPostSchema,
+    AttachmentPostUploadInfoSchema,
+)
 from object_storage_api.services.attachment import AttachmentService
 
 
@@ -54,8 +58,10 @@ class CreateDSL(AttachmentServiceDSL):
 
         # Store
         self._expected_attachment_in = MagicMock()
-        expected_upload_url = "http://example-upload-url"
-        self.mock_attachment_store.create.return_value = (self._expected_attachment_in, expected_upload_url)
+        expected_upload_info = AttachmentPostUploadInfoSchema(
+            url="http://example-upload-url", fields={"some": "fields"}
+        )
+        self.mock_attachment_store.create.return_value = (self._expected_attachment_in, expected_upload_info)
 
         # Repo (The contents of the returned output model does not matter here as long as its valid)
         expected_attachment_out = AttachmentOut(
@@ -66,7 +72,7 @@ class CreateDSL(AttachmentServiceDSL):
         self.mock_attachment_repository.create.return_value = expected_attachment_out
 
         self._expected_attachment = AttachmentPostResponseSchema(
-            **expected_attachment_out.model_dump(), upload_url=expected_upload_url
+            **expected_attachment_out.model_dump(), upload_info=expected_upload_info
         )
 
     def call_create(self) -> None:
