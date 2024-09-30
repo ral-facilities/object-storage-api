@@ -20,6 +20,21 @@ from bson import ObjectId
 # Used for _GET_DATA's as when comparing these will not be possible to know at runtime
 CREATED_MODIFIED_GET_DATA_EXPECTED = {"created_time": ANY, "modified_time": ANY}
 
+# Used for _POST_RESPONSE_DATA's as when comparing most of these are not possible to know at runtime arguably we dont
+# need to put the fields in but it ensures we capture potential changes to how boto3 functions
+ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED = {
+    "upload_info": {
+        "url": ANY,
+        "fields": {
+            "AWSAccessKeyId": ANY,
+            "Content-Type": "multipart/form-data",
+            "key": ANY,
+            "policy": ANY,
+            "signature": ANY,
+        },
+    }
+}
+
 # ---------------------------- ATTACHMENTS -----------------------------
 
 # Required values only
@@ -29,15 +44,11 @@ ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY = {
     "file_name": "report.txt",
 }
 
-# TODO: Create UPLOAD_INFO structure for these?
 ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
     **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
     "id": ANY,
-    "upload_info": {
-        "url": ANY,
-        "fields": ANY,
-    },
     "title": None,
     "description": None,
 }
@@ -60,9 +71,6 @@ ATTACHMENT_IN_DATA_ALL_VALUES = {
 ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {
     **ATTACHMENT_POST_DATA_ALL_VALUES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
     "id": ANY,
-    "upload_info": {
-        "url": ANY,
-        "fields": ANY,
-    },
 }

@@ -39,7 +39,6 @@ class AttachmentStore:
         object_key = f"attachments/{attachment.entity_id}/{attachment_id}"
 
         logger.info("Generating a presigned URL for uploading the attachment")
-        # TODO: Handle failure here before creating the AttachmentPostUploadInfoSchema?
         presigned_post_response = s3_client.generate_presigned_post(
             Bucket=object_storage_config.bucket_name.get_secret_value(),
             Key=object_key,
