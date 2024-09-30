@@ -46,6 +46,7 @@ class ObjectStorageConfig(BaseModel):
     secret_access_key: SecretStr
     bucket_name: SecretStr
     presigned_url_expiry: int
+    attachment_max_size_bytes: int
 
     model_config = ConfigDict(hide_input_in_errors=True)
 

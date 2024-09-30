@@ -47,13 +47,8 @@ class AttachmentStore:
                 # Insert content type here so it is provided in the fields and can be used directly
                 "Content-Type": "multipart/form-data"
             },
-            # TODO: Make this configurable
             Conditions=[
-                [
-                    "content-length-range",
-                    0,
-                    100000,
-                ],
+                ["content-length-range", 0, object_storage_config.attachment_max_size_bytes],
                 # TODO: For images can use this ["starts-with", "$Content-Type", "image/"]
                 ["eq", "$Content-Type", "multipart/form-data"],
             ],

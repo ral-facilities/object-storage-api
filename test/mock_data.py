@@ -61,5 +61,8 @@ ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {
     **ATTACHMENT_POST_DATA_ALL_VALUES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "upload_url": ANY,
+    "upload_info": {
+        "url": ANY,
+        "fields": ANY,
+    },
 }
