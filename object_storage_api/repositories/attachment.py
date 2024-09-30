@@ -46,7 +46,7 @@ class AttachmentRepo:
         """
         Retrieve an attachment by its ID from a MongoDB database.
 
-        :param attachment: ID of the attachment to retrieve.
+        :param attachment_id: ID of the attachment to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
         :return: Retrieved attachment or `None` if not found.
         """

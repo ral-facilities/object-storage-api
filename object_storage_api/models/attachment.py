@@ -16,6 +16,7 @@ class AttachmentBase(BaseModel):
     """
 
     file_name: str
+    # Key of the attachment file in object storage
     object_key: str
     title: Optional[str] = None
     description: Optional[str] = None
