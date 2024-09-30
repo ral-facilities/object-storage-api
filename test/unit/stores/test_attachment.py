@@ -73,7 +73,7 @@ class CreatePresignedURLDSL(AttachmentStoreDSL):
                 "Key": self._expected_object_key,
                 "ContentType": "multipart/form-data",
             },
-            ExpiresIn=object_storage_config.presigned_url_expiry,
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
 
         # Cannot know the expected creation and modified time here, so ignore in comparison

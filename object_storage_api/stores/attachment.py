@@ -38,7 +38,7 @@ class AttachmentStore:
                 # the same type in the headers as well
                 "ContentType": "multipart/form-data",
             },
-            ExpiresIn=object_storage_config.presigned_url_expiry,
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
 
         return object_key, url
