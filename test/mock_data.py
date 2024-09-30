@@ -29,11 +29,15 @@ ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY = {
     "file_name": "report.txt",
 }
 
+# TODO: Create UPLOAD_INFO structure for these?
 ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
     **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "upload_url": ANY,
+    "upload_info": {
+        "url": ANY,
+        "fields": ANY,
+    },
     "title": None,
     "description": None,
 }
