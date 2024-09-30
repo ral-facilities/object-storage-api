@@ -30,7 +30,7 @@ def fixture_cleanup_database_collections():
     database.attachments.delete_many({})
 
 
-@pytest.fixture(name="create_and_cleanup_object_storage_bucket", autouse=True)
+@pytest.fixture(name="cleanup_object_storage_bucket", autouse=True)
 def fixture_cleanup_object_storage_bucket():
     """
     Fixture to clean up the test object storage bucket after session finishes.
