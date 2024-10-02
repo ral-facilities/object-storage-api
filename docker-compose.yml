@@ -4,9 +4,14 @@ services:
     build: .
     volumes:
       - ./object_storage_api:/object-storage-api-run/object_storage_api
+    restart: on-failure
     ports:
       - 8000:8000
-    restart: on-failure
+    depends_on:
+      - mongo-db
+      - minio
+    environment:
+      DATABASE__HOST_AND_OPTIONS: object_storage_api_mongodb_container:27017/?authMechanism=SCRAM-SHA-256&authSource=admin
 
   mongo-db:
     image: mongo:7.0-jammy
@@ -33,6 +38,7 @@ services:
       MINIO_ROOT_PASSWORD: example_password
       MINIO_ADDRESS: ":9000"
       MINIO_CONSOLE_ADDRESS: ":9001"
+    network_mode: "host"
 
   # From https://stackoverflow.com/questions/66412289/minio-add-a-public-bucket-with-docker-compose
   minio_create_buckets:
@@ -41,7 +47,9 @@ services:
       - minio
     entrypoint: >
       /bin/sh -c "
-      /usr/bin/mc alias set object-storage http://minio:9000 root example_password;
+      /usr/bin/mc alias set object-storage http://localhost:9000 root example_password;
       /usr/bin/mc mb object-storage/object-storage;
+      /usr/bin/mc mb object-storage/test-object-storage;
       exit 0;
       "
+    network_mode: "host"

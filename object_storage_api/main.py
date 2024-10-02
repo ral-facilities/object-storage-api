@@ -11,7 +11,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from object_storage_api.core.config import config
+from object_storage_api.core.exceptions import BaseAPIException
 from object_storage_api.core.logger_setup import setup_logger
+from object_storage_api.routers import attachment
 
 app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
 
@@ -20,18 +22,20 @@ logger = logging.getLogger()
 logger.info("Logging now setup")
 
 
-@app.exception_handler(Exception)
-async def custom_general_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+@app.exception_handler(BaseAPIException)
+async def custom_base_api_exception_handler(_: Request, exc: BaseAPIException) -> JSONResponse:
     """
-    Custom exception handler for FastAPI to handle uncaught exceptions. It logs the error and returns an appropriate
-    response.
+    Custom exception handler for FastAPI to handle `BaseAPIException`'s.
 
-    :param _: Unused
-    :param exc: The exception object that triggered this handler.
-    :return: A JSON response indicating that something went wrong.
+    This handler ensures that these exceptions return the appropriate response code and generalised detail
+    while logging any specific detail.
+
+    :param _: Unused.
+    :param exc: The exception object representing the `BaseAPIException`.
+    :return: A JSON response with exception details.
     """
-    logger.exception(exc)
-    return JSONResponse(content={"detail": "Something went wrong"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+    logger.exception(exc.detail)
+    return JSONResponse(content={"detail": exc.response_detail}, status_code=exc.status_code)
 
 
 @app.exception_handler(RequestValidationError)
@@ -51,6 +55,20 @@ async def custom_validation_exception_handler(request: Request, exc: RequestVali
     return await request_validation_exception_handler(request, exc)
 
 
+@app.exception_handler(Exception)
+async def custom_general_exception_handler(_: Request, exc: Exception) -> JSONResponse:
+    """
+    Custom exception handler for FastAPI to handle uncaught exceptions. It logs the error and returns an appropriate
+    response.
+
+    :param _: Unused.
+    :param exc: The exception object that triggered this handler.
+    :return: A JSON response indicating that something went wrong.
+    """
+    logger.exception(exc)
+    return JSONResponse(content={"detail": "Something went wrong"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.api.allowed_cors_origins,
@@ -58,6 +76,8 @@ app.add_middleware(
     allow_methods=config.api.allowed_cors_methods,
     allow_headers=config.api.allowed_cors_headers,
 )
+
+app.include_router(attachment.router)
 
 
 @app.get("/")
