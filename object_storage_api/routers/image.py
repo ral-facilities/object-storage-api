@@ -4,9 +4,9 @@ service.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 
 from object_storage_api.schemas.image import ImagePostSchema, ImageSchema
 from object_storage_api.services.image import ImageService
@@ -25,9 +25,23 @@ ImageServiceDep = Annotated[ImageService, Depends(ImageService)]
     response_description="Information about the created image",
     status_code=status.HTTP_201_CREATED,
 )
-def create_image(image: ImagePostSchema, image_service: ImageServiceDep) -> ImageSchema:
+# pylint:disable=too-many-arguments
+def create_image(
+    image_service: ImageServiceDep,
+    # Unfortunately using Annotated[ImagePostSchema, Form()] as on
+    # https://fastapi.tiangolo.com/tutorial/request-form-models/does not work correctly when there is an UploadFile
+    # within it, so have to redefine here before passing them to the schema
+    entity_id: Annotated[str, Form(description="ID of the entity the image relates to")],
+    file_name: Annotated[str, Form(description="File name of the image")],
+    file: Annotated[UploadFile, File(description="Image file")],
+    title: Annotated[Optional[str], Form(description="Title of the image")] = None,
+    description: Annotated[Optional[str], Form(description="Description of the image")] = None,
+) -> ImageSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new image")
+
+    image = ImagePostSchema(entity_id=entity_id, file_name=file_name, file=file, title=title, description=description)
+
     logger.debug("Image data: %s", image)
 
     return image_service.create(image)
