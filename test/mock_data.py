@@ -74,3 +74,18 @@ ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {
     **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
     "id": ANY,
 }
+
+# ---------------------------- IMAGES -----------------------------
+
+IMAGE_POST_DATA_ALL_VALUES = {
+    "entity_id": str(ObjectId()),
+    "file_name": "report.txt",
+    "title": "Report Title",
+    "description": "A damage report.",
+}
+
+IMAGE_IN_DATA_ALL_VALUES = {
+    **IMAGE_POST_DATA_ALL_VALUES,
+    "id": str(ObjectId()),
+    "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
+}
