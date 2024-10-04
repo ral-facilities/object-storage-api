@@ -4,13 +4,12 @@ Module for defining the API schema models for representing images.
 
 from typing import Optional
 
-from fastapi import UploadFile
 from pydantic import BaseModel, Field
 
 from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
-class ImageSchemaBase(BaseModel):
+class ImagePostMetadataSchema(BaseModel):
     """
     Base schema model for an image.
     """
@@ -21,15 +20,7 @@ class ImageSchemaBase(BaseModel):
     description: Optional[str] = Field(default=None, description="Description of the image")
 
 
-class ImagePostSchema(ImageSchemaBase):
-    """
-    Schema model for an image creation request.
-    """
-
-    upload_file: UploadFile = Field(description="Image file")
-
-
-class ImageSchema(CreatedModifiedSchemaMixin, ImageSchemaBase):
+class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
     """
     Schema model for an image get request response.
     """

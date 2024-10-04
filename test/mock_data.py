@@ -77,7 +77,7 @@ ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {
 
 # ---------------------------- IMAGES -----------------------------
 
-IMAGE_POST_DATA_ALL_VALUES = {
+IMAGE_POST_METADATA_DATA_ALL_VALUES = {
     "entity_id": str(ObjectId()),
     "file_name": "report.txt",
     "title": "Report Title",
@@ -85,7 +85,7 @@ IMAGE_POST_DATA_ALL_VALUES = {
 }
 
 IMAGE_IN_DATA_ALL_VALUES = {
-    **IMAGE_POST_DATA_ALL_VALUES,
+    **IMAGE_POST_METADATA_DATA_ALL_VALUES,
     "id": str(ObjectId()),
     "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
 }

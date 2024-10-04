@@ -4,8 +4,10 @@ Module for providing a store for managing images in an S3 object store.
 
 import logging
 
+from fastapi import UploadFile
+
 from object_storage_api.core.object_store import object_storage_config, s3_client
-from object_storage_api.schemas.image import ImagePostSchema
+from object_storage_api.schemas.image import ImagePostMetadataSchema
 
 logger = logging.getLogger()
 
@@ -15,22 +17,23 @@ class ImageStore:
     Store for managing images in an S3 object store.
     """
 
-    def upload_image(self, image_id: str, image: ImagePostSchema) -> str:
+    def upload(self, image_id: str, image_metadata: ImagePostMetadataSchema, upload_file: UploadFile) -> str:
         """
         Uploads a given image to object storage.
 
-        :param attachment_id: ID of the attachment to generate the URL for.
-        :param attachment: Attachment to generate the URL for.
+        :param image_id: ID of the attachment to generate the URL for.
+        :param image_metadata: Metadata of the image to be uploaded.
+        :param upload_file: Upload file of the image to be uploaded.
         :return: Object key of the image.
         """
-        object_key = f"images/{image.entity_id}/{image_id}"
+        object_key = f"images/{image_metadata.entity_id}/{image_id}"
 
         logger.info("Uploading image file to the object storage")
         s3_client.upload_fileobj(
-            image.upload_file.file,
+            upload_file.file,
             Bucket=object_storage_config.bucket_name.get_secret_value(),
             Key=object_key,
-            ExtraArgs={"ContentType": image.upload_file.content_type},
+            ExtraArgs={"ContentType": upload_file.content_type},
         )
 
         return object_key

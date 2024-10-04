@@ -7,12 +7,12 @@ import logging
 from typing import Annotated
 
 from bson import ObjectId
-from fastapi import Depends
+from fastapi import Depends, UploadFile
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
-from object_storage_api.schemas.image import ImagePostSchema, ImageSchema
+from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.stores.image import ImageStore
 
 logger = logging.getLogger()
@@ -37,11 +37,12 @@ class ImageService:
         self._image_repository = image_repository
         self._image_store = image_store
 
-    def create(self, image: ImagePostSchema) -> ImageSchema:
+    def create(self, image_metadata: ImagePostMetadataSchema, upload_file: UploadFile) -> ImageSchema:
         """
         Create a new image.
 
-        :param image: Image to be created.
+        :param image_metadata: Metadata of the image to be created.
+        :param upload_file: Upload file of the image to be created.
         :return: Created image with an pre-signed upload URL.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         """
@@ -50,10 +51,10 @@ class ImageService:
         # before generating the presigned URL which would then require transactions
         image_id = str(ObjectId())
 
-        object_key = self._image_store.upload_image(image_id, image)
+        object_key = self._image_store.upload(image_id, image_metadata, upload_file)
 
         try:
-            image_in = ImageIn(**image.model_dump(), id=image_id, object_key=object_key)
+            image_in = ImageIn(**image_metadata.model_dump(), id=image_id, object_key=object_key)
         except InvalidObjectIdError as exc:
             # Provide more specific detail
             exc.response_detail = "Invalid `entity_id` given"

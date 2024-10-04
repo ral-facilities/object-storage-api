@@ -30,7 +30,7 @@ class AttachmentStoreDSL:
 
 
 class CreatePresignedPostDSL(AttachmentStoreDSL):
-    """Base class for `create` tests."""
+    """Base class for `create_presigned_post` tests."""
 
     _attachment_post: AttachmentPostSchema
     _attachment_id: str
@@ -44,7 +44,7 @@ class CreatePresignedPostDSL(AttachmentStoreDSL):
         Mocks object store methods appropriately to test the `create_presigned_post` store method.
 
         :param attachment_post_data: Dictionary containing the attachment data as would be required for an
-                                     `AttachmentPost` schema.
+                                     `AttachmentPostSchema`.
         """
         self._attachment_post = AttachmentPostSchema(**attachment_post_data)
         self._attachment_id = str(ObjectId())

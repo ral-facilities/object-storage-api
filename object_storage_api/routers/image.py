@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 
-from object_storage_api.schemas.image import ImagePostSchema, ImageSchema
+from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
 logger = logging.getLogger()
@@ -41,10 +41,11 @@ def create_image(
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new image")
 
-    image = ImagePostSchema(
-        entity_id=entity_id, file_name=file_name, upload_file=upload_file, title=title, description=description
+    image_metadata = ImagePostMetadataSchema(
+        entity_id=entity_id, file_name=file_name, title=title, description=description
     )
 
-    logger.debug("Image data: %s", image)
+    logger.debug("Image metadata: %s", image_metadata)
+    logger.debug("Image data: %s", upload_file)
 
-    return image_service.create(image)
+    return image_service.create(image_metadata, upload_file)
