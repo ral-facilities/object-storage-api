@@ -33,7 +33,6 @@ def create_image(
     # https://fastapi.tiangolo.com/tutorial/request-form-models/does not work correctly when there is an UploadFile
     # within it, so have to redefine here before passing them to the schema
     entity_id: Annotated[str, Form(description="ID of the entity the image relates to")],
-    file_name: Annotated[str, Form(description="File name of the image")],
     upload_file: Annotated[UploadFile, File(description="Image file")],
     title: Annotated[Optional[str], Form(description="Title of the image")] = None,
     description: Annotated[Optional[str], Form(description="Description of the image")] = None,
@@ -41,9 +40,7 @@ def create_image(
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new image")
 
-    image_metadata = ImagePostMetadataSchema(
-        entity_id=entity_id, file_name=file_name, title=title, description=description
-    )
+    image_metadata = ImagePostMetadataSchema(entity_id=entity_id, title=title, description=description)
 
     logger.debug("Image metadata: %s", image_metadata)
     logger.debug("Image data: %s", upload_file)

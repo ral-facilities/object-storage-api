@@ -54,7 +54,9 @@ class ImageService:
         object_key = self._image_store.upload(image_id, image_metadata, upload_file)
 
         try:
-            image_in = ImageIn(**image_metadata.model_dump(), id=image_id, object_key=object_key)
+            image_in = ImageIn(
+                **image_metadata.model_dump(), id=image_id, object_key=object_key, file_name=upload_file.filename
+            )
         except InvalidObjectIdError as exc:
             # Provide more specific detail
             exc.response_detail = "Invalid `entity_id` given"

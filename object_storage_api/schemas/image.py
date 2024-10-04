@@ -15,7 +15,6 @@ class ImagePostMetadataSchema(BaseModel):
     """
 
     entity_id: str = Field(description="ID of the entity the image relates to")
-    file_name: str = Field(description="File name of the image")
     title: Optional[str] = Field(default=None, description="Title of the image")
     description: Optional[str] = Field(default=None, description="Description of the image")
 
