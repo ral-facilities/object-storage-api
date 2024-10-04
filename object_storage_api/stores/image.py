@@ -27,7 +27,10 @@ class ImageStore:
 
         logger.info("Uploading image file to the object storage")
         s3_client.upload_fileobj(
-            image.upload_file.file, Bucket=object_storage_config.bucket_name.get_secret_value(), Key=object_key
+            image.upload_file.file,
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=object_key,
+            ExtraArgs={"ContentType": image.upload_file.content_type},
         )
 
         return object_key
