@@ -19,15 +19,14 @@ class AttachmentStore:
         self, attachment_id: str, attachment: AttachmentPostSchema
     ) -> tuple[str, AttachmentPostUploadInfoSchema]:
         """
-        Creates a presigned post URL for uploading an attachment file.
+        Creates a presigned post URL for uploading an attachment file to object storage.
 
         :param attachment_id: ID of the attachment to generate the URL for.
         :param attachment: Attachment to generate the URL for.
         :return: Tuple with
-                 - Object key of the new attachment.
+                 - Object key of the attachment.
                  - Upload info schema containing a presigned url to upload the attachment file to and the required form
                    fields for the request.
-        :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         """
         object_key = f"attachments/{attachment.entity_id}/{attachment_id}"
 

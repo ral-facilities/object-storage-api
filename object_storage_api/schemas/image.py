@@ -26,7 +26,7 @@ class ImagePostSchema(ImageSchemaBase):
     Schema model for an image creation request.
     """
 
-    file: UploadFile = Field(description="Image file")
+    upload_file: UploadFile = Field(description="Image file")
 
 
 class ImageSchema(CreatedModifiedSchemaMixin, ImageSchemaBase):

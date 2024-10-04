@@ -43,14 +43,14 @@ class ImageService:
 
         :param image: Image to be created.
         :return: Created image with an pre-signed upload URL.
+        :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         """
 
         # Generate a unique ID for the image - this needs to be known now to avoid inserting into the database
         # before generating the presigned URL which would then require transactions
         image_id = str(ObjectId())
 
-        # TODO: Populate
-        object_key = "SOME_OBJECT_KEY"
+        object_key = self._image_store.upload_image(image_id, image)
 
         try:
             image_in = ImageIn(**image.model_dump(), id=image_id, object_key=object_key)

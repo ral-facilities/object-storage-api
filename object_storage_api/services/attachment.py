@@ -43,6 +43,7 @@ class AttachmentService:
 
         :param attachment: Attachment to be created.
         :return: Created attachment with an pre-signed upload URL.
+        :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         """
 
         # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database

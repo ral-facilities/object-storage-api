@@ -12,6 +12,8 @@ services:
       - minio
     environment:
       DATABASE__HOST_AND_OPTIONS: object_storage_api_mongodb_container:27017/?authMechanism=SCRAM-SHA-256&authSource=admin
+    extra_hosts:
+      - "minio:host-gateway"
 
   mongo-db:
     image: mongo:7.0-jammy
