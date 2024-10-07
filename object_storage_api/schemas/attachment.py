@@ -11,7 +11,7 @@ from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 class AttachmentPostSchema(BaseModel):
     """
-    Schema model for an attachment creation request
+    Schema model for an attachment creation request.
     """
 
     entity_id: str = Field(description="ID of the entity the attachment relates to")
@@ -20,10 +20,21 @@ class AttachmentPostSchema(BaseModel):
     description: Optional[str] = Field(default=None, description="Description of the attachment")
 
 
+class AttachmentPostUploadInfoSchema(BaseModel):
+    """
+    Schema model for the information required to upload a file.
+    """
+
+    url: HttpUrl = Field(description="Pre-signed upload URL to upload the attachment file to")
+    fields: dict = Field(description="Form fields required for submitting the attachment file upload request")
+
+
 class AttachmentPostResponseSchema(CreatedModifiedSchemaMixin, AttachmentPostSchema):
     """
-    Schema model for the response to an attachment creation request
+    Schema model for the response to an attachment creation request.
     """
 
     id: str = Field(description="ID of the attachment")
-    upload_url: HttpUrl = Field(description="Pre-signed upload URL to upload the attachment file to")
+    upload_info: AttachmentPostUploadInfoSchema = Field(
+        description="Information required to upload the attachment file"
+    )

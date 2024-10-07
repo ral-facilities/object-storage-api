@@ -49,7 +49,7 @@ class AttachmentService:
         # before generating the presigned URL which would then require transactions
         attachment_id = str(ObjectId())
 
-        object_key, upload_url = self._attachment_store.create_presigned_url(attachment_id, attachment)
+        object_key, upload_info = self._attachment_store.create_presigned_post(attachment_id, attachment)
 
         try:
             attachment_in = AttachmentIn(**attachment.model_dump(), id=attachment_id, object_key=object_key)
@@ -60,4 +60,4 @@ class AttachmentService:
 
         attachment_out = self._attachment_repository.create(attachment_in)
 
-        return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_url=upload_url)
+        return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)

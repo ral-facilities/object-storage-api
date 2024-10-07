@@ -10,7 +10,11 @@ from bson import ObjectId
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
-from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
+from object_storage_api.schemas.attachment import (
+    AttachmentPostResponseSchema,
+    AttachmentPostSchema,
+    AttachmentPostUploadInfoSchema,
+)
 from object_storage_api.services.attachment import AttachmentService
 
 
@@ -69,8 +73,10 @@ class CreateDSL(AttachmentServiceDSL):
 
         # Store
         expected_object_key = "some/object/key"
-        expected_upload_url = "http://example-upload-url"
-        self.mock_attachment_store.create_presigned_url.return_value = (expected_object_key, expected_upload_url)
+        expected_upload_info = AttachmentPostUploadInfoSchema(
+            url="http://example-upload-url", fields={"some": "fields"}
+        )
+        self.mock_attachment_store.create_presigned_post.return_value = (expected_object_key, expected_upload_info)
 
         # Expected model data with the object key defined (Ignore if invalid to avoid a premature error)
         if self._attachment_post.entity_id != "invalid-id":
@@ -85,7 +91,7 @@ class CreateDSL(AttachmentServiceDSL):
             self.mock_attachment_repository.create.return_value = expected_attachment_out
 
             self._expected_attachment = AttachmentPostResponseSchema(
-                **expected_attachment_out.model_dump(), upload_url=expected_upload_url
+                **expected_attachment_out.model_dump(), upload_info=expected_upload_info
             )
 
     def call_create(self) -> None:
@@ -108,7 +114,7 @@ class CreateDSL(AttachmentServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        self.mock_attachment_store.create_presigned_url.assert_called_once_with(
+        self.mock_attachment_store.create_presigned_post.assert_called_once_with(
             str(self._expected_attachment_id), self._attachment_post
         )
         self.mock_attachment_repository.create.assert_called_once_with(self._expected_attachment_in)
@@ -123,7 +129,7 @@ class CreateDSL(AttachmentServiceDSL):
         :param message: Message of the raised exception.
         """
 
-        self.mock_attachment_store.create_presigned_url.assert_called_once_with(
+        self.mock_attachment_store.create_presigned_post.assert_called_once_with(
             str(self._expected_attachment_id), self._attachment_post
         )
         self.mock_attachment_repository.create.assert_not_called()

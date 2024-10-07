@@ -9,7 +9,7 @@ import pytest
 from bson import ObjectId
 
 from object_storage_api.core.object_store import object_storage_config
-from object_storage_api.schemas.attachment import AttachmentPostSchema
+from object_storage_api.schemas.attachment import AttachmentPostSchema, AttachmentPostUploadInfoSchema
 from object_storage_api.stores.attachment import AttachmentStore
 
 
@@ -29,19 +29,19 @@ class AttachmentStoreDSL:
             yield
 
 
-class CreatePresignedURLDSL(AttachmentStoreDSL):
+class CreatePresignedPostDSL(AttachmentStoreDSL):
     """Base class for `create` tests."""
 
     _attachment_post: AttachmentPostSchema
     _attachment_id: str
     _expected_object_key: str
-    _expected_url: str
+    _expected_attachment_upload_info: AttachmentPostUploadInfoSchema
     _obtained_object_key: str
-    _created_url: str
+    _created_attachment_upload_info: str
 
-    def mock_create_presigned_url(self, attachment_post_data: dict) -> None:
+    def mock_create_presigned_post(self, attachment_post_data: dict) -> None:
         """
-        Mocks object store methods appropriately to test the `create_presigned_url` store method.
+        Mocks object store methods appropriately to test the `create_presigned_post` store method.
 
         :param attachment_post_data: Dictionary containing the attachment data as would be required for an
                                      `AttachmentPost` schema.
@@ -51,42 +51,43 @@ class CreatePresignedURLDSL(AttachmentStoreDSL):
 
         self._expected_object_key = f"attachments/{self._attachment_post.entity_id}/{self._attachment_id}"
 
-        # Mock presigned url generation
-        self._expected_url = "http://test-url.com"
-        self.mock_s3_client.generate_presigned_url.return_value = self._expected_url
+        # Mock presigned post generation
+        expected_presigned_post_response = {"url": "http://example-upload-url", "fields": {"some": "fields"}}
+        self._expected_attachment_upload_info = AttachmentPostUploadInfoSchema(**expected_presigned_post_response)
+        self.mock_s3_client.generate_presigned_post.return_value = expected_presigned_post_response
 
-    def call_create_presigned_url(self) -> None:
-        """Calls the `AttachmentStore` `create_presigned_url` method with the appropriate data from a prior call to
-        `mock_create_presigned_url`."""
+    def call_create_presigned_post(self) -> None:
+        """Calls the `AttachmentStore` `create_presigned_post` method with the appropriate data from a prior call to
+        `mock_create_presigned_post`."""
 
-        self._obtained_object_key, self._created_url = self.attachment_store.create_presigned_url(
+        self._obtained_object_key, self._created_attachment_upload_info = self.attachment_store.create_presigned_post(
             self._attachment_id, self._attachment_post
         )
 
-    def check_create_presigned_url_success(self) -> None:
-        """Checks that a prior call to `call_create_presigned_url` worked as expected."""
+    def check_create_presigned_post_success(self) -> None:
+        """Checks that a prior call to `call_create_presigned_post` worked as expected."""
 
-        self.mock_s3_client.generate_presigned_url.assert_called_once_with(
-            "put_object",
-            Params={
-                "Bucket": object_storage_config.bucket_name.get_secret_value(),
-                "Key": self._expected_object_key,
-                "ContentType": "multipart/form-data",
-            },
+        self.mock_s3_client.generate_presigned_post.assert_called_once_with(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=self._expected_object_key,
+            Fields={"Content-Type": "multipart/form-data"},
+            Conditions=[
+                ["content-length-range", 0, object_storage_config.attachment_max_size_bytes],
+                ["eq", "$Content-Type", "multipart/form-data"],
+            ],
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
 
-        # Cannot know the expected creation and modified time here, so ignore in comparison
         assert self._obtained_object_key == self._expected_object_key
-        assert self._created_url == self._expected_url
+        assert self._created_attachment_upload_info == self._expected_attachment_upload_info
 
 
-class TestCreatePresignedURL(CreatePresignedURLDSL):
-    """Tests for creating a presigned URL for an attachment."""
+class TestCreatePresignedPost(CreatePresignedPostDSL):
+    """Tests for creating a presigned post for an attachment."""
 
-    def test_create_presigned_url(self):
-        """Test creating a presigned URL for an attachment."""
+    def test_create_presigned_post(self):
+        """Test creating a presigned post for an attachment."""
 
-        self.mock_create_presigned_url(ATTACHMENT_POST_DATA_ALL_VALUES)
-        self.call_create_presigned_url()
-        self.check_create_presigned_url_success()
+        self.mock_create_presigned_post(ATTACHMENT_POST_DATA_ALL_VALUES)
+        self.call_create_presigned_post()
+        self.check_create_presigned_post_success()

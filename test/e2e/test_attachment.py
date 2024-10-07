@@ -44,15 +44,18 @@ class CreateDSL:
             self._post_response_attachment.json()["id"] if self._post_response_attachment.status_code == 201 else None
         )
 
-    def upload_attachment(self) -> None:
+    def upload_attachment(self, file_data: str = "Some test data\nnew line") -> None:
         """
         Uploads an attachment to the last posted attachment's `upload_url`.
+
+        :param file_data: File data to upload.
         """
 
-        self._upload_response_attachment = requests.put(
-            self._post_response_attachment.json()["upload_url"],
-            data="Some test data\nnew line",
-            headers={"Content-Type": "multipart/form-data"},
+        upload_info = self._post_response_attachment.json()["upload_info"]
+        self._upload_response_attachment = requests.post(
+            upload_info["url"],
+            files={"file": file_data},
+            data=upload_info["fields"],
             timeout=5,
         )
 
@@ -83,7 +86,18 @@ class CreateDSL:
         Checks that a prior call to `upload_attachment` gave a successful response with response returned.
         """
 
-        assert self._upload_response_attachment.status_code == 200
+        assert self._upload_response_attachment.status_code == 204
+
+    def check_upload_attachment_failed_with_contents(self, status_code: int, expected_contents: str) -> None:
+        """
+        Checks that a prior call to `upload_attachment` gave a failed response with expected code and contents.
+
+        :param status_code: Expected status code of the response.
+        :param expected_contents: Expected contents expected to be found within the content of the failed request.
+        """
+
+        assert self._upload_response_attachment.status_code == status_code
+        assert expected_contents in self._upload_response_attachment.content.decode()
 
 
 class TestCreate(CreateDSL):
@@ -104,6 +118,14 @@ class TestCreate(CreateDSL):
         self.check_post_attachment_success(ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES)
         self.upload_attachment()
         self.check_upload_attachment_success()
+
+    def test_create_with_file_too_large(self):
+        """Test creating an attachment with file that is too large."""
+
+        self.post_attachment(ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_attachment_success(ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY)
+        self.upload_attachment(file_data="Some test data\n" * 10)
+        self.check_upload_attachment_failed_with_contents(400, "EntityTooLarge")
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an attachment with an invalid `entity_id`."""
