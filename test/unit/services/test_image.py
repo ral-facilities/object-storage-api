@@ -60,7 +60,7 @@ class CreateDSL(ImageServiceDSL):
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
-        :param image_post_metadata_data: Dictionary containing the image data as would be required for an
+        :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
         """
 

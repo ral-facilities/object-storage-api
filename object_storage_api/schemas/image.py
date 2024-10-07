@@ -25,3 +25,4 @@ class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
     """
 
     id: str = Field(description="ID of the image")
+    file_name: str = Field(description="File name of the image")

@@ -43,6 +43,6 @@ def create_image(
     image_metadata = ImagePostMetadataSchema(entity_id=entity_id, title=title, description=description)
 
     logger.debug("Image metadata: %s", image_metadata)
-    logger.debug("Image data: %s", upload_file)
+    logger.debug("Image upload file: %s", upload_file)
 
     return image_service.create(image_metadata, upload_file)

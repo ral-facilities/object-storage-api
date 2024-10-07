@@ -21,7 +21,7 @@ class ImageStore:
         """
         Uploads a given image to object storage.
 
-        :param image_id: ID of the attachment to generate the URL for.
+        :param image_id: ID of the image being uploaded.
         :param image_metadata: Metadata of the image to be uploaded.
         :param upload_file: Upload file of the image to be uploaded.
         :return: Object key of the image.

@@ -43,7 +43,7 @@ class UploadDSL(ImageStoreDSL):
         """
         Mocks object store methods appropriately to test the `upload` store method.
 
-        :param image_post_metadata_data: Dictionary containing the image data as would be required for an
+        :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
         """
 
