@@ -44,3 +44,12 @@ class InvalidObjectIdError(DatabaseError):
 
     status_code = 422
     response_detail = "Invalid ID given"
+
+
+class InvalidImageFileError(BaseAPIException):
+    """
+    The provided image file is not valid.
+    """
+
+    status_code = 422
+    response_detail = "File given is not a valid image"

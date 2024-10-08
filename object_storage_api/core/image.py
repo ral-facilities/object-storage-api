@@ -7,9 +7,10 @@ import logging
 from io import BytesIO
 
 from fastapi import UploadFile
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 from object_storage_api.core.config import config
+from object_storage_api.core.exceptions import InvalidImageFileError
 
 logger = logging.getLogger()
 
@@ -22,11 +23,18 @@ def generate_thumbnail_base64_str(uploaded_image_file: UploadFile) -> str:
 
     :param uploaded_image_file: Uploaded image file.
     :return: Base64 encoded string of the thumbnail
+    :raises: InvalidImageFileError if the given image file cannot be processed due to being invalid in some way.
     """
 
     logger.debug("Generating thumbnail for uploaded image file")
 
-    pillow_image = Image.open(uploaded_image_file.file)
+    # Image may fail to open if the file is either not an image or is invalid in some other way
+    try:
+        pillow_image = Image.open(uploaded_image_file.file)
+    except UnidentifiedImageError as exc:
+        raise InvalidImageFileError(
+            f"The uploaded file '{uploaded_image_file.filename}' could not be opened by Pillow"
+        ) from exc
 
     pillow_image.thumbnail(
         (image_config.thumbnail_max_size_pixels, image_config.thumbnail_max_size_pixels),

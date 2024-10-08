@@ -29,17 +29,18 @@ class CreateDSL:
 
         self.test_client = test_client
 
-    def post_image(self, image_post_metadata_data: dict) -> Optional[str]:
+    def post_image(self, image_post_metadata_data: dict, file_name: str) -> Optional[str]:
         """
         Posts an image with the given metadata and a test image file and returns the id of the created image if
         successful.
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
+        :param file_name: File name of the image to upload (relative to the 'test/files' directory).
         :return: ID of the created image (or `None` if not successful).
         """
 
-        with open("test/e2e/files/image.jpg", mode="rb") as file:
+        with open(f"test/files/{file_name}", mode="rb") as file:
             self._post_response_image = self.test_client.post(
                 "/images", data={**image_post_metadata_data}, files={"upload_file": file}
             )
@@ -74,17 +75,23 @@ class TestCreate(CreateDSL):
     def test_create_with_only_required_values_provided(self):
         """Test creating an image with only required values provided."""
 
-        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY)
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
         self.check_post_image_success(IMAGE_GET_DATA_REQUIRED_VALUES_ONLY)
 
     def test_create_with_all_values_provided(self):
         """Test creating an image with all values provided."""
 
-        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES)
+        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.check_post_image_success(IMAGE_GET_DATA_ALL_VALUES)
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
 
-        self.post_image({**IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": "invalid-id"})
+        self.post_image({**IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": "invalid-id"}, "image.jpg")
         self.check_post_image_failed_with_detail(422, "Invalid `entity_id` given")
+
+    def test_create_with_invalid_image_file(self):
+        """Test creating an image with an invalid image file."""
+
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "invalid_image.jpg")
+        self.check_post_image_failed_with_detail(422, "File given is not a valid image")
