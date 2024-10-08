@@ -24,6 +24,8 @@ def generate_thumbnail_base64_str(uploaded_image_file: UploadFile) -> str:
     :return: Base64 encoded string of the thumbnail
     """
 
+    logger.debug("Generating thumbnail for uploaded image file")
+
     pillow_image = Image.open(uploaded_image_file.file)
 
     pillow_image.thumbnail(
