@@ -46,9 +46,24 @@ class ObjectStorageConfig(BaseModel):
     secret_access_key: SecretStr
     bucket_name: SecretStr
     presigned_url_expiry_seconds: int
-    attachment_max_size_bytes: int
 
     model_config = ConfigDict(hide_input_in_errors=True)
+
+
+class AttachmentConfig(BaseModel):
+    """
+    Configuration model for attachments.
+    """
+
+    max_size_bytes: int
+
+
+class ImageConfig(BaseModel):
+    """
+    Configuration model for images.
+    """
+
+    thumbnail_max_size_pixels: int
 
 
 class Config(BaseSettings):
@@ -63,6 +78,8 @@ class Config(BaseSettings):
     api: APIConfig
     database: DatabaseConfig
     object_storage: ObjectStorageConfig
+    attachment: AttachmentConfig
+    image: ImageConfig
 
     model_config = SettingsConfigDict(
         env_file=Path(__file__).parent.parent / ".env",

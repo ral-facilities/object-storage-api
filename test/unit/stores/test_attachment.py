@@ -8,6 +8,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bson import ObjectId
 
+from object_storage_api.core.config import config
 from object_storage_api.core.object_store import object_storage_config
 from object_storage_api.schemas.attachment import AttachmentPostSchema, AttachmentPostUploadInfoSchema
 from object_storage_api.stores.attachment import AttachmentStore
@@ -72,7 +73,7 @@ class CreatePresignedPostDSL(AttachmentStoreDSL):
             Key=self._expected_object_key,
             Fields={"Content-Type": "multipart/form-data"},
             Conditions=[
-                ["content-length-range", 0, object_storage_config.attachment_max_size_bytes],
+                ["content-length-range", 0, config.attachment.max_size_bytes],
                 ["eq", "$Content-Type", "multipart/form-data"],
             ],
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
