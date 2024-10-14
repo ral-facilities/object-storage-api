@@ -23,6 +23,7 @@ code-analysis = [
     "pylint==3.3.1",
     "object-storage-api[test]"
 ]
+
 test = [
     "pytest==8.3.3",
     "pytest-asyncio==0.24.0",
@@ -31,9 +32,14 @@ test = [
     "requests==2.32.3"
 ]
 
+scripts = [
+    "faker==30.3.0",
+]
+
 dev = [
     "object-storage-api[code-analysis]",
     "object-storage-api[test]",
+    "object-storage-api[scripts]",
 ]
 
 [tool.setuptools]
