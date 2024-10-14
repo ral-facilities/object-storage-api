@@ -27,3 +27,4 @@ class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
     id: str = Field(description="ID of the image")
     file_name: str = Field(description="File name of the image")
     thumbnail: str = Field(description="Thumbnail of the image as a byte string")
+    primary: bool = Field(description="Whether the image is the primary for its related entity")
