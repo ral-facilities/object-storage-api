@@ -1,4 +1,4 @@
-"""Module defining a CLI Script for some common development tasks"""
+"""Module defining a CLI Script for some common development tasks."""
 
 import argparse
 import logging
@@ -16,14 +16,14 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
     logging.debug("Running command: %s", " ".join(args))
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
     # for some reason)
-    popen = subprocess.Popen(
+    with subprocess.Popen(
         args, stdin=stdin, stdout=stdout if stdout is not None else subprocess.PIPE, universal_newlines=True
-    )
-    if stdout is None:
-        for stdout_line in iter(popen.stdout.readline, ""):
-            print(stdout_line, end="")
-        popen.stdout.close()
-    return_code = popen.wait()
+    ) as popen:
+        if stdout is None:
+            for stdout_line in iter(popen.stdout.readline, ""):
+                print(stdout_line, end="")
+            popen.stdout.close()
+        return_code = popen.wait()
     return return_code
 
 
@@ -61,17 +61,17 @@ def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, 
 def add_mongodb_auth_args(parser: argparse.ArgumentParser):
     """Adds common arguments for MongoDB authentication"""
 
-    parser.add_argument("-u", "--db-username", default="root", help="Username for MongoDB authentication")
-    parser.add_argument("-p", "--db-password", default="example", help="Password for MongoDB authentication")
+    parser.add_argument("-u", "--username", default="root", help="Username for MongoDB authentication")
+    parser.add_argument("-p", "--password", default="example", help="Password for MongoDB authentication")
 
 
 def get_mongodb_auth_args(args: argparse.Namespace):
     """Returns arguments in a list to use the parser arguments defined in add_mongodb_auth_args above"""
     return [
         "--username",
-        args.db_username,
+        args.username,
         "--password",
-        args.db_password,
+        args.password,
         "--authenticationDatabase=admin",
     ]
 
@@ -109,14 +109,10 @@ class SubCommand(ABC):
 
 
 class CommandGenerate(SubCommand):
-    # TODO: Update comments
-    """Command to generate new test data for the database (runs generate_mock_data.py)
+    """Command to generate new test data for the database and object storage (runs generate_mock_data.py)
 
     - Deletes all existing data (after confirmation)
-    - Imports units
     - Runs generate_mock_data.py
-
-    Has option to dump the data into './data/mock_data.dump'.
     """
 
     def __init__(self):
@@ -147,14 +143,12 @@ class CommandGenerate(SubCommand):
                 ]
             )
             logging.info("Deleting MinIO bucket contents...")
-            # run_minio_command(
-            #     ["mc", "alias", "set", "object-storage", "http://localhost:9000", "root", "example_password"]
-            # )
             run_minio_command(["mc", "rm", "--recursive", "--force", "object-storage/object-storage"])
             # Generate new data
             logging.info("Generating new mock data...")
             try:
                 # Import here only because CI wont install necessary packages to import it directly
+                # pylint:disable=import-outside-toplevel
                 from generate_mock_data import generate_mock_data
 
                 generate_mock_data()

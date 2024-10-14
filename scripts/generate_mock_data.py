@@ -1,3 +1,5 @@
+"""Module defining a script for populating the database and object store with randomised data."""
+
 import logging
 from typing import Any
 
@@ -6,6 +8,7 @@ from faker import Faker
 
 fake = Faker("en_GB")
 
+# Various constants determining the result of the script
 API_URL = "http://localhost:8002"
 IMS_API_URL = "http://localhost:8000"
 MAX_NUMBER_ATTACHMENTS_PER_ENTITY = 3
@@ -14,13 +17,19 @@ PROBABILITY_ATTACHMENT_HAS_OPTIONAL_FIELD = 0.5
 SEED = 0
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger()
 
 
 def optional_attachment_field(function):
+    """Either returns the result of executing the given function, or None while taking into account the fields
+    probability to be populated."""
+
     return function() if fake.random.random() < PROBABILITY_ATTACHMENT_HAS_OPTIONAL_FIELD else None
 
 
 def generate_random_attachment(entity_id: str):
+    """Generates randomised data for an attachment with a given entity ID."""
+
     return {
         "entity_id": entity_id,
         "file_name": fake.file_name(),
@@ -30,7 +39,7 @@ def generate_random_attachment(entity_id: str):
 
 
 def post(endpoint: str, json: dict) -> dict[str, Any]:
-    """Posts an entity's data to the given endpoint
+    """Posts an entity's data to the given endpoint.
 
     :return: JSON data from the response.
     """
@@ -38,6 +47,8 @@ def post(endpoint: str, json: dict) -> dict[str, Any]:
 
 
 def create_attachment(attachment_data: dict) -> dict[str, Any]:
+    """Creates an attachment given its metadata and uploads some file data to it."""
+
     attachment = post("/attachments", attachment_data)
     upload_info = attachment["upload_info"]
     requests.post(
@@ -50,31 +61,41 @@ def create_attachment(attachment_data: dict) -> dict[str, Any]:
     return attachment
 
 
-def populate_attachments_for_entity(entity_id: str):
-    if fake.random.random() < PROBABILITY_ENTITY_HAS_ATTACHMENTS:
-        for _ in range(0, fake.random.randint(0, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
-            attachment = generate_random_attachment(entity_id)
-            create_attachment(attachment)
+def populate_random_attachments(existing_entity_ids: list[str]):
+    """Randomly populates attachments for the given list of entity IDs."""
+
+    for entity_id in existing_entity_ids:
+        if fake.random.random() < PROBABILITY_ENTITY_HAS_ATTACHMENTS:
+            for _ in range(0, fake.random.randint(0, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
+                attachment = generate_random_attachment(entity_id)
+                create_attachment(attachment)
 
 
-def populate_attachments():
-    logging.info("Generating attachments for catalogue items...")
+def obtain_existing_ims_entities() -> list[str]:
+    """Obtains existing IMS entities to generate attachments/images for and adds them to a global variable for later
+    use."""
 
     catalogue_items = requests.get(f"{IMS_API_URL}/v1/catalogue-items", timeout=10).json()
-    for catalogue_item in catalogue_items:
-        populate_attachments_for_entity(catalogue_item["id"])
+    existing_entity_ids = [entity["id"] for entity in catalogue_items]
 
-    logging.info("Generating attachments for items...")
     items = requests.get(f"{IMS_API_URL}/v1/items", timeout=10).json()
-    for item in items:
-        populate_attachments_for_entity(item["id"])
+    existing_entity_ids.extend([entity["id"] for entity in items])
 
-    logging.info("Generating attachments for systems...")
     systems = requests.get(f"{IMS_API_URL}/v1/systems", timeout=10).json()
-    for system in systems:
-        populate_attachments_for_entity(system["id"])
+    existing_entity_ids.extend([entity["id"] for entity in systems])
+
+    return existing_entity_ids
 
 
 def generate_mock_data():
-    logging.info("Populating attachments...")
-    populate_attachments()
+    """Generates mock data for all the entities."""
+
+    logger.info("Obtaining a list of existing IMS entities...")
+    existing_entity_ids = obtain_existing_ims_entities()
+
+    logger.info("Populating attachments...")
+    populate_random_attachments(existing_entity_ids)
+
+
+if __name__ == "__main__":
+    generate_mock_data()
