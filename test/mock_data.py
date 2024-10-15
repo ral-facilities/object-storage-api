@@ -86,8 +86,8 @@ IMAGE_GET_DATA_REQUIRED_VALUES_ONLY = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "file_name": "image.jpg",
-    "thumbnail": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
     "primary": False,
+    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
     "title": None,
     "description": None,
 }
@@ -103,7 +103,7 @@ IMAGE_IN_DATA_ALL_VALUES = {
     "id": str(ObjectId()),
     "file_name": "image.jpg",
     "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
-    "thumbnail": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
+    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
 }
 
 IMAGE_GET_DATA_ALL_VALUES = {
@@ -112,5 +112,5 @@ IMAGE_GET_DATA_ALL_VALUES = {
     "id": ANY,
     "file_name": "image.jpg",
     "primary": False,
-    "thumbnail": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
+    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
 }

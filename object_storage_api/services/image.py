@@ -53,7 +53,7 @@ class ImageService:
         image_id = str(ObjectId())
 
         # Generate the thumbnail
-        thumbnail = generate_thumbnail_base64_str(upload_file)
+        thumbnail_base64 = generate_thumbnail_base64_str(upload_file)
 
         # Upload the full size image to object storage
         object_key = self._image_store.upload(image_id, image_metadata, upload_file)
@@ -64,7 +64,7 @@ class ImageService:
                 id=image_id,
                 file_name=upload_file.filename,
                 object_key=object_key,
-                thumbnail=thumbnail,
+                thumbnail_base64=thumbnail_base64,
             )
         except InvalidObjectIdError as exc:
             # Provide more specific detail
