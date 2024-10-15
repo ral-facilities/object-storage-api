@@ -52,7 +52,7 @@ def create_attachment(attachment_data: dict) -> dict[str, Any]:
     attachment = post("/attachments", attachment_data)
     upload_info = attachment["upload_info"]
     requests.post(
-        upload_info["url"].replace("minio", "localhost"),
+        upload_info["url"],
         files={"file": fake.paragraph(nb_sentences=2)},
         data=upload_info["fields"],
         timeout=5,

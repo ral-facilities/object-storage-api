@@ -82,14 +82,13 @@ def add_minio_alias_args(parser: argparse.ArgumentParser):
 
     parser.add_argument("-mu", "--minio-username", default="root", help="Username for MinIO authentication")
     parser.add_argument("-mp", "--minio-password", default="example_password", help="Password for MinIO authentication")
-    parser.add_argument("-mh", "--minio-host", default="http://locahost:9000", help="Host for MinIO")
+    parser.add_argument("-mh", "--minio-host", default="http://localhost:9000", help="Host for MinIO")
 
 
 def set_minio_alias(args: argparse.Namespace):
     """Sets a MinIO alias named `object_storage` for use before MinIO commands using the parser arguments defined in
     `add_minio_alias_args` above."""
 
-    print(args)
     run_command(
         [
             "docker",
@@ -102,7 +101,7 @@ def set_minio_alias(args: argparse.Namespace):
             "object-storage",
             args.minio_host,
             args.minio_username,
-            args.minio_host,
+            args.minio_password,
         ],
     )
 
