@@ -30,7 +30,7 @@ ImageServiceDep = Annotated[ImageService, Depends(ImageService)]
 def create_image(
     image_service: ImageServiceDep,
     # Unfortunately using Annotated[ImagePostSchema, Form()] as on
-    # https://fastapi.tiangolo.com/tutorial/request-form-models/does not work correctly when there is an UploadFile
+    # https://fastapi.tiangolo.com/tutorial/request-form-models/ does not work correctly when there is an UploadFile
     # within it, so have to redefine here before passing them to the schema
     entity_id: Annotated[str, Form(description="ID of the entity the image relates to")],
     upload_file: Annotated[UploadFile, File(description="Image file")],
