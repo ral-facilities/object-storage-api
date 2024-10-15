@@ -13,7 +13,9 @@ services:
     environment:
       DATABASE__HOST_AND_OPTIONS: object_storage_api_mongodb_container:27017/?authMechanism=SCRAM-SHA-256&authSource=admin
     extra_hosts:
-      - "minio:host-gateway"
+      # Want to use localhost for MinIO connection so the presigned URLs are correct but also want to avoid using host
+      # networking
+      - "localhost:host-gateway"
 
   mongo-db:
     image: mongo:7.0-jammy
