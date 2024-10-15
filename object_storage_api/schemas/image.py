@@ -26,4 +26,4 @@ class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
 
     id: str = Field(description="ID of the image")
     file_name: str = Field(description="File name of the image")
-    thumbnail: str = Field(description="Thumbnail of the image as a byte string")
+    thumbnail_base64: str = Field(description="Thumbnail of the image as a base64 encoded byte string")
