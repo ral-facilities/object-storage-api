@@ -10,9 +10,8 @@ from typing import Optional
 
 
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """
-    Runs a command using subprocess
-    """
+    """Runs a command using subprocess."""
+
     logging.debug("Running command: %s", " ".join(args))
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
     # for some reason)
@@ -28,7 +27,8 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
 
 
 def start_group(text: str, args: argparse.Namespace):
-    """Print the start of a group for Github CI (to get collapsable sections)"""
+    """Print the start of a group for Github CI (to get collapsable sections)."""
+
     if args.ci:
         print(f"::group::{text}")
     else:
@@ -36,15 +36,15 @@ def start_group(text: str, args: argparse.Namespace):
 
 
 def end_group(args: argparse.Namespace):
-    """End of a group for Github CI"""
+    """End of a group for Github CI."""
+
     if args.ci:
         print("::endgroup::")
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """
-    Runs a command within the mongodb container
-    """
+    """Runs a command within the mongodb container."""
+
     return run_command(
         [
             "docker",
@@ -59,33 +59,63 @@ def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, 
 
 
 def add_mongodb_auth_args(parser: argparse.ArgumentParser):
-    """Adds common arguments for MongoDB authentication"""
+    """Adds common arguments for MongoDB authentication."""
 
-    parser.add_argument("-u", "--username", default="root", help="Username for MongoDB authentication")
-    parser.add_argument("-p", "--password", default="example", help="Password for MongoDB authentication")
+    parser.add_argument("-dbu", "--db-username", default="root", help="Username for MongoDB authentication")
+    parser.add_argument("-dbp", "--db-password", default="example", help="Password for MongoDB authentication")
 
 
 def get_mongodb_auth_args(args: argparse.Namespace):
-    """Returns arguments in a list to use the parser arguments defined in add_mongodb_auth_args above"""
+    """Returns arguments in a list to use the parser arguments defined in `add_mongodb_auth_args` above."""
+
     return [
         "--username",
-        args.username,
+        args.db_username,
         "--password",
-        args.password,
+        args.db_password,
         "--authenticationDatabase=admin",
     ]
 
 
+def add_minio_alias_args(parser: argparse.ArgumentParser):
+    """Adds common arguments for a MinIO alias."""
+
+    parser.add_argument("-mu", "--minio-username", default="root", help="Username for MinIO authentication")
+    parser.add_argument("-mp", "--minio-password", default="example_password", help="Password for MinIO authentication")
+    parser.add_argument("-mh", "--minio-host", default="http://locahost:9000", help="Host for MinIO")
+
+
+def set_minio_alias(args: argparse.Namespace):
+    """Sets a MinIO alias named `object_storage` for use before MinIO commands using the parser arguments defined in
+    `add_minio_alias_args` above."""
+
+    print(args)
+    run_command(
+        [
+            "docker",
+            "exec",
+            "-i",
+            "object_storage_minio_container",
+            "mc",
+            "alias",
+            "set",
+            "object-storage",
+            args.minio_host,
+            args.minio_username,
+            args.minio_host,
+        ],
+    )
+
+
 def run_minio_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """
-    Runs a command within the mongodb container
-    """
+    """Runs a command within the minio container."""
+
     return run_command(
         [
             "docker",
             "exec",
             "-i",
-            "object_storage_minio_mc_container",
+            "object_storage_minio_container",
         ]
         + args,
         stdin=stdin,
@@ -94,18 +124,18 @@ def run_minio_command(args: list[str], stdin: Optional[TextIOWrapper] = None, st
 
 
 class SubCommand(ABC):
-    """Base class for a sub command"""
+    """Base class for a sub command."""
 
     def __init__(self, help_message: str):
         self.help_message = help_message
 
     @abstractmethod
     def setup(self, parser: argparse.ArgumentParser):
-        """Setup the parser by adding any parameters here"""
+        """Setup the parser by adding any parameters here."""
 
     @abstractmethod
     def run(self, args: argparse.Namespace):
-        """Run the command with the given parameters as added by 'setup'"""
+        """Run the command with the given parameters as added by 'setup'."""
 
 
 class CommandGenerate(SubCommand):
@@ -120,10 +150,7 @@ class CommandGenerate(SubCommand):
 
     def setup(self, parser: argparse.ArgumentParser):
         add_mongodb_auth_args(parser)
-
-        parser.add_argument(
-            "-d", "--dump", action="store_true", help="Whether to dump the output into a file that can be committed"
-        )
+        add_minio_alias_args(parser)
 
     def run(self, args: argparse.Namespace):
         if args.ci:
@@ -143,7 +170,14 @@ class CommandGenerate(SubCommand):
                 ]
             )
             logging.info("Deleting MinIO bucket contents...")
+
+            # Not ideal that this runs here - would either have to setup once as part of some sort of init (e.g. could
+            # have an init for creating the buckets instead of using the minio/mc image) or would have to somehow detect if it
+            # has already been done. Doesn't seem to be any harm in setting it again here though.
+            set_minio_alias(args)
+
             run_minio_command(["mc", "rm", "--recursive", "--force", "object-storage/object-storage"])
+
             # Generate new data
             logging.info("Generating new mock data...")
             try:
@@ -163,7 +197,8 @@ commands: dict[str, SubCommand] = {
 
 
 def main():
-    """Runs CLI commands"""
+    """Runs CLI commands."""
+
     parser = argparse.ArgumentParser(prog="ObjectStorage Dev Script", description="Some commands for development")
     parser.add_argument(
         "--debug", action="store_true", help="Flag for setting the log level to debug to output more info"

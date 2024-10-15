@@ -54,6 +54,6 @@ services:
       /usr/bin/mc alias set object-storage http://localhost:9000 root example_password;
       /usr/bin/mc mb object-storage/object-storage;
       /usr/bin/mc mb object-storage/test-object-storage;
-      sleep inf;
+      exit 0;
       "
     network_mode: "host"
