@@ -6,14 +6,19 @@ from typing import Any
 import requests
 from faker import Faker
 from faker_file.providers.docx_file import DocxFileProvider
+from faker_file.providers.image.pil_generator import PilImageGenerator
+from faker_file.providers.jpeg_file import GraphicJpegFileProvider
 from faker_file.providers.pdf_file import PdfFileProvider
 from faker_file.providers.pdf_file.generators.reportlab_generator import ReportlabPdfGenerator
+from faker_file.providers.png_file import GraphicPngFileProvider
 from faker_file.providers.txt_file import TxtFileProvider
 
 fake = Faker("en_GB")
 fake.add_provider(TxtFileProvider)
 fake.add_provider(PdfFileProvider)
 fake.add_provider(DocxFileProvider)
+fake.add_provider(GraphicJpegFileProvider)
+fake.add_provider(GraphicPngFileProvider)
 
 # Various constants determining the result of the script
 API_URL = "http://localhost:8002"
@@ -23,6 +28,10 @@ MAX_NUMBER_IMAGES_PER_ENTITY = 3
 PROBABILITY_ENTITY_HAS_ATTACHMENTS = 0.2
 PROBABILITY_ENTITY_HAS_IMAGES = 0.2
 PROBABILITY_ATTACHMENT_HAS_OPTIONAL_FIELD = 0.5
+ATTACHMENT_MIN_CHARS = 100
+ATTACHMENT_MAX_CHARS = 1000
+IMAGE_MIN_SIZE = 200
+IMAGE_MAX_SIZE = 600
 SEED = 0
 
 logging.basicConfig(level=logging.INFO)
@@ -71,14 +80,16 @@ def create_attachment(attachment_metadata: dict) -> dict[str, Any]:
     file = None
     extension = fake.random.choice(["txt", "pdf", "docx"])
 
+    params = {"raw": True, "max_nb_chars": fake.random.randint(ATTACHMENT_MIN_CHARS, ATTACHMENT_MAX_CHARS)}
+
     if extension == "txt":
-        file = fake.txt_file(raw=True)
+        file = fake.txt_file(**params)
     elif extension == "pdf":
         # Use this generator as default requires wkhtmltopdf to be installed on the system separately
         # see https://faker-file.readthedocs.io/en/0.15.5/faker_file.providers.pdf_file.html
-        file = fake.pdf_file(pdf_generator_cls=ReportlabPdfGenerator, raw=True)
+        file = fake.pdf_file(**params, pdf_generator_cls=ReportlabPdfGenerator)
     elif extension == "docx":
-        file = fake.docx_file(raw=True)
+        file = fake.docx_file(**params)
 
     file_name = fake.file_name(extension=extension)
 
@@ -97,13 +108,34 @@ def create_attachment(attachment_metadata: dict) -> dict[str, Any]:
 def create_image(image_metadata: dict) -> dict[str, Any]:
     """Creates an image given its metadata and uploads some file data to it."""
 
-    with open("test/files/image.jpg", mode="rb") as file:
-        image = requests.post(
-            f"{API_URL}/images",
-            data=image_metadata,
-            files={"upload_file": ("image.jpg", file, "image/jpeg")},
-            timeout=5,
-        ).json()
+    file = None
+    extension = fake.random.choice(["jpeg", "png"])
+
+    params = {
+        "image_generator_cls": PilImageGenerator,
+        "raw": True,
+        "size": (
+            fake.random.randint(IMAGE_MIN_SIZE, IMAGE_MAX_SIZE),
+            fake.random.randint(IMAGE_MIN_SIZE, IMAGE_MAX_SIZE),
+        ),
+    }
+
+    # Use PIL generator as default requires wkhtmltopdf to be installed on the system separately
+    # see https://faker-file.readthedocs.io/en/latest/creating_images.html
+    # Also avoid having text in it as Rocky 8 cannot load fonts presumably due to lacking any being installed
+    if extension == "jpeg":
+        file = fake.graphic_jpeg_file(**params)
+    elif extension == "png":
+        file = fake.graphic_png_file(**params)
+
+    file_name = fake.file_name(extension=extension)
+
+    image = requests.post(
+        f"{API_URL}/images",
+        data=image_metadata,
+        files={"upload_file": (file_name, file, f"image/{extension}")},
+        timeout=5,
+    ).json()
 
     return image
 
