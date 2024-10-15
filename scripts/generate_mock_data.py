@@ -5,8 +5,15 @@ from typing import Any
 
 import requests
 from faker import Faker
+from faker_file.providers.docx_file import DocxFileProvider
+from faker_file.providers.pdf_file import PdfFileProvider
+from faker_file.providers.pdf_file.generators.reportlab_generator import ReportlabPdfGenerator
+from faker_file.providers.txt_file import TxtFileProvider
 
 fake = Faker("en_GB")
+fake.add_provider(TxtFileProvider)
+fake.add_provider(PdfFileProvider)
+fake.add_provider(DocxFileProvider)
 
 # Various constants determining the result of the script
 API_URL = "http://localhost:8002"
@@ -29,12 +36,12 @@ def optional_attachment_field(function):
     return function() if fake.random.random() < PROBABILITY_ATTACHMENT_HAS_OPTIONAL_FIELD else None
 
 
-def generate_random_attachment(entity_id: str):
-    """Generates randomised data for an attachment with a given entity ID."""
+def generate_random_attachment_metadata(entity_id: str):
+    """Generates randomised metadata for an attachment with a given entity ID (purposefully excludes the filename as it
+    will be determined later with the file data)."""
 
     return {
         "entity_id": entity_id,
-        "file_name": fake.file_name(),
         "title": optional_attachment_field(lambda: fake.paragraph(nb_sentences=1)),
         "description": optional_attachment_field(lambda: fake.paragraph(nb_sentences=2)),
     }
@@ -58,14 +65,28 @@ def post(endpoint: str, json: dict) -> dict[str, Any]:
     return requests.post(f"{API_URL}{endpoint}", json=json, timeout=10).json()
 
 
-def create_attachment(attachment_data: dict) -> dict[str, Any]:
-    """Creates an attachment given its metadata and uploads some file data to it."""
+def create_attachment(attachment_metadata: dict) -> dict[str, Any]:
+    """Creates an attachment given its metadata and uploads some randomly generated file data to it."""
 
-    attachment = post("/attachments", attachment_data)
+    file = None
+    extension = fake.random.choice(["txt", "pdf", "docx"])
+
+    if extension == "txt":
+        file = fake.txt_file(raw=True)
+    elif extension == "pdf":
+        # Use this generator as default requires wkhtmltopdf to be installed on the system separately
+        # see https://faker-file.readthedocs.io/en/0.15.5/faker_file.providers.pdf_file.html
+        file = fake.pdf_file(pdf_generator_cls=ReportlabPdfGenerator, raw=True)
+    elif extension == "docx":
+        file = fake.docx_file(raw=True)
+
+    file_name = fake.file_name(extension=extension)
+
+    attachment = post("/attachments", {**attachment_metadata, "file_name": file_name})
     upload_info = attachment["upload_info"]
     requests.post(
         upload_info["url"],
-        files={"file": fake.paragraph(nb_sentences=2)},
+        files={"file": file},
         data=upload_info["fields"],
         timeout=5,
     )
@@ -93,8 +114,8 @@ def populate_random_attachments(existing_entity_ids: list[str]):
     for entity_id in existing_entity_ids:
         if fake.random.random() < PROBABILITY_ENTITY_HAS_ATTACHMENTS:
             for _ in range(0, fake.random.randint(0, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
-                attachment = generate_random_attachment(entity_id)
-                create_attachment(attachment)
+                attachment_metadata = generate_random_attachment_metadata(entity_id)
+                create_attachment(attachment_metadata)
 
 
 def populate_random_images(existing_entity_ids: list[str]):
