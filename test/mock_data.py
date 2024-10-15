@@ -74,3 +74,38 @@ ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {
     **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
     "id": ANY,
 }
+
+# ---------------------------- IMAGES -----------------------------
+
+IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY = {
+    "entity_id": str(ObjectId()),
+}
+
+IMAGE_GET_DATA_REQUIRED_VALUES_ONLY = {
+    **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "file_name": "image.jpg",
+    "title": None,
+    "description": None,
+}
+
+IMAGE_POST_METADATA_DATA_ALL_VALUES = {
+    **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    "title": "Report Title",
+    "description": "A damage report.",
+}
+
+IMAGE_IN_DATA_ALL_VALUES = {
+    **IMAGE_POST_METADATA_DATA_ALL_VALUES,
+    "id": str(ObjectId()),
+    "file_name": "image.jpg",
+    "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
+}
+
+IMAGE_GET_DATA_ALL_VALUES = {
+    **IMAGE_POST_METADATA_DATA_ALL_VALUES,
+    **CREATED_MODIFIED_GET_DATA_EXPECTED,
+    "id": ANY,
+    "file_name": "image.jpg",
+}

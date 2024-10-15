@@ -53,7 +53,7 @@ class CreateDSL(AttachmentServiceDSL):
 
     _attachment_post: AttachmentPostSchema
     _expected_attachment_id: ObjectId
-    _expected_attachment_in: MagicMock
+    _expected_attachment_in: AttachmentIn
     _expected_attachment: AttachmentPostResponseSchema
     _created_attachment: AttachmentPostResponseSchema
     _create_exception: pytest.ExceptionInfo

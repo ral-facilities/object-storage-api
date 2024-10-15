@@ -10,8 +10,6 @@ from pymongo.collection import Collection
 from pymongo.database import Database
 from pymongo.results import InsertOneResult
 
-from object_storage_api.repositories.attachment import AttachmentRepo
-
 
 @pytest.fixture(name="database_mock")
 def fixture_database_mock() -> Mock:
@@ -22,18 +20,8 @@ def fixture_database_mock() -> Mock:
     """
     database_mock = Mock(Database)
     database_mock.attachments = Mock(Collection)
+    database_mock.images = Mock(Collection)
     return database_mock
-
-
-@pytest.fixture(name="attachment_repository")
-def fixture_item_repository(database_mock: Mock) -> AttachmentRepo:
-    """
-    Fixture to create a `AttachmentRepo` instance with a mocked Database dependency.
-
-    :param database_mock: Mocked MongoDB database instance.
-    :return: `AttachmentRepo` instance with the mocked dependency.
-    """
-    return AttachmentRepo(database_mock)
 
 
 class RepositoryTestHelpers:

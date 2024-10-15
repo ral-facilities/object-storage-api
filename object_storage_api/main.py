@@ -13,7 +13,7 @@ from fastapi.responses import JSONResponse
 from object_storage_api.core.config import config
 from object_storage_api.core.exceptions import BaseAPIException
 from object_storage_api.core.logger_setup import setup_logger
-from object_storage_api.routers import attachment
+from object_storage_api.routers import attachment, image
 
 app = FastAPI(title=config.api.title, description=config.api.description, root_path=config.api.root_path)
 
@@ -78,6 +78,7 @@ app.add_middleware(
 )
 
 app.include_router(attachment.router)
+app.include_router(image.router)
 
 
 @app.get("/")

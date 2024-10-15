@@ -1,5 +1,5 @@
 """
-Module for defining the API schema models for representing attachments
+Module for defining the API schema models for representing attachments.
 """
 
 from typing import Optional
