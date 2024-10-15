@@ -76,8 +76,8 @@ class CreateDSL(ImageServiceDSL):
         self.mock_object_id.return_value = self._expected_image_id
 
         # Thumbnail
-        expected_thumbnail = "some_thumbnail"
-        self.mock_generate_thumbnail_base64_str.return_value = expected_thumbnail
+        expected_thumbnail_base64 = "some_thumbnail"
+        self.mock_generate_thumbnail_base64_str.return_value = expected_thumbnail_base64
 
         # Store
         expected_object_key = "some/object/key"
@@ -90,7 +90,7 @@ class CreateDSL(ImageServiceDSL):
                 id=str(self._expected_image_id),
                 object_key=expected_object_key,
                 file_name=self._upload_file.filename,
-                thumbnail=expected_thumbnail,
+                thumbnail_base64=expected_thumbnail_base64,
             )
 
             # Repo (The contents of the returned output model does not matter here as long as its valid)
