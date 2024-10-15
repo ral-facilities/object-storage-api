@@ -122,6 +122,20 @@ Ensure that Python is installed on your machine before proceeding.
    The microservice should now be running locally at http://localhost:8002. The Swagger UI can be accessed
    at http://localhost:8002/docs.
 
+## Using mock data for testing [Optional]
+
+### Generating mock data
+
+To populate the database and object storage with mock data for testing IMS first ensure both `inventory-management-api`
+and `object-storage-api` are running in docker and then run.
+
+```bash
+python ./scripts/dev_cli.py generate
+```
+
+This will clear the database and MinIO storage, fetch existing entities from the `inventory-management-system-api` and
+add generate and add mock data for them.
+
 ## Notes
 
 ### Application Configuration
