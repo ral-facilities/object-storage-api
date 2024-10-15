@@ -12,7 +12,9 @@ fake = Faker("en_GB")
 API_URL = "http://localhost:8002"
 IMS_API_URL = "http://localhost:8000"
 MAX_NUMBER_ATTACHMENTS_PER_ENTITY = 3
+MAX_NUMBER_IMAGES_PER_ENTITY = 3
 PROBABILITY_ENTITY_HAS_ATTACHMENTS = 0.2
+PROBABILITY_ENTITY_HAS_IMAGES = 0.2
 PROBABILITY_ATTACHMENT_HAS_OPTIONAL_FIELD = 0.5
 SEED = 0
 
@@ -33,6 +35,16 @@ def generate_random_attachment(entity_id: str):
     return {
         "entity_id": entity_id,
         "file_name": fake.file_name(),
+        "title": optional_attachment_field(lambda: fake.paragraph(nb_sentences=1)),
+        "description": optional_attachment_field(lambda: fake.paragraph(nb_sentences=2)),
+    }
+
+
+def generate_random_image_metadata(entity_id: str):
+    """Generates randomised data for an image with a given entity ID."""
+
+    return {
+        "entity_id": entity_id,
         "title": optional_attachment_field(lambda: fake.paragraph(nb_sentences=1)),
         "description": optional_attachment_field(lambda: fake.paragraph(nb_sentences=2)),
     }
@@ -61,6 +73,20 @@ def create_attachment(attachment_data: dict) -> dict[str, Any]:
     return attachment
 
 
+def create_image(image_metadata: dict) -> dict[str, Any]:
+    """Creates an image given its metadata and uploads some file data to it."""
+
+    with open("test/files/image.jpg", mode="rb") as file:
+        image = requests.post(
+            f"{API_URL}/images",
+            data=image_metadata,
+            files={"upload_file": ("image.jpg", file, "image/jpeg")},
+            timeout=5,
+        ).json()
+
+    return image
+
+
 def populate_random_attachments(existing_entity_ids: list[str]):
     """Randomly populates attachments for the given list of entity IDs."""
 
@@ -69,6 +95,16 @@ def populate_random_attachments(existing_entity_ids: list[str]):
             for _ in range(0, fake.random.randint(0, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
                 attachment = generate_random_attachment(entity_id)
                 create_attachment(attachment)
+
+
+def populate_random_images(existing_entity_ids: list[str]):
+    """Randomly populates images for the given list of entity IDs."""
+
+    for entity_id in existing_entity_ids:
+        if fake.random.random() < PROBABILITY_ENTITY_HAS_IMAGES:
+            for _ in range(0, fake.random.randint(0, MAX_NUMBER_IMAGES_PER_ENTITY)):
+                image_metadata = generate_random_image_metadata(entity_id)
+                create_image(image_metadata)
 
 
 def obtain_existing_ims_entities() -> list[str]:
@@ -95,6 +131,9 @@ def generate_mock_data():
 
     logger.info("Populating attachments...")
     populate_random_attachments(existing_entity_ids)
+
+    logger.info("Populating images...")
+    populate_random_images(existing_entity_ids)
 
 
 if __name__ == "__main__":
