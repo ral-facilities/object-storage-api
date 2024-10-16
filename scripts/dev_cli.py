@@ -171,8 +171,8 @@ class CommandGenerate(SubCommand):
             logging.info("Deleting MinIO bucket contents...")
 
             # Not ideal that this runs here - would either have to setup once as part of some sort of init (e.g. could
-            # have an init for creating the buckets instead of using the minio/mc image) or would have to somehow detect if it
-            # has already been done. Doesn't seem to be any harm in setting it again here though.
+            # have an init for creating the buckets instead of using the minio/mc image) or would have to somehow detect
+            # if it has already been done. Doesn't seem to be any harm in setting it again here though.
             set_minio_alias(args)
 
             run_minio_command(["mc", "rm", "--recursive", "--force", "object-storage/object-storage"])

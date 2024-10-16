@@ -23,10 +23,10 @@ fake.add_provider(GraphicPngFileProvider)
 # Various constants determining the result of the script
 API_URL = "http://localhost:8002"
 IMS_API_URL = "http://localhost:8000"
-MAX_NUMBER_ATTACHMENTS_PER_ENTITY = 3
-MAX_NUMBER_IMAGES_PER_ENTITY = 3
-PROBABILITY_ENTITY_HAS_ATTACHMENTS = 0.2
-PROBABILITY_ENTITY_HAS_IMAGES = 0.2
+MAX_NUMBER_ATTACHMENTS_PER_ENTITY = 5
+MAX_NUMBER_IMAGES_PER_ENTITY = 5
+PROBABILITY_ENTITY_HAS_ATTACHMENTS = 0.3
+PROBABILITY_ENTITY_HAS_IMAGES = 0.3
 PROBABILITY_ATTACHMENT_HAS_OPTIONAL_FIELD = 0.5
 ATTACHMENT_MIN_CHARS = 100
 ATTACHMENT_MAX_CHARS = 1000
@@ -145,7 +145,7 @@ def populate_random_attachments(existing_entity_ids: list[str]):
 
     for entity_id in existing_entity_ids:
         if fake.random.random() < PROBABILITY_ENTITY_HAS_ATTACHMENTS:
-            for _ in range(0, fake.random.randint(0, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
+            for _ in range(0, fake.random.randint(1, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
                 attachment_metadata = generate_random_attachment_metadata(entity_id)
                 create_attachment(attachment_metadata)
 
@@ -155,7 +155,7 @@ def populate_random_images(existing_entity_ids: list[str]):
 
     for entity_id in existing_entity_ids:
         if fake.random.random() < PROBABILITY_ENTITY_HAS_IMAGES:
-            for _ in range(0, fake.random.randint(0, MAX_NUMBER_IMAGES_PER_ENTITY)):
+            for _ in range(0, fake.random.randint(1, MAX_NUMBER_IMAGES_PER_ENTITY)):
                 image_metadata = generate_random_image_metadata(entity_id)
                 create_image(image_metadata)
 
