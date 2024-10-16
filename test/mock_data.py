@@ -86,6 +86,7 @@ IMAGE_GET_DATA_REQUIRED_VALUES_ONLY = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "file_name": "image.jpg",
+    "primary": False,
     "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
     "title": None,
     "description": None,
@@ -110,5 +111,6 @@ IMAGE_GET_DATA_ALL_VALUES = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "file_name": "image.jpg",
+    "primary": False,
     "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
 }

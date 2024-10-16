@@ -19,6 +19,7 @@ class ImageBase(BaseModel):
     # Key of the image file in object storage
     object_key: str
     thumbnail_base64: str
+    primary: bool = False
     title: Optional[str] = None
     description: Optional[str] = None
 
