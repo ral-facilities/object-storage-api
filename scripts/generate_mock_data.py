@@ -1,7 +1,7 @@
 """Module defining a script for populating the database and object store with randomised data."""
 
 import logging
-from typing import Any
+from typing import Any, Optional
 
 import requests
 from faker import Faker
@@ -23,7 +23,9 @@ fake.add_provider(GraphicPngFileProvider)
 # Various constants determining the result of the script
 API_URL = "http://localhost:8002"
 IMS_API_URL = "http://localhost:8000"
-MAX_NUMBER_ATTACHMENTS_PER_ENTITY = 5
+MIN_NUMBER_ATTACHMENTS_PER_ENTITY = 1
+MIN_NUMBER_IMAGES_PER_ENTITY = 1
+MAX_NUMBER_ATTACHMENTS_PER_ENTITY = 1
 MAX_NUMBER_IMAGES_PER_ENTITY = 5
 PROBABILITY_ENTITY_HAS_ATTACHMENTS = 0.3
 PROBABILITY_ENTITY_HAS_IMAGES = 0.3
@@ -145,7 +147,9 @@ def populate_random_attachments(existing_entity_ids: list[str], exclude_existenc
 
     for entity_id in existing_entity_ids:
         if exclude_existence_check or fake.random.random() < PROBABILITY_ENTITY_HAS_ATTACHMENTS:
-            for _ in range(0, fake.random.randint(1, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
+            for _ in range(
+                0, fake.random.randint(MIN_NUMBER_ATTACHMENTS_PER_ENTITY, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)
+            ):
                 attachment_metadata = generate_random_attachment_metadata(entity_id)
                 create_attachment(attachment_metadata)
 
@@ -155,7 +159,7 @@ def populate_random_images(existing_entity_ids: list[str], exclude_existence_che
 
     for entity_id in existing_entity_ids:
         if exclude_existence_check or fake.random.random() < PROBABILITY_ENTITY_HAS_IMAGES:
-            for _ in range(0, fake.random.randint(1, MAX_NUMBER_IMAGES_PER_ENTITY)):
+            for _ in range(0, fake.random.randint(MIN_NUMBER_IMAGES_PER_ENTITY, MAX_NUMBER_IMAGES_PER_ENTITY)):
                 image_metadata = generate_random_image_metadata(entity_id)
                 create_image(image_metadata)
 
@@ -176,7 +180,9 @@ def obtain_existing_ims_entities() -> list[str]:
     return existing_entity_ids
 
 
-def generate_mock_data(entity_ids: list[str] = None):
+def generate_mock_data(
+    entity_ids: list[str] = None, num_attachments: Optional[int] = None, num_images: Optional[int] = None
+):
     """Generates mock data for all the entities."""
 
     existing_entity_ids = entity_ids
@@ -187,6 +193,19 @@ def generate_mock_data(entity_ids: list[str] = None):
         existing_entity_ids = obtain_existing_ims_entities()
     else:
         exclude_existence_check = True
+
+    # pylint:disable=global-statement
+    if num_attachments is not None:
+        global MIN_NUMBER_ATTACHMENTS_PER_ENTITY
+        global MAX_NUMBER_ATTACHMENTS_PER_ENTITY
+        MIN_NUMBER_ATTACHMENTS_PER_ENTITY = num_attachments
+        MAX_NUMBER_ATTACHMENTS_PER_ENTITY = num_attachments
+
+    if num_images is not None:
+        global MIN_NUMBER_IMAGES_PER_ENTITY
+        global MAX_NUMBER_IMAGES_PER_ENTITY
+        MIN_NUMBER_IMAGES_PER_ENTITY = num_images
+        MAX_NUMBER_IMAGES_PER_ENTITY = num_images
 
     logger.info("Populating attachments...")
     populate_random_attachments(existing_entity_ids, exclude_existence_check)

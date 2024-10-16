@@ -163,6 +163,20 @@ class CommandGenerate(SubCommand):
             default=None,
             help="One or more entity IDs to generate attachments and images for.",
         )
+        parser.add_argument(
+            "-na",
+            "--num-attachments",
+            type=int,
+            default=None,
+            help="Specific number of attachments to generate for each entity.",
+        )
+        parser.add_argument(
+            "-ni",
+            "--num-images",
+            type=int,
+            default=None,
+            help="Specific number of images to generate for each entity.",
+        )
 
     def run(self, args: argparse.Namespace):
         if args.ci:
@@ -199,7 +213,9 @@ class CommandGenerate(SubCommand):
             # pylint:disable=import-outside-toplevel
             from generate_mock_data import generate_mock_data
 
-            generate_mock_data(args.entities)
+            generate_mock_data(
+                entity_ids=args.entities, num_attachments=args.num_attachments, num_images=args.num_images
+            )
         except ImportError:
             logging.error("Failed to find generate_mock_data.py")
 
