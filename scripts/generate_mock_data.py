@@ -140,21 +140,21 @@ def create_image(image_metadata: dict) -> dict[str, Any]:
     return image
 
 
-def populate_random_attachments(existing_entity_ids: list[str]):
+def populate_random_attachments(existing_entity_ids: list[str], exclude_existence_check=False):
     """Randomly populates attachments for the given list of entity IDs."""
 
     for entity_id in existing_entity_ids:
-        if fake.random.random() < PROBABILITY_ENTITY_HAS_ATTACHMENTS:
+        if exclude_existence_check or fake.random.random() < PROBABILITY_ENTITY_HAS_ATTACHMENTS:
             for _ in range(0, fake.random.randint(1, MAX_NUMBER_ATTACHMENTS_PER_ENTITY)):
                 attachment_metadata = generate_random_attachment_metadata(entity_id)
                 create_attachment(attachment_metadata)
 
 
-def populate_random_images(existing_entity_ids: list[str]):
+def populate_random_images(existing_entity_ids: list[str], exclude_existence_check=False):
     """Randomly populates images for the given list of entity IDs."""
 
     for entity_id in existing_entity_ids:
-        if fake.random.random() < PROBABILITY_ENTITY_HAS_IMAGES:
+        if exclude_existence_check or fake.random.random() < PROBABILITY_ENTITY_HAS_IMAGES:
             for _ in range(0, fake.random.randint(1, MAX_NUMBER_IMAGES_PER_ENTITY)):
                 image_metadata = generate_random_image_metadata(entity_id)
                 create_image(image_metadata)
@@ -176,17 +176,23 @@ def obtain_existing_ims_entities() -> list[str]:
     return existing_entity_ids
 
 
-def generate_mock_data():
+def generate_mock_data(entity_ids: list[str] = None):
     """Generates mock data for all the entities."""
 
-    logger.info("Obtaining a list of existing IMS entities...")
-    existing_entity_ids = obtain_existing_ims_entities()
+    existing_entity_ids = entity_ids
+    exclude_existence_check = False
+
+    if not entity_ids:
+        logger.info("Obtaining a list of existing IMS entities...")
+        existing_entity_ids = obtain_existing_ims_entities()
+    else:
+        exclude_existence_check = True
 
     logger.info("Populating attachments...")
-    populate_random_attachments(existing_entity_ids)
+    populate_random_attachments(existing_entity_ids, exclude_existence_check)
 
     logger.info("Populating images...")
-    populate_random_images(existing_entity_ids)
+    populate_random_images(existing_entity_ids, exclude_existence_check)
 
 
 if __name__ == "__main__":
