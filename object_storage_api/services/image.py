@@ -10,6 +10,7 @@ from bson import ObjectId
 from fastapi import Depends, UploadFile
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
 from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
@@ -51,11 +52,19 @@ class ImageService:
         # before generating the presigned URL which would then require transactions
         image_id = str(ObjectId())
 
+        # Generate the thumbnail
+        thumbnail_base64 = generate_thumbnail_base64_str(upload_file)
+
+        # Upload the full size image to object storage
         object_key = self._image_store.upload(image_id, image_metadata, upload_file)
 
         try:
             image_in = ImageIn(
-                **image_metadata.model_dump(), id=image_id, object_key=object_key, file_name=upload_file.filename
+                **image_metadata.model_dump(),
+                id=image_id,
+                file_name=upload_file.filename,
+                object_key=object_key,
+                thumbnail_base64=thumbnail_base64,
             )
         except InvalidObjectIdError as exc:
             # Provide more specific detail

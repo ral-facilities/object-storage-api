@@ -23,6 +23,7 @@ class ImageServiceDSL:
     image_service: ImageService
 
     mock_object_id: MagicMock
+    mock_generate_thumbnail_base64_str: MagicMock
 
     @pytest.fixture(autouse=True)
     def setup(
@@ -42,7 +43,11 @@ class ImageServiceDSL:
 
         with patch("object_storage_api.services.image.ObjectId") as object_id_mock:
             self.mock_object_id = object_id_mock
-            yield
+            with patch(
+                "object_storage_api.services.image.generate_thumbnail_base64_str"
+            ) as generate_thumbnail_base64_str_mock:
+                self.mock_generate_thumbnail_base64_str = generate_thumbnail_base64_str_mock
+                yield
 
 
 class CreateDSL(ImageServiceDSL):
@@ -70,6 +75,10 @@ class CreateDSL(ImageServiceDSL):
         self._expected_image_id = ObjectId()
         self.mock_object_id.return_value = self._expected_image_id
 
+        # Thumbnail
+        expected_thumbnail_base64 = "some_thumbnail"
+        self.mock_generate_thumbnail_base64_str.return_value = expected_thumbnail_base64
+
         # Store
         expected_object_key = "some/object/key"
         self.mock_image_store.upload.return_value = expected_object_key
@@ -81,6 +90,7 @@ class CreateDSL(ImageServiceDSL):
                 id=str(self._expected_image_id),
                 object_key=expected_object_key,
                 file_name=self._upload_file.filename,
+                thumbnail_base64=expected_thumbnail_base64,
             )
 
             # Repo (The contents of the returned output model does not matter here as long as its valid)
@@ -109,6 +119,7 @@ class CreateDSL(ImageServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
+        self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
         self.mock_image_store.upload.assert_called_once_with(
             str(self._expected_image_id), self._image_post_metadata, self._upload_file
         )
@@ -124,6 +135,7 @@ class CreateDSL(ImageServiceDSL):
         :param message: Message of the raised exception.
         """
 
+        self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
         self.mock_image_store.upload.assert_called_once_with(
             str(self._expected_image_id), self._image_post_metadata, self._upload_file
         )
