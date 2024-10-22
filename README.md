@@ -51,8 +51,8 @@ configured to start
    docker-compose up
    ```
 
-   The microservice should now be running inside Docker at http://localhost:8000 and its Swagger UI could be accessed
-   at http://localhost:8000/docs. A MongoDB instance should also be running at http://localhost:27018.
+   The microservice should now be running inside Docker at http://localhost:8002 and its Swagger UI could be accessed
+   at http://localhost:8002/docs. A MongoDB instance should also be running at http://localhost:27018.
 
 #### Using `Dockerfile`
 
@@ -65,20 +65,20 @@ production)!
    docker build -f Dockerfile -t object_storage_api_image .
    ```
 
-2. Start the container using the image built and map it to port `8000` locally):
+2. Start the container using the image built and map it to port `8002` locally):
 
    ```bash
-   docker run -p 8000:8000 --name object_storage_api_container object_storage_api_image
+   docker run -p 8002:8000 --name object_storage_api_container object_storage_api_image
    ```
 
    or with values for the environment variables:
 
    ```bash
-   docker run -p 8000:8000 --name object_storage_api_container --env DATABASE__NAME=ims object-storage_api_image
+   docker run -p 8002:8000 --name object_storage_api_container --env DATABASE__NAME=ims object-storage_api_image
    ```
 
-   The microservice should now be running inside Docker at http://localhost:8000 and its Swagger UI could be accessed
-   at http://localhost:8000/docs.
+   The microservice should now be running inside Docker at http://localhost:8002 and its Swagger UI could be accessed
+   at http://localhost:8002/docs.
 
 ### Local Setup
 
@@ -119,8 +119,22 @@ Ensure that Python is installed on your machine before proceeding.
    fastapi dev object_storage_api/main.py
    ```
 
-   The microservice should now be running locally at http://localhost:8000. The Swagger UI can be accessed
-   at http://localhost:8000/docs.
+   The microservice should now be running locally at http://localhost:8002. The Swagger UI can be accessed
+   at http://localhost:8002/docs.
+
+## Using mock data for testing [Optional]
+
+### Generating mock data
+
+To populate the database and object storage with mock data for testing IMS first ensure both `inventory-management-api`
+and `object-storage-api` are running in docker and then run.
+
+```bash
+python ./scripts/dev_cli.py generate
+```
+
+This will clear the database and MinIO storage, fetch existing entities from the `inventory-management-system-api` and
+generate and add mock data for them.
 
 ## Notes
 
