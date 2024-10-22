@@ -134,7 +134,7 @@ python ./scripts/dev_cli.py generate
 ```
 
 This will clear the database and MinIO storage, fetch existing entities from the `inventory-management-system-api` and
-add generate and add mock data for them.
+generate and add mock data for them.
 
 ## Notes
 
