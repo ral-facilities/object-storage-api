@@ -150,43 +150,74 @@ class CommandGenerate(SubCommand):
     def setup(self, parser: argparse.ArgumentParser):
         add_mongodb_auth_args(parser)
         add_minio_alias_args(parser)
+        parser.add_argument(
+            "-c",
+            "--clear",
+            action=argparse.BooleanOptionalAction,
+            help="Whether existing data should be cleared before generating new data.",
+        )
+        parser.add_argument(
+            "-e",
+            "--entities",
+            nargs="+",
+            default=None,
+            help="One or more entity IDs to generate attachments and images for.",
+        )
+        parser.add_argument(
+            "-na",
+            "--num-attachments",
+            type=int,
+            default=None,
+            help="Specific number of attachments to generate for each entity.",
+        )
+        parser.add_argument(
+            "-ni",
+            "--num-images",
+            type=int,
+            default=None,
+            help="Specific number of images to generate for each entity.",
+        )
 
     def run(self, args: argparse.Namespace):
         if args.ci:
             sys.exit("Cannot use --ci with generate (currently has interactive input)")
 
-        # Firstly confirm ok with deleting
-        answer = input("This operation will replace all existing data, are you sure? ")
-        if answer in ("y", "yes"):
-            # Delete the existing data
-            logging.info("Deleting database contents...")
-            run_mongodb_command(
-                ["mongosh", "object-storage"]
-                + get_mongodb_auth_args(args)
-                + [
-                    "--eval",
-                    "db.dropDatabase()",
-                ]
+        if args.clear:
+            # Firstly confirm ok with deleting
+            answer = input("This operation will replace all existing data, are you sure? ")
+            if answer in ("y", "yes"):
+                # Delete the existing data
+                logging.info("Deleting database contents...")
+                run_mongodb_command(
+                    ["mongosh", "object-storage"]
+                    + get_mongodb_auth_args(args)
+                    + [
+                        "--eval",
+                        "db.dropDatabase()",
+                    ]
+                )
+                logging.info("Deleting MinIO bucket contents...")
+
+                # Not ideal that this runs here - would either have to setup once as part of some sort of init (e.g.
+                # could have an init for creating the buckets instead of using the minio/mc image) or would have to
+                # somehow detect if it has already been done. Doesn't seem to be any harm in setting it again here
+                # though.
+                set_minio_alias(args)
+
+                run_minio_command(["mc", "rm", "--recursive", "--force", "object-storage/object-storage"])
+
+        # Generate new data
+        logging.info("Generating new mock data...")
+        try:
+            # Import here only because CI wont install necessary packages to import it directly
+            # pylint:disable=import-outside-toplevel
+            from generate_mock_data import generate_mock_data
+
+            generate_mock_data(
+                entity_ids=args.entities, num_attachments=args.num_attachments, num_images=args.num_images
             )
-            logging.info("Deleting MinIO bucket contents...")
-
-            # Not ideal that this runs here - would either have to setup once as part of some sort of init (e.g. could
-            # have an init for creating the buckets instead of using the minio/mc image) or would have to somehow detect if it
-            # has already been done. Doesn't seem to be any harm in setting it again here though.
-            set_minio_alias(args)
-
-            run_minio_command(["mc", "rm", "--recursive", "--force", "object-storage/object-storage"])
-
-            # Generate new data
-            logging.info("Generating new mock data...")
-            try:
-                # Import here only because CI wont install necessary packages to import it directly
-                # pylint:disable=import-outside-toplevel
-                from generate_mock_data import generate_mock_data
-
-                generate_mock_data()
-            except ImportError:
-                logging.error("Failed to find generate_mock_data.py")
+        except ImportError:
+            logging.error("Failed to find generate_mock_data.py")
 
 
 # List of subcommands

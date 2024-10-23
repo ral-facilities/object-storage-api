@@ -130,11 +130,14 @@ To populate the database and object storage with mock data for testing IMS first
 and `object-storage-api` are running in docker and then run.
 
 ```bash
-python ./scripts/dev_cli.py generate
+python ./scripts/dev_cli.py generate -c
 ```
 
 This will clear the database and MinIO storage, fetch existing entities from the `inventory-management-system-api` and
 generate and add mock data for them.
+
+You can also generate mock attachments just for specific entities by repeatedly using `-e ENTITY_ID`. This will ensure
+the entity has at least one attachment and image.
 
 ## Notes
 
