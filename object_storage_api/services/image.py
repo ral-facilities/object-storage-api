@@ -11,7 +11,7 @@ from fastapi import Depends, UploadFile
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
-from object_storage_api.models.image import ImageIn
+from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.repositories.image import ImageRepo
 from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.stores.image import ImageStore
@@ -74,3 +74,12 @@ class ImageService:
         image_out = self._image_repository.create(image_in)
 
         return ImageSchema(**image_out.model_dump())
+
+    def list(self) -> list[ImageOut]:
+        """
+        Retrieve a list of all Images
+
+        :return: List of Images or an empty list if no Images are retrieved
+        """
+
+        return self._image_repository.list()

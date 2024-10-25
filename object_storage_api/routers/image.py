@@ -6,8 +6,9 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
+from object_storage_api.models.image import ImageOut
 from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
@@ -46,3 +47,13 @@ def create_image(
     logger.debug("Image upload file: %s", upload_file)
 
     return image_service.create(image_metadata, upload_file)
+
+
+@router.get(path="", summary="retrieve a list of images", status_code=status.HTTP_200_OK)
+def get_image_list(
+    image_service: ImageServiceDep,
+    entity_id: Annotated[str | None, Query()] = None,
+    primary: Annotated[bool | None, Query()] = None,
+) -> list[ImageSchema]:
+    images = image_service.list()
+    return (ImageSchema(**image) for image in images)

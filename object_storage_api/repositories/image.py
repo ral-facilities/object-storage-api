@@ -56,3 +56,14 @@ class ImageRepo:
         if image:
             return ImageOut(**image)
         return None
+
+    def list(self, session: ClientSession = None) -> list[ImageOut]:
+        """
+        Retrieve Images from a MongoDB database.
+
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: List of Images or an empty list if no Images are retrieved
+        """
+
+        images = self._images_collection.find(session=session)
+        return [ImageOut(**image) for image in images]
