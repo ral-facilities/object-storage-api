@@ -57,7 +57,7 @@ class ImageRepo:
             return ImageOut(**image)
         return None
 
-    def list(self, session: ClientSession = None) -> list[ImageOut]:
+    def list(self, entity_id: Optional[str], primary: Optional[bool], session: ClientSession = None) -> list[ImageOut]:
         """
         Retrieve Images from a MongoDB database.
 
@@ -65,5 +65,18 @@ class ImageRepo:
         :return: List of Images or an empty list if no Images are retrieved
         """
 
-        images = self._images_collection.find(session=session)
+        query = {}
+        if entity_id is not None:
+            query["entity_id":entity_id]
+        if primary is not None:
+            query["primary":primary]
+
+        message = "Retrieving all images from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided filter(s)", message)
+            logger.debug("Provided filter(s): %s", query)
+
+        images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]

@@ -49,11 +49,25 @@ def create_image(
     return image_service.create(image_metadata, upload_file)
 
 
-@router.get(path="", summary="retrieve a list of images", status_code=status.HTTP_200_OK)
+@router.get(
+    path="",
+    summary="retrieve a list of images",
+    response_description="a list of images",
+    status_code=status.HTTP_200_OK,
+)
 def get_image_list(
     image_service: ImageServiceDep,
     entity_id: Annotated[str | None, Query()] = None,
     primary: Annotated[bool | None, Query()] = None,
 ) -> list[ImageSchema]:
-    images = image_service.list()
-    return (ImageSchema(**image) for image in images)
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting images")
+
+    if entity_id:
+        logger.debug("Entity ID filter: '%s'", entity_id)
+
+    if primary:
+        logger.debug("Primary filter: '%s'", primary)
+    images = image_service.list(entity_id, primary)
+
+    return (ImageSchema(**image.model_dump()) for image in images)

@@ -4,7 +4,7 @@ store.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
 from bson import ObjectId
 from fastapi import Depends, UploadFile
@@ -75,11 +75,11 @@ class ImageService:
 
         return ImageSchema(**image_out.model_dump())
 
-    def list(self) -> list[ImageOut]:
+    def list(self, entity_id: Optional[str], primary: Optional[bool]) -> list[ImageOut]:
         """
         Retrieve a list of all Images
 
         :return: List of Images or an empty list if no Images are retrieved
         """
 
-        return self._image_repository.list()
+        return self._image_repository.list(entity_id, primary)
