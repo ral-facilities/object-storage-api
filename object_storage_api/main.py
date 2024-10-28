@@ -4,7 +4,7 @@ Main module contains the API entrypoint.
 
 import logging
 
-from fastapi import FastAPI, Request, status
+from fastapi import Depends, FastAPI, Request, status
 from fastapi.exception_handlers import request_validation_exception_handler
 from fastapi.exceptions import RequestValidationError
 from fastapi.middleware.cors import CORSMiddleware
@@ -69,6 +69,25 @@ async def custom_general_exception_handler(_: Request, exc: Exception) -> JSONRe
     return JSONResponse(content={"detail": "Something went wrong"}, status_code=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
+# pylint:disable=fixme
+# TODO: The auth code in this file is identical to the one in inventory-management-system-api - Use common repo?
+
+
+def get_router_dependencies() -> list:
+    """
+    Get the list of dependencies for the API routers.
+    :return: List of dependencies
+    """
+    dependencies = []
+    # Include the `JWTBearer` as a dependency if authentication is enabled
+    if config.authentication.enabled is True:
+        # pylint:disable=import-outside-toplevel
+        from object_storage_api.auth.jwt_bearer import JWTBearer
+
+        dependencies.append(Depends(JWTBearer()))
+    return dependencies
+
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.api.allowed_cors_origins,
@@ -77,8 +96,10 @@ app.add_middleware(
     allow_headers=config.api.allowed_cors_headers,
 )
 
-app.include_router(attachment.router)
-app.include_router(image.router)
+router_dependencies = get_router_dependencies()
+
+app.include_router(attachment.router, dependencies=router_dependencies)
+app.include_router(image.router, dependencies=router_dependencies)
 
 
 @app.get("/")

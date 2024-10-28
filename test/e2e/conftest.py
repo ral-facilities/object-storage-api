@@ -2,12 +2,17 @@
 Module providing test fixtures for the e2e tests.
 """
 
+from test.mock_data import VALID_ACCESS_TOKEN
+
 import pytest
 from fastapi.testclient import TestClient
 
 from object_storage_api.core.database import get_database
 from object_storage_api.core.object_store import object_storage_config, s3_client
 from object_storage_api.main import app
+
+# pylint:disable=fixme
+# TODO: This is identical to the one in inventory-management-system-api - Use common repo?
 
 
 @pytest.fixture(name="test_client")
@@ -17,7 +22,7 @@ def fixture_test_client() -> TestClient:
 
     :return: The test client.
     """
-    return TestClient(app)
+    return TestClient(app, headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN}"})
 
 
 @pytest.fixture(name="cleanup_database_collections", autouse=True)
