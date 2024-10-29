@@ -2,7 +2,9 @@
 Module for providing common test configuration, test fixtures, and helper functions.
 """
 
-from unittest.mock import Mock
+from sqlite3 import Cursor
+from typing import List, Optional
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
@@ -62,3 +64,23 @@ class RepositoryTestHelpers:
             documents = list(collection_mock.find_one.side_effect)
             documents.append(document)
             collection_mock.find_one.side_effect = documents
+
+    @staticmethod
+    def mock_find(collection_mock: Mock, documents: List[dict], query: Optional[dict] = None) -> None:
+        """
+        Mocks the `find` method of the MongoDB database collection mock to return a specific list of documents.
+
+        :param collection_mock: Mocked MongoDB database collection instance.
+        :param documents: The list of documents to be returned by the `find` method.
+
+        """
+        if query is None:
+            filtered_documents = documents
+        else:
+            filtered_documents = [
+                doc for doc in documents if all(query_param in doc.items() for query_param in query.items())
+            ]
+
+        cursor_mock = MagicMock(Cursor)
+        cursor_mock.__iter__.return_value = iter(filtered_documents)
+        collection_mock.find.return_value = cursor_mock

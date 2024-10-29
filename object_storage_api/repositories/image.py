@@ -67,9 +67,9 @@ class ImageRepo:
 
         query = {}
         if entity_id is not None:
-            query["entity_id":entity_id]
+            query["entity_id"] = CustomObjectId(entity_id)
         if primary is not None:
-            query["primary":primary]
+            query["primary"] = primary
 
         message = "Retrieving all images from the database"
         if not query:

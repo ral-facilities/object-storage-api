@@ -3,6 +3,7 @@ Unit tests for the `ImageService` service.
 """
 
 from test.mock_data import IMAGE_POST_METADATA_DATA_ALL_VALUES
+from typing import Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -160,3 +161,35 @@ class TestCreate(CreateDSL):
         self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"})
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class ListDSL(ImageServiceDSL):
+    """Base class for `list` tests."""
+
+    _expected_images: MagicMock
+    _obtained_images: MagicMock
+
+    def mock_list(self) -> None:
+        """Mocks repo methods appropriately to test the `list` service method."""
+
+        self._expected_images = MagicMock()
+        self.mock_usage_status_repository.list.return_value = self._expected_images
+
+    def call_list(self, entity_id: Optional[str], primary: Optional[bool]) -> None:
+        """Calls the `UsageStatusService` `list` method."""
+        self._obtained_images = self.image_service.list(entity_id=entity_id, primary=primary)
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+        self.mock_image_repository.list.assert_called_once()
+        assert self._obtained_usage_statuses == self._expected_usage_statuses
+
+
+class TestList(ListDSL):
+    """Tests for listing usage statuses."""
+
+    def test_list(self):
+        """Test listing usage statuses."""
+        self.mock_list()
+        self.call_list()
+        self.check_list_success()
