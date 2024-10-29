@@ -33,7 +33,7 @@ test = [
 ]
 
 scripts = [
-    "faker==30.3.0",
+    "faker==30.8.1",
     "faker-file[pdf,docx,images]==0.17.12",
 ]
 
