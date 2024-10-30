@@ -110,15 +110,19 @@ class ListDSL(ImageRepoDSL):
             self.images_collection, [image_out.model_dump() for image_out in self._expected_image_out], query=query
         )
 
-    def call_list(self, entity_id: Optional[str], primary: Optional[bool]) -> None:
+    def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
         """Calls the `ImageRepo` `list method` method."""
         self._obtained_image_out = self.image_repository.list(
             session=self.mock_session, entity_id=entity_id, primary=primary
         )
 
-    def check_list_success(self, query: Optional[dict] = None) -> None:
+    def check_list_success(self, query: Optional[dict] = {}) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
-        self.images_collection.find.assert_called_once_with(session=self.mock_session, query=query)
+
+        if query:
+            query["entity_id"] = ObjectId(query["entity_id"])
+
+        self.images_collection.find.assert_called_once_with(query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
 
 
