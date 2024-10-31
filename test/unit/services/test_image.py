@@ -166,6 +166,8 @@ class TestCreate(CreateDSL):
 class ListDSL(ImageServiceDSL):
     """Base class for `list` tests."""
 
+    _entity_id_filter: Optional[str]
+    _primary_filter: Optional[str]
     _expected_images: MagicMock
     _obtained_images: MagicMock
 
@@ -173,16 +175,18 @@ class ListDSL(ImageServiceDSL):
         """Mocks repo methods appropriately to test the `list` service method."""
 
         self._expected_images = MagicMock()
-        self.mock_usage_status_repository.list.return_value = self._expected_images
+        self.mock_image_repository.list.return_value = self._expected_images
 
-    def call_list(self, entity_id: Optional[str], primary: Optional[bool]) -> None:
+    def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
         """Calls the `UsageStatusService` `list` method."""
+        self._entity_id_filter = entity_id
+        self._primary_filter = primary
         self._obtained_images = self.image_service.list(entity_id=entity_id, primary=primary)
 
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
-        self.mock_image_repository.list.assert_called_once()
-        assert self._obtained_usage_statuses == self._expected_usage_statuses
+        self.mock_image_repository.list.assert_called_once_with(self._entity_id_filter, self._primary_filter)
+        assert self._obtained_images == self._expected_images
 
 
 class TestList(ListDSL):
@@ -190,6 +194,8 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test listing usage statuses."""
+        entity_id = str(ObjectId())
+        primary = False
         self.mock_list()
-        self.call_list()
+        self.call_list(entity_id, primary)
         self.check_list_success()
