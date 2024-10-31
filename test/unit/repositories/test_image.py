@@ -10,7 +10,6 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.repositories.image import ImageRepo
 
@@ -116,10 +115,12 @@ class ListDSL(ImageRepoDSL):
             session=self.mock_session, entity_id=entity_id, primary=primary
         )
 
-    def check_list_success(self, query: Optional[dict] = {}) -> None:
+    def check_list_success(self, query: Optional[dict] = None) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
 
-        if query:
+        if query is None:
+            query = {}
+        elif "entity_id" in query:
             query["entity_id"] = ObjectId(query["entity_id"])
 
         self.images_collection.find.assert_called_once_with(query, session=self.mock_session)
@@ -141,21 +142,21 @@ class TestList(ListDSL):
         self.call_list()
         self.check_list_success()
 
-    def test_list(self):
+    def test_list_with_entity_id(self):
         """Test listing all images with an entity_id argument."""
         query = {"entity_id": IMAGE_IN_DATA_ALL_VALUES["entity_id"]}
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES], query=query)
         self.call_list(entity_id=query["entity_id"])
         self.check_list_success(query)
 
-    def test_list(self):
+    def test_list_with_primary(self):
         """Test listing all images with a primary argument."""
         query = {"primary": False}
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES], query=query)
         self.call_list(primary=query["primary"])
         self.check_list_success(query)
 
-    def test_list(self):
+    def test_list_with_primary_and_entity_id(self):
         """Test listing all images with an entity_id and primary argument."""
         query = {"entity_id": IMAGE_IN_DATA_ALL_VALUES["entity_id"], "primary": False}
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES], query=query)

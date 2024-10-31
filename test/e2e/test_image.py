@@ -102,14 +102,12 @@ class ListDSL(CreateDSL):
     """Base class for list tests."""
 
     _get_response_image: Response
-    _get_response_image_entity_id: str
 
-    def get_images(self, filters: Optional[dict] = {}) -> None:
+    def get_images(self, filters: Optional[dict] = None) -> None:
         """Gets a list of images with the given filters.
 
         :param filters: Filters to use in the request."""
         self._get_response_image = self.test_client.get("/images", params=filters)
-        self._get_response_image_entity_id = str(self._get_response_image.json()[0]["entity_id"])
 
     def check_get_images_success(self, expected_images_get_data: list[dict]) -> None:
         """
@@ -119,7 +117,6 @@ class ListDSL(CreateDSL):
             be required for a `ImageSchema`.
         """
         assert self._get_response_image.status_code == 200
-        print("HAAAAAAAAAAAAA", self._get_response_image.json())
         assert self._get_response_image.json() == expected_images_get_data
 
 
@@ -130,13 +127,12 @@ class TestList(ListDSL):
         """
         Test getting a list of all images with no filters provided.
 
-        Posts an image and expects both to be returned.
+        Posts an image and expects it to be returned.
         """
 
         self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         expected_result = self._post_response_image.json()
         self.get_images()
-        IMAGE_GET_DATA_ALL_VALUES["entity_id"] = self._get_response_image_entity_id
         self.check_get_images_success([expected_result])
 
     def test_list_with_entity_id_filter(self):
@@ -146,16 +142,18 @@ class TestList(ListDSL):
         Posts an image and then filter using the `entity_id`.
         """
 
-        entity_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        expected_result = self._post_response_image.json()
+        entity_id = expected_result["entity_id"]
         self.get_images(filters={"entity_id": entity_id})
-        IMAGE_GET_DATA_ALL_VALUES["entity_id"] = self._get_response_image_entity_id
-        self.check_get_images_success([{**IMAGE_GET_DATA_ALL_VALUES, "file_name": "image.jpg"}])
+        self.check_get_images_success([expected_result])
 
     def test_list_with_entity_id_filter_with_no_matching_results(self):
-        """Test getting a list of all images with an `entity_id` filter that returns no results."""
-        entity_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
-        self.get_images(filters={"entity_id": str(ObjectId())})
-        IMAGE_GET_DATA_ALL_VALUES["entity_id"] = self._get_response_image_entity_id
+        """Test getting a list of all images with an `entity_id` filter
+
+        Posts nothing and expects no results."""
+        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        self.get_images(filters={"entity_id": ObjectId()})
         self.check_get_images_success([])
 
     def test_list_with_primary_filter(self):
@@ -166,13 +164,14 @@ class TestList(ListDSL):
         """
 
         self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        expected_result = self._post_response_image.json()
         self.get_images(filters={"primary": False})
-        IMAGE_GET_DATA_ALL_VALUES["entity_id"] = self._get_response_image_entity_id
-        self.check_get_images_success([{**IMAGE_GET_DATA_ALL_VALUES, "file_name": "image.jpg"}])
+        self.check_get_images_success([expected_result])
 
     def test_list_with_primary_filter_with_no_matching_results(self):
-        """Test getting a list of all images with a `primary` filter that returns no results."""
+        """Test getting a list of all images with a `primary` filter
+
+        Posts nothing and expects no results."""
         self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.get_images(filters={"primary": True})
-        IMAGE_GET_DATA_ALL_VALUES["entity_id"] = self._get_response_image_entity_id
         self.check_get_images_success([])

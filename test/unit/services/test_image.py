@@ -178,7 +178,7 @@ class ListDSL(ImageServiceDSL):
         self.mock_image_repository.list.return_value = self._expected_images
 
     def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
-        """Calls the `UsageStatusService` `list` method."""
+        """Calls the `ImageService` `list` method."""
         self._entity_id_filter = entity_id
         self._primary_filter = primary
         self._obtained_images = self.image_service.list(entity_id=entity_id, primary=primary)
@@ -190,10 +190,10 @@ class ListDSL(ImageServiceDSL):
 
 
 class TestList(ListDSL):
-    """Tests for listing usage statuses."""
+    """Tests for listing images."""
 
     def test_list(self):
-        """Test listing usage statuses."""
+        """Test listing images."""
         entity_id = str(ObjectId())
         primary = False
         self.mock_list()

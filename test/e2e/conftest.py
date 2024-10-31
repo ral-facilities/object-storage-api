@@ -28,6 +28,7 @@ def fixture_cleanup_database_collections():
     database = get_database()
     yield
     database.attachments.delete_many({})
+    database.images.delete_many({})
 
 
 @pytest.fixture(name="cleanup_object_storage_bucket", autouse=True)

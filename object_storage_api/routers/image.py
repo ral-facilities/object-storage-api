@@ -8,7 +8,6 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
-from object_storage_api.models.image import ImageOut
 from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
