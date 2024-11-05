@@ -75,11 +75,13 @@ class ImageService:
 
         return ImageSchema(**image_out.model_dump())
 
-    def list(self, entity_id: Optional[str], primary: Optional[bool]) -> list[ImageOut]:
+    def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageSchema]:
         """
-        Retrieve a list of all Images
+        Retrieve a list of all images.
 
-        :return: List of Images or an empty list if no Images are retrieved
+        :param entity_id: The ID of the entity to filter images by.
+        :param primary: The primary value to filter images by.
+        :return: List of images or an empty list if no images are retrieved.
         """
-
-        return self._image_repository.list(entity_id, primary)
+        images = self._image_repository.list(entity_id, primary)
+        return [ImageSchema(**image.model_dump()) for image in images]

@@ -2,8 +2,8 @@
 Unit tests for the `ImageService` service.
 """
 
-from test.mock_data import IMAGE_POST_METADATA_DATA_ALL_VALUES
-from typing import Optional
+from test.mock_data import IMAGE_GET_DATA_ALL_VALUES, IMAGE_IN_DATA_ALL_VALUES, IMAGE_POST_METADATA_DATA_ALL_VALUES
+from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -168,17 +168,26 @@ class ListDSL(ImageServiceDSL):
 
     _entity_id_filter: Optional[str]
     _primary_filter: Optional[str]
-    _expected_images: MagicMock
-    _obtained_images: MagicMock
+    _expected_images: List[ImageSchema]
+    _obtained_images: List[ImageSchema]
 
-    def mock_list(self) -> None:
+    def mock_list(self, image_in_data: list[dict]) -> None:
         """Mocks repo methods appropriately to test the `list` service method."""
 
-        self._expected_images = MagicMock()
-        self.mock_image_repository.list.return_value = self._expected_images
+        self._expected_images = [
+            ImageSchema(**ImageOut(**ImageIn(**image_in_data).model_dump()).model_dump())
+            for image_in_data in image_in_data
+        ]
+        self.mock_image_repository.list.return_value = [
+            ImageOut(**ImageIn(**image_in_data).model_dump()) for image_in_data in image_in_data
+        ]
 
     def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
-        """Calls the `ImageService` `list` method."""
+        """Calls the `ImageService` `list` method.
+
+        :param entity_id: The ID of the entity to filter images by.
+        :param primary: The primary value to filter images by.
+        """
         self._entity_id_filter = entity_id
         self._primary_filter = primary
         self._obtained_images = self.image_service.list(entity_id=entity_id, primary=primary)
@@ -194,8 +203,6 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test listing images."""
-        entity_id = str(ObjectId())
-        primary = False
-        self.mock_list()
-        self.call_list(entity_id, primary)
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(entity_id=str(ObjectId()), primary=False)
         self.check_list_success()

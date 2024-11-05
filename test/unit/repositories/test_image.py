@@ -92,9 +92,11 @@ class ListDSL(ImageRepoDSL):
     """Base class for `list` tests."""
 
     _expected_image_out: list[ImageOut]
+    _entity_id_filter: Optional[str]
+    _primary_filter: Optional[bool]
     _obtained_image_out: list[ImageOut]
 
-    def mock_list(self, image_in_data: list[dict], query: dict = None) -> None:
+    def mock_list(self, image_in_data: list[dict]) -> None:
         """
         Mocks database methods appropriately to test the `list` repo method.
 
@@ -106,29 +108,35 @@ class ListDSL(ImageRepoDSL):
         ]
 
         RepositoryTestHelpers.mock_find(
-            self.images_collection, [image_out.model_dump() for image_out in self._expected_image_out], query=query
+            self.images_collection, [image_out.model_dump() for image_out in self._expected_image_out]
         )
 
     def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
-        """Calls the `ImageRepo` `list method` method."""
+        """Calls the `ImageRepo` `list method` method.
+
+        :param entity_id: The ID of the entity to filter images by.
+        :param primary: The primary value to filter images by.
+        """
+        self._entity_id_filter = entity_id
+        self._primary_filter = primary
         self._obtained_image_out = self.image_repository.list(
             session=self.mock_session, entity_id=entity_id, primary=primary
         )
 
-    def check_list_success(self, query: Optional[dict] = None) -> None:
+    def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
+        expected_query = {}
+        if self._entity_id_filter:
+            expected_query["entity_id"] = ObjectId(self._entity_id_filter)
+        if self._primary_filter != None:
+            expected_query["primary"] = self._primary_filter
 
-        if query is None:
-            query = {}
-        elif "entity_id" in query:
-            query["entity_id"] = ObjectId(query["entity_id"])
-
-        self.images_collection.find.assert_called_once_with(query, session=self.mock_session)
+        self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
 
 
 class TestList(ListDSL):
-    """Tests for listing images"""
+    """Tests for listing images."""
 
     def test_list(self):
         """Test listing all images."""
@@ -144,21 +152,18 @@ class TestList(ListDSL):
 
     def test_list_with_entity_id(self):
         """Test listing all images with an entity_id argument."""
-        query = {"entity_id": IMAGE_IN_DATA_ALL_VALUES["entity_id"]}
-        self.mock_list([IMAGE_IN_DATA_ALL_VALUES], query=query)
-        self.call_list(entity_id=query["entity_id"])
-        self.check_list_success(query)
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
+        self.check_list_success()
 
     def test_list_with_primary(self):
         """Test listing all images with a primary argument."""
-        query = {"primary": False}
-        self.mock_list([IMAGE_IN_DATA_ALL_VALUES], query=query)
-        self.call_list(primary=query["primary"])
-        self.check_list_success(query)
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(primary=False)
+        self.check_list_success()
 
     def test_list_with_primary_and_entity_id(self):
         """Test listing all images with an entity_id and primary argument."""
-        query = {"entity_id": IMAGE_IN_DATA_ALL_VALUES["entity_id"], "primary": False}
-        self.mock_list([IMAGE_IN_DATA_ALL_VALUES], query=query)
-        self.call_list(primary=query["primary"], entity_id=query["entity_id"])
-        self.check_list_success(query)
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(primary=False, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
+        self.check_list_success()

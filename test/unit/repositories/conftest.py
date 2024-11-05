@@ -66,7 +66,7 @@ class RepositoryTestHelpers:
             collection_mock.find_one.side_effect = documents
 
     @staticmethod
-    def mock_find(collection_mock: Mock, documents: List[dict], query: Optional[dict] = None) -> None:
+    def mock_find(collection_mock: Mock, documents: List[dict]) -> None:
         """
         Mocks the `find` method of the MongoDB database collection mock to return a specific list of documents.
 
@@ -74,13 +74,7 @@ class RepositoryTestHelpers:
         :param documents: The list of documents to be returned by the `find` method.
 
         """
-        if query is None:
-            filtered_documents = documents
-        else:
-            filtered_documents = [
-                doc for doc in documents if all(query_param in doc.items() for query_param in query.items())
-            ]
 
         cursor_mock = MagicMock(Cursor)
-        cursor_mock.__iter__.return_value = iter(filtered_documents)
+        cursor_mock.__iter__.return_value = iter(documents)
         collection_mock.find.return_value = cursor_mock
