@@ -3,7 +3,7 @@ Module for providing common test configuration, test fixtures, and helper functi
 """
 
 from sqlite3 import Cursor
-from typing import List, Optional
+from typing import List
 from unittest.mock import MagicMock, Mock
 
 import pytest
@@ -72,7 +72,6 @@ class RepositoryTestHelpers:
 
         :param collection_mock: Mocked MongoDB database collection instance.
         :param documents: The list of documents to be returned by the `find` method.
-
         """
 
         cursor_mock = MagicMock(Cursor)

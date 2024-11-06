@@ -11,7 +11,7 @@ from fastapi import Depends, UploadFile
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
-from object_storage_api.models.image import ImageIn, ImageOut
+from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
 from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.stores.image import ImageStore
@@ -77,7 +77,7 @@ class ImageService:
 
     def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageSchema]:
         """
-        Retrieve a list of all images.
+        Retrieve a list of images based on the provided filters.
 
         :param entity_id: The ID of the entity to filter images by.
         :param primary: The primary value to filter images by.

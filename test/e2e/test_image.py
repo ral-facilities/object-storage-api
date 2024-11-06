@@ -113,6 +113,54 @@ class ListDSL(CreateDSL):
         """
         self._get_response_image = self.test_client.get("/images", params=filters)
 
+    def post_test_images(self) -> list[dict]:
+        """
+        Posts three images. The first two images have the same entity ID, the last image has a different one.
+
+        :return: List of dictionaries containing the expected item data returned from a get endpoint in
+                 the form of an `ImageSchema`.
+        """
+        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
+
+        # First item
+        image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
+
+        # Second item
+        image_b_id = self.post_image(
+            {
+                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+            "image.jpg",
+        )
+
+        # Third item
+        image_c_id = self.post_image(
+            {
+                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
+                "entity_id": entity_id_b,
+            },
+            "image.jpg",
+        )
+
+        return [
+            {
+                **IMAGE_GET_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+                "id": image_a_id,
+            },
+            {
+                **IMAGE_GET_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+                "id": image_b_id,
+            },
+            {
+                **IMAGE_GET_DATA_ALL_VALUES,
+                "entity_id": entity_id_b,
+                "id": image_c_id,
+            },
+        ]
+
     def check_get_images_success(self, expected_images_get_data: list[dict]) -> None:
         """
         Checks that a prior call to `get_images` gave a successful response with the expected data returned.
@@ -124,69 +172,10 @@ class ListDSL(CreateDSL):
         assert self._get_response_image.json() == expected_images_get_data
 
     def check_images_list_response_failed_with_message(self, status_code, expected_detail, obtained_detail):
-        """Checks the response of listing images failed as expected"""
+        """Checks the response of listing images failed as expected."""
 
         assert self._get_response_image.status_code == status_code
         assert obtained_detail == expected_detail
-
-    def post_test_images(self) -> list[dict]:
-        """
-        Posts three images. The first two have the same entity ID, and all of them have different titles and descriptions.
-
-        :return: List of dictionaries containing the expected item data returned from a get endpoint in
-                 the form of an `ImageSchema`.
-        """
-
-        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
-
-        # First item
-        image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
-
-        # Second item
-        image_b_id = self.post_image(
-            {
-                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "title": "Essay Title",
-                "description": "A research essay.",
-            },
-            "image.jpg",
-        )
-
-        # Third item
-        image_c_id = self.post_image(
-            {
-                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-                "title": "Book Title",
-                "description": "A science book.",
-            },
-            "image.jpg",
-        )
-
-        return [
-            {
-                **IMAGE_GET_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": image_a_id,
-                "title": "Report Title",
-                "description": "A damage report.",
-            },
-            {
-                **IMAGE_GET_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": image_b_id,
-                "title": "Essay Title",
-                "description": "A research essay.",
-            },
-            {
-                **IMAGE_GET_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-                "id": image_c_id,
-                "title": "Book Title",
-                "description": "A science book.",
-            },
-        ]
 
 
 class TestList(ListDSL):
@@ -196,12 +185,12 @@ class TestList(ListDSL):
         """
         Test getting a list of all images with no filters provided.
 
-        Posts 3 images and expects it to be returned.
+        Posts 3 images and expects all of them to be returned.
         """
 
-        expected_result = self.post_test_images()
+        images = self.post_test_images()
         self.get_images()
-        self.check_get_images_success(expected_result)
+        self.check_get_images_success(images)
 
     def test_list_with_entity_id_filter(self):
         """
@@ -210,9 +199,9 @@ class TestList(ListDSL):
         Posts 3 images and then filter using the `entity_id`.
         """
 
-        expected_result = self.post_test_images()[:2]
-        self.get_images(filters={"entity_id": expected_result[0]["entity_id"]})
-        self.check_get_images_success(expected_result)
+        images = self.post_test_images()
+        self.get_images(filters={"entity_id": images[0]["entity_id"]})
+        self.check_get_images_success(images[:2])
 
     def test_list_with_entity_id_filter_with_no_matching_results(self):
         """
@@ -224,6 +213,18 @@ class TestList(ListDSL):
         self.get_images(filters={"entity_id": ObjectId()})
         self.check_get_images_success([])
 
+    def test_list_with_invalid_entity_id_filter(self):
+        """
+        Test getting a list of all images with an invalid `entity_id` filter provided.
+
+        Posts 3 images and expects a 422 status code.
+        """
+        self.post_test_images()
+        self.get_images(filters={"entity_id": False})
+        self.check_images_list_response_failed_with_message(
+            422, "Invalid ID given", self._get_response_image.json()["detail"]
+        )
+
     def test_list_with_primary_filter(self):
         """
         Test getting a list of all images with a `primary` filter provided.
@@ -231,9 +232,9 @@ class TestList(ListDSL):
         Posts 3 images and then filter using the `primary`.
         """
 
-        expected_result = self.post_test_images()
+        images = self.post_test_images()
         self.get_images(filters={"primary": False})
-        self.check_get_images_success(expected_result)
+        self.check_get_images_success(images)
 
     def test_list_with_primary_filter_with_no_matching_results(self):
         """
@@ -257,16 +258,4 @@ class TestList(ListDSL):
             422,
             "Input should be a valid boolean, unable to interpret input",
             self._get_response_image.json()["detail"][0]["msg"],
-        )
-
-    def test_list_with_invalid_entity_id_filter(self):
-        """
-        Test getting a list of all images with an invalid `entity_id` filter provided.
-
-        Posts 3 images and expects a 422 status code.
-        """
-        self.post_test_images()
-        self.get_images(filters={"entity_id": False})
-        self.check_images_list_response_failed_with_message(
-            422, "Invalid ID given", self._get_response_image.json()["detail"]
         )

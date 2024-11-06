@@ -2,7 +2,7 @@
 Unit tests for the `ImageService` service.
 """
 
-from test.mock_data import IMAGE_GET_DATA_ALL_VALUES, IMAGE_IN_DATA_ALL_VALUES, IMAGE_POST_METADATA_DATA_ALL_VALUES
+from test.mock_data import IMAGE_IN_DATA_ALL_VALUES, IMAGE_POST_METADATA_DATA_ALL_VALUES
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -171,16 +171,13 @@ class ListDSL(ImageServiceDSL):
     _expected_images: List[ImageSchema]
     _obtained_images: List[ImageSchema]
 
-    def mock_list(self, image_in_data: list[dict]) -> None:
+    def mock_list(self) -> None:
         """Mocks repo methods appropriately to test the `list` service method."""
 
-        self._expected_images = [
-            ImageSchema(**ImageOut(**ImageIn(**image_in_data).model_dump()).model_dump())
-            for image_in_data in image_in_data
-        ]
-        self.mock_image_repository.list.return_value = [
-            ImageOut(**ImageIn(**image_in_data).model_dump()) for image_in_data in image_in_data
-        ]
+        # Just returns the result after converting it to the schemas currently, so actual value doesn't matter here
+        images_out = [ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())]
+        self.mock_image_repository.list.return_value = images_out
+        self._expected_images = [ImageSchema(**image_out.model_dump()) for image_out in images_out]
 
     def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
         """Calls the `ImageService` `list` method.
@@ -203,6 +200,6 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test listing images."""
-        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.mock_list()
         self.call_list(entity_id=str(ObjectId()), primary=False)
         self.check_list_success()

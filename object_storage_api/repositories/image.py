@@ -68,7 +68,7 @@ class ImageRepo:
         """
 
         query = {}
-        if entity_id:
+        if entity_id is not None:
             query["entity_id"] = CustomObjectId(entity_id)
         if primary is not None:
             query["primary"] = primary

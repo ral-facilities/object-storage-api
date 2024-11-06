@@ -61,10 +61,9 @@ def get_images(
     # pylint: disable=missing-function-docstring
     logger.info("Getting images")
 
-    if entity_id:
+    if entity_id is not None:
         logger.debug("Entity ID filter: '%s'", entity_id)
-
-    if primary:
+    if primary is not None:
         logger.debug("Primary filter: '%s'", primary)
 
     return image_service.list(entity_id, primary)
