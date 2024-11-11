@@ -27,14 +27,14 @@ code-analysis = [
 test = [
     "pytest==8.3.3",
     "pytest-asyncio==0.24.0",
-    "pytest-cov==5.0.0",
+    "pytest-cov==6.0.0",
     "pytest-env==1.1.5",
     "requests==2.32.3"
 ]
 
 scripts = [
-    "faker==30.3.0",
-    "faker-file[pdf,docx,images]==0.17.12",
+    "faker==30.8.2",
+    "faker-file[pdf,docx,images]==0.17.13",
 ]
 
 dev = [
