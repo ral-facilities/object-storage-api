@@ -56,3 +56,29 @@ class ImageRepo:
         if image:
             return ImageOut(**image)
         return None
+
+    def list(self, entity_id: Optional[str], primary: Optional[bool], session: ClientSession = None) -> list[ImageOut]:
+        """
+        Retrieve images from a MongoDB database.
+
+        :param session: PyMongo ClientSession to use for database operations.
+        :param entity_id: The ID of the entity to filter images by.
+        :param primary: The primary value to filter images by.
+        :return: List of images or an empty list if no images are retrieved.
+        """
+
+        query = {}
+        if entity_id is not None:
+            query["entity_id"] = CustomObjectId(entity_id)
+        if primary is not None:
+            query["primary"] = primary
+
+        message = "Retrieving all images from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided filter(s)", message)
+            logger.debug("Provided filter(s): %s", query)
+
+        images = self._images_collection.find(query, session=session)
+        return [ImageOut(**image) for image in images]

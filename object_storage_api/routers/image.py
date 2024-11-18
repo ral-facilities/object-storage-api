@@ -6,7 +6,7 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
 from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
@@ -46,3 +46,24 @@ def create_image(
     logger.debug("Image upload file: %s", upload_file)
 
     return image_service.create(image_metadata, upload_file)
+
+
+@router.get(
+    path="",
+    summary="Get images",
+    response_description="List of images",
+)
+def get_images(
+    image_service: ImageServiceDep,
+    entity_id: Annotated[Optional[str], Query(description="Filter images by entity ID")] = None,
+    primary: Annotated[Optional[bool], Query(description="Filter images by primary")] = None,
+) -> list[ImageSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting images")
+
+    if entity_id is not None:
+        logger.debug("Entity ID filter: '%s'", entity_id)
+    if primary is not None:
+        logger.debug("Primary filter: '%s'", primary)
+
+    return image_service.list(entity_id, primary)

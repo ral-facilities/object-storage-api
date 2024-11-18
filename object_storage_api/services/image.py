@@ -4,7 +4,7 @@ store.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
 from bson import ObjectId
 from fastapi import Depends, UploadFile
@@ -74,3 +74,14 @@ class ImageService:
         image_out = self._image_repository.create(image_in)
 
         return ImageSchema(**image_out.model_dump())
+
+    def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageSchema]:
+        """
+        Retrieve a list of images based on the provided filters.
+
+        :param entity_id: The ID of the entity to filter images by.
+        :param primary: The primary value to filter images by.
+        :return: List of images or an empty list if no images are retrieved.
+        """
+        images = self._image_repository.list(entity_id, primary)
+        return [ImageSchema(**image.model_dump()) for image in images]

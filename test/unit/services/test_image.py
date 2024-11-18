@@ -2,7 +2,8 @@
 Unit tests for the `ImageService` service.
 """
 
-from test.mock_data import IMAGE_POST_METADATA_DATA_ALL_VALUES
+from test.mock_data import IMAGE_IN_DATA_ALL_VALUES, IMAGE_POST_METADATA_DATA_ALL_VALUES
+from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -160,3 +161,45 @@ class TestCreate(CreateDSL):
         self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"})
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class ListDSL(ImageServiceDSL):
+    """Base class for `list` tests."""
+
+    _entity_id_filter: Optional[str]
+    _primary_filter: Optional[str]
+    _expected_images: List[ImageSchema]
+    _obtained_images: List[ImageSchema]
+
+    def mock_list(self) -> None:
+        """Mocks repo methods appropriately to test the `list` service method."""
+
+        # Just returns the result after converting it to the schemas currently, so actual value doesn't matter here
+        images_out = [ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())]
+        self.mock_image_repository.list.return_value = images_out
+        self._expected_images = [ImageSchema(**image_out.model_dump()) for image_out in images_out]
+
+    def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
+        """Calls the `ImageService` `list` method.
+
+        :param entity_id: The ID of the entity to filter images by.
+        :param primary: The primary value to filter images by.
+        """
+        self._entity_id_filter = entity_id
+        self._primary_filter = primary
+        self._obtained_images = self.image_service.list(entity_id=entity_id, primary=primary)
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+        self.mock_image_repository.list.assert_called_once_with(self._entity_id_filter, self._primary_filter)
+        assert self._obtained_images == self._expected_images
+
+
+class TestList(ListDSL):
+    """Tests for listing images."""
+
+    def test_list(self):
+        """Test listing images."""
+        self.mock_list()
+        self.call_list(entity_id=str(ObjectId()), primary=False)
+        self.check_list_success()

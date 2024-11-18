@@ -4,9 +4,11 @@ Unit tests for the `ImageRepo` repository.
 
 from test.mock_data import IMAGE_IN_DATA_ALL_VALUES
 from test.unit.repositories.conftest import RepositoryTestHelpers
+from typing import Optional
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from bson import ObjectId
 
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.repositories.image import ImageRepo
@@ -84,3 +86,84 @@ class TestCreate(CreateDSL):
         self.mock_create(IMAGE_IN_DATA_ALL_VALUES)
         self.call_create()
         self.check_create_success()
+
+
+class ListDSL(ImageRepoDSL):
+    """Base class for `list` tests."""
+
+    _expected_image_out: list[ImageOut]
+    _entity_id_filter: Optional[str]
+    _primary_filter: Optional[bool]
+    _obtained_image_out: list[ImageOut]
+
+    def mock_list(self, image_in_data: list[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `list` repo method.
+
+        :param image_in_data: List of dictionaries containing the image data as would be required for an
+            `ImageIn` database model (i.e. no ID or created and modified times required).
+        """
+        self._expected_image_out = [
+            ImageOut(**ImageIn(**image_in_data).model_dump()) for image_in_data in image_in_data
+        ]
+
+        RepositoryTestHelpers.mock_find(
+            self.images_collection, [image_out.model_dump() for image_out in self._expected_image_out]
+        )
+
+    def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
+        """Calls the `ImageRepo` `list method` method.
+
+        :param entity_id: The ID of the entity to filter images by.
+        :param primary: The primary value to filter images by.
+        """
+        self._entity_id_filter = entity_id
+        self._primary_filter = primary
+        self._obtained_image_out = self.image_repository.list(
+            session=self.mock_session, entity_id=entity_id, primary=primary
+        )
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+        expected_query = {}
+        if self._entity_id_filter is not None:
+            expected_query["entity_id"] = ObjectId(self._entity_id_filter)
+        if self._primary_filter is not None:
+            expected_query["primary"] = self._primary_filter
+
+        self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        assert self._obtained_image_out == self._expected_image_out
+
+
+class TestList(ListDSL):
+    """Tests for listing images."""
+
+    def test_list(self):
+        """Test listing all images."""
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list()
+        self.check_list_success()
+
+    def test_list_with_no_results(self):
+        """Test listing all images returning no results."""
+        self.mock_list([])
+        self.call_list()
+        self.check_list_success()
+
+    def test_list_with_entity_id(self):
+        """Test listing all images with an `entity_id` argument."""
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
+        self.check_list_success()
+
+    def test_list_with_primary(self):
+        """Test listing all images with a `primary` argument."""
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(primary=False)
+        self.check_list_success()
+
+    def test_list_with_primary_and_entity_id(self):
+        """Test listing all images with an `entity_id` and `primary` argument."""
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(primary=True, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
+        self.check_list_success()
