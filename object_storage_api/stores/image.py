@@ -53,8 +53,7 @@ class ImageStore:
                 Params={
                     "Bucket": object_storage_config.bucket_name.get_secret_value(),
                     "Key": object_key,
-                    "ResponseContentDisposition": 'attachment; filename="{}"'.format(file_name),
-                    "ResponseContentType": "image/jpeg",
+                    "ResponseContentDisposition": 'inline; filename="{}"'.format(file_name),
                 },
                 ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
             )
@@ -63,4 +62,4 @@ class ImageStore:
             return None
 
         # The response contains the presigned URL
-        return response["url"]
+        return response
