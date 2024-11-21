@@ -4,7 +4,7 @@ Module for defining the API schema models for representing images.
 
 from typing import Optional
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, HttpUrl
 
 from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
@@ -28,3 +28,11 @@ class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
     file_name: str = Field(description="File name of the image")
     primary: bool = Field(description="Whether the image is the primary for its related entity")
     thumbnail_base64: str = Field(description="Thumbnail of the image as a base64 encoded byte string")
+
+
+class ImageGetUrlInfoSchema(ImageSchema):
+    """
+    Schema model for an image get request response with a presigned url
+    """
+
+    url: HttpUrl = Field(description="Pre-signed get URL to get the image file")

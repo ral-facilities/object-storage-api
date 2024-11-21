@@ -13,7 +13,7 @@ from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
-from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import ImageGetUrlInfoSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.stores.image import ImageStore
 
 logger = logging.getLogger()
@@ -74,6 +74,17 @@ class ImageService:
         image_out = self._image_repository.create(image_in)
 
         return ImageSchema(**image_out.model_dump())
+
+    def get(self, image_id: str) -> ImageGetUrlInfoSchema:
+        """
+        Retrive an image with its presigned url.
+        :param: ID of the image to retrieve.
+        :return: An image or none if no image is retrieved.
+        """
+        image = self._image_repository.get(image_id=image_id)
+        presigned_url = self._image_store.create_presigned_url(object_key=image.object_key, file_name=image.file_name)
+
+        return ImageGetUrlInfoSchema(**image.model_dump(), url=presigned_url)
 
     def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageSchema]:
         """
