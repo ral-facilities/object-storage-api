@@ -1,5 +1,4 @@
-FROM python:3.12.7-alpine3.20@sha256:edd1d8559c585e1e9a9b79de44ac27f8ac32cb0c7323e112ae6870ceeecd8dbf
-
+FROM python:3.12.7-alpine3.20@sha256:edd1d8559c585e1e9a9b79de44ac27f8ac32cb0c7323e112ae6870ceeecd8dbf AS stage1
 
 COPY requirements.txt ./
 
@@ -12,6 +11,8 @@ FROM python:3.12.7-alpine3.20@sha256:edd1d8559c585e1e9a9b79de44ac27f8ac32cb0c732
 
 WORKDIR /object-storage-api-run
 
+COPY --from=stage1 /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=stage1 /usr/local/bin /usr/local/bin
 
 COPY README.md ./
 COPY object_storage_api/ object_storage_api/
