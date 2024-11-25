@@ -9,7 +9,7 @@ from fastapi import UploadFile
 from pydantic import HttpUrl
 
 from object_storage_api.core.object_store import object_storage_config, s3_client
-from object_storage_api.schemas.image import ImageGetUrlInfoSchema, ImagePostMetadataSchema
+from object_storage_api.schemas.image import ImagePostMetadataSchema
 
 logger = logging.getLogger()
 
@@ -53,7 +53,7 @@ class ImageStore:
                 Params={
                     "Bucket": object_storage_config.bucket_name.get_secret_value(),
                     "Key": object_key,
-                    "ResponseContentDisposition": 'inline; filename="{}"'.format(file_name),
+                    "ResponseContentDisposition": f'inline; filename="{file_name}"',
                 },
                 ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
             )

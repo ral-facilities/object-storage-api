@@ -88,6 +88,50 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
 
+class GetDSL(ImageRepoDSL):
+    """Base class for `get` tests."""
+
+    _expected_image_out: ImageOut
+    _image_id: str
+    _obtained_image_out: ImageOut
+
+    def mock_get(self, image_in_data: dict) -> None:
+        """
+        Mocks database methods appropriately to test the `get` repo method.
+
+        :param image_in_data: Dictionary containing the image data as would be required for an
+            `ImageIn` database model (i.e. no ID or created and modified times required).
+        """
+        self._expected_image_out = ImageOut(**ImageIn(**image_in_data).model_dump())
+
+        RepositoryTestHelpers.mock_find_one(self.images_collection, self._expected_image_out.model_dump())
+
+    def call_get(self, image_id: str) -> None:
+        """Calls the `ImageRepo` `get method` method.
+
+        :param entity_id: The ID of the image to retrieve.
+        """
+        self._image_id = image_id
+        self._obtained_image_out = self.image_repository.get(session=self.mock_session, image_id=image_id)
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+        expected_query = {"_id": ObjectId(self._image_id)}
+
+        self.images_collection.find_one.assert_called_once_with(expected_query, session=self.mock_session)
+        assert self._obtained_image_out == self._expected_image_out
+
+
+class TestGet(GetDSL):
+    """Tests for getting images."""
+
+    def test_get(self):
+        """Test getting an image."""
+        self.mock_get(IMAGE_IN_DATA_ALL_VALUES)
+        self.call_get(image_id=IMAGE_IN_DATA_ALL_VALUES["id"])
+        self.check_get_success()
+
+
 class ListDSL(ImageRepoDSL):
     """Base class for `list` tests."""
 

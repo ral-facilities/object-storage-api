@@ -12,7 +12,7 @@ from fastapi import UploadFile
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.image import ImageIn, ImageOut
-from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import ImageGetUrlInfoSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
 
@@ -161,6 +161,46 @@ class TestCreate(CreateDSL):
         self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"})
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class GetDSL(ImageServiceDSL):
+    """Base class for `get` tests."""
+
+    _image_id: str
+    _expected_image: ImageGetUrlInfoSchema
+    _obtained_image: ImageGetUrlInfoSchema
+
+    def mock_get(self) -> None:
+        """Mocks repo methods appropriately to test the `get` service method."""
+
+        # Just returns the result after converting it to the schemas currently, so actual value doesn't matter here
+        image_out = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
+        self.mock_image_repository.get.return_value = image_out
+        self.mock_image_store.create_presigned_url.return_value = "https://fakepresignedurl.co.uk"
+        self._expected_image = ImageGetUrlInfoSchema(**image_out.model_dump(), url="https://fakepresignedurl.co.uk")
+
+    def call_get(self, image_id: str) -> None:
+        """Calls the `ImageService` `get` method.
+
+        :param image_id: The ID of the image to retrieve.
+        """
+        self._image_id = image_id
+        self._obtained_image = self.image_service.get(image_id=image_id)
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+        self.mock_image_repository.get.assert_called_once_with(image_id=self._image_id)
+        assert self._obtained_image == self._expected_image
+
+
+class TestGet(GetDSL):
+    """Tests for getting images."""
+
+    def test_get(self):
+        """Test getting images."""
+        self.mock_get()
+        self.call_get(image_id=str(ObjectId()))
+        self.check_get_success()
 
 
 class ListDSL(ImageServiceDSL):
