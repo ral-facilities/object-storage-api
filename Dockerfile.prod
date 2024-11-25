@@ -1,4 +1,4 @@
-FROM python:3.12.7-alpine3.20@sha256:edd1d8559c585e1e9a9b79de44ac27f8ac32cb0c7323e112ae6870ceeecd8dbf AS stage1
+FROM python:3.12.7-alpine3.20@sha256:edd1d8559c585e1e9a9b79de44ac27f8ac32cb0c7323e112ae6870ceeecd8dbf AS builder
 
 COPY requirements.txt ./
 
@@ -11,8 +11,8 @@ FROM python:3.12.7-alpine3.20@sha256:edd1d8559c585e1e9a9b79de44ac27f8ac32cb0c732
 
 WORKDIR /object-storage-api-run
 
-COPY --from=stage1 /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=stage1 /usr/local/bin /usr/local/bin
+COPY --from=builder /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
 
 COPY README.md ./
 COPY object_storage_api/ object_storage_api/
@@ -20,13 +20,9 @@ COPY object_storage_api/ object_storage_api/
 RUN set -eux; \
     \
     # Create loging.ini from its .example file \
-    cp object_storage_api/logging.example.ini object_storage_api/logging.ini; \
-    \
-    # Create a non-root user to run as \
-    addgroup -S object-storage-api; \
-    adduser -S -D -G object-storage-api -H -h /object-storage-api-run object-storage-api;
+    cp object_storage_api/logging.example.ini object_storage_api/logging.ini;
 
-USER object-storage-api
+USER nobody
 
 CMD ["uvicorn", "object_storage_api.main:app", "--app-dir", "/object-storage-api-run", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000
