@@ -4,7 +4,6 @@ Module for providing a store for managing images in an S3 object store.
 
 import logging
 
-from botocore.exceptions import ClientError
 from fastapi import UploadFile
 from pydantic import HttpUrl
 
@@ -41,25 +40,20 @@ class ImageStore:
         return object_key
 
     def create_presigned_url(self, object_key: str, file_name: str) -> HttpUrl:
-        """Generate a presigned URL to share an S3 object
+        """Generate a presigned URL to share an S3 object.
 
         :param object_key: object key of the image to generate the url for.
         :return: Image Metadata with a presigned url.
         """
 
-        try:
-            response = s3_client.generate_presigned_url(
-                "get_object",
-                Params={
-                    "Bucket": object_storage_config.bucket_name.get_secret_value(),
-                    "Key": object_key,
-                    "ResponseContentDisposition": f'inline; filename="{file_name}"',
-                },
-                ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
-            )
-        except ClientError as e:
-            logging.error(e)
-            return None
+        response = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": object_key,
+                "ResponseContentDisposition": f'inline; filename="{file_name}"',
+            },
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+        )
 
-        # The response contains the presigned URL
         return response

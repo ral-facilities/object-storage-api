@@ -77,9 +77,9 @@ class ImageService:
 
     def get(self, image_id: str) -> ImageGetUrlInfoSchema:
         """
-        Retrive an image with its presigned url.
+        Retrieve an image with its presigned url by its ID.
         :param: ID of the image to retrieve.
-        :return: An image or none if no image is retrieved.
+        :return: An image or None if no image is retrieved.
         """
         message = "Image not found"
         try:

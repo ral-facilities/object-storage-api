@@ -101,7 +101,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
         self._object_key = "images/d1n238nd743/dn237846dbd34d"
         self._file_name = "example_filename"
 
-        # Mock presigned post generation
+        # Mock presigned url generation
         self._expected_presigned_url = "example_presigned_url"
         self.mock_s3_client.generate_presigned_url.return_value = self._expected_presigned_url
 

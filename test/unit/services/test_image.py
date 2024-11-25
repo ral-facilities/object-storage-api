@@ -173,7 +173,6 @@ class GetDSL(ImageServiceDSL):
     def mock_get(self) -> None:
         """Mocks repo methods appropriately to test the `get` service method."""
 
-        # Just returns the result after converting it to the schemas currently, so actual value doesn't matter here
         image_out = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
         self.mock_image_repository.get.return_value = image_out
         self.mock_image_store.create_presigned_url.return_value = "https://fakepresignedurl.co.uk"

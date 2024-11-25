@@ -109,17 +109,18 @@ class GetDSL(CreateDSL):
 
     def get_image(self, image_id: str) -> None:
         """
-        Gets an image by its ID.
+        Gets an image with the given ID.
 
-        :param image_id: ID of the image to retrieve
+        :param image_id: The ID of the image to be obtained.
         """
         self._get_response_image = self.test_client.get(f"/images/{image_id}")
 
     def check_get_image_success(self, expected_image_data: dict) -> None:
         """
-        Checks if an image get request was successful.
+        Checks that a prior call to `get_image` gave a successful response with the expected data returned.
 
-        :param expected_image_data: The expected image metadata from the get response.
+        :param expected_image_data: Dictionary containing the expected image data as would be required
+            for an `ImageSchema`.
         """
         assert self._get_response_image.status_code == 200
         response_json = self._get_response_image.json()
@@ -128,7 +129,7 @@ class GetDSL(CreateDSL):
 
     def check_get_image_failed(self) -> None:
         """
-        Checks if an image get request was unsuccessful.
+        Checks that prior call to `get_image` gave a failed response.
 
         """
         assert self._get_response_image.status_code == 404
@@ -136,29 +137,27 @@ class GetDSL(CreateDSL):
 
 
 class TestGet(GetDSL):
-    "Tests for getting an image"
+    "Tests for getting an image."
 
     def test_get_with_valid_image_id(self):
-        """Test getting an image with a valid image ID"""
+        """Test getting an image with a valid image ID."""
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.get_image(image_id)
         self.check_get_image_success(IMAGE_GET_DATA_ALL_VALUES)
 
     def test_get_with_invalid_image_id(self):
-        """Test getting an image with an invalid image ID"""
+        """Test getting an image with an invalid image ID."""
         self.get_image("sdfgfsdg")
         self.check_get_image_failed()
 
-    def test_get_with_nonexistent_image_id(self):
-        """Test getting an image with a non-existent image ID"""
+    def test_get_with_non_existent_image_id(self):
+        """Test getting an image with a non-existent image ID."""
         self.get_image(str(ObjectId()))
         self.check_get_image_failed()
 
 
-class ListDSL(CreateDSL):
+class ListDSL(GetDSL):
     """Base class for list tests."""
-
-    _get_response_image: Response
 
     def get_images(self, filters: Optional[dict] = None) -> None:
         """

@@ -91,8 +91,8 @@ class TestCreate(CreateDSL):
 class GetDSL(ImageRepoDSL):
     """Base class for `get` tests."""
 
-    _expected_image_out: ImageOut
     _image_id: str
+    _expected_image_out: ImageOut
     _obtained_image_out: ImageOut
 
     def mock_get(self, image_in_data: dict) -> None:
@@ -109,7 +109,7 @@ class GetDSL(ImageRepoDSL):
     def call_get(self, image_id: str) -> None:
         """Calls the `ImageRepo` `get method` method.
 
-        :param entity_id: The ID of the image to retrieve.
+        :param image_id: The ID of the image to retrieve.
         """
         self._image_id = image_id
         self._obtained_image_out = self.image_repository.get(session=self.mock_session, image_id=image_id)
