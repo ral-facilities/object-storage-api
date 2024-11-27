@@ -7,7 +7,7 @@ import logging
 from typing import Annotated, Optional
 
 from bson import ObjectId
-from fastapi import Depends, HTTPException, UploadFile, status
+from fastapi import Depends, UploadFile
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
@@ -81,18 +81,9 @@ class ImageService:
         :param: ID of the image to retrieve.
         :return: An image or None if no image is retrieved.
         """
-        message = "Image not found"
-        try:
-            image = self._image_repository.get(image_id=image_id)
-            if not image:
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-            presigned_url = self._image_store.create_presigned_url(
-                object_key=image.object_key, file_name=image.file_name
-            )
-            return ImageGetUrlInfoSchema(**image.model_dump(), url=presigned_url)
-        except InvalidObjectIdError as exc:
-            logger.exception("The ID is not a valid ObjectId value")
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+        image = self._image_repository.get(image_id=image_id)
+        presigned_url = self._image_store.create_presigned_get(image)
+        return ImageGetUrlInfoSchema(**image.model_dump(), url=presigned_url)
 
     def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageSchema]:
         """

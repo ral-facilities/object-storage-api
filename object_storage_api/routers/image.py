@@ -6,9 +6,8 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Path, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.schemas.image import ImageGetUrlInfoSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
@@ -76,12 +75,5 @@ def get_image(
 ) -> ImageGetUrlInfoSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting image with ID %s", image_id)
-    message = "An image with such ID was not found"
-    try:
-        image = image_service.get(image_id)
-        if not image:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message)
-        return ImageGetUrlInfoSchema(**image.model_dump())
-    except InvalidObjectIdError as exc:
-        logger.exception("The ID is not a valid ObjectId value")
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=message) from exc
+
+    return image_service.get(image_id)

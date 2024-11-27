@@ -98,10 +98,6 @@ class TestCreate(CreateDSL):
         self.check_post_image_failed_with_detail(422, "File given is not a valid image")
 
 
-# pylint:disable=fixme
-# TODO: Inherit from GetDSL when added
-
-
 class GetDSL(CreateDSL):
     """Base class for get tests."""
 
@@ -127,13 +123,13 @@ class GetDSL(CreateDSL):
         del response_json["url"]
         assert response_json == expected_image_data
 
-    def check_get_image_failed(self) -> None:
+    def check_get_image_failed(self, expected_detail: str) -> None:
         """
         Checks that prior call to `get_image` gave a failed response.
 
         """
         assert self._get_response_image.status_code == 404
-        assert self._get_response_image.json()["detail"] == "Image not found"
+        assert self._get_response_image.json()["detail"] == expected_detail
 
 
 class TestGet(GetDSL):
@@ -148,12 +144,13 @@ class TestGet(GetDSL):
     def test_get_with_invalid_image_id(self):
         """Test getting an image with an invalid image ID."""
         self.get_image("sdfgfsdg")
-        self.check_get_image_failed()
+        self.check_get_image_failed("Invalid image_id format: sdfgfsdg")
 
     def test_get_with_non_existent_image_id(self):
         """Test getting an image with a non-existent image ID."""
-        self.get_image(str(ObjectId()))
-        self.check_get_image_failed()
+        image_id = str(ObjectId())
+        self.get_image(image_id)
+        self.check_get_image_failed(f"Image with image_id {image_id} was not found.")
 
 
 class ListDSL(GetDSL):

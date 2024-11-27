@@ -175,7 +175,7 @@ class GetDSL(ImageServiceDSL):
 
         image_out = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
         self.mock_image_repository.get.return_value = image_out
-        self.mock_image_store.create_presigned_url.return_value = "https://fakepresignedurl.co.uk"
+        self.mock_image_store.create_presigned_get.return_value = "https://fakepresignedurl.co.uk"
         self._expected_image = ImageGetUrlInfoSchema(**image_out.model_dump(), url="https://fakepresignedurl.co.uk")
 
     def call_get(self, image_id: str) -> None:

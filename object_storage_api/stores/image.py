@@ -8,6 +8,7 @@ from fastapi import UploadFile
 from pydantic import HttpUrl
 
 from object_storage_api.core.object_store import object_storage_config, s3_client
+from object_storage_api.models.image import ImageOut
 from object_storage_api.schemas.image import ImagePostMetadataSchema
 
 logger = logging.getLogger()
@@ -39,19 +40,19 @@ class ImageStore:
 
         return object_key
 
-    def create_presigned_url(self, object_key: str, file_name: str) -> HttpUrl:
+    def create_presigned_get(self, image: ImageOut) -> HttpUrl:
         """Generate a presigned URL to share an S3 object.
 
-        :param object_key: object key of the image to generate the url for.
-        :return: Image Metadata with a presigned url.
+        :param image: `ImageOut` model of the image.
+        :return: Image metadata with a presigned url.
         """
 
         response = s3_client.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
-                "Key": object_key,
-                "ResponseContentDisposition": f'inline; filename="{file_name}"',
+                "Key": image.object_key,
+                "ResponseContentDisposition": f'inline; filename="{image.file_name}"',
             },
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
