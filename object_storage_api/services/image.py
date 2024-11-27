@@ -85,3 +85,7 @@ class ImageService:
         """
         images = self._image_repository.list(entity_id, primary)
         return [ImageSchema(**image.model_dump()) for image in images]
+
+    def delete(self, image_id: str) -> None:
+        object_key = self._image_repository.delete(image_id)
+        self._image_store.delete(object_key)

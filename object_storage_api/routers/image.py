@@ -6,7 +6,7 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
 from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
@@ -67,3 +67,13 @@ def get_images(
         logger.debug("Primary filter: '%s'", primary)
 
     return image_service.list(entity_id, primary)
+
+
+@router.delete(
+    path="/{image_id}", summary="Delete an image by its ID", response_description="Successfully deleted image"
+)
+def delete_image(
+    image_service: ImageServiceDep,
+    image_id: Annotated[str, Path(description="The ID of the image that is to be deleted")],
+) -> None:
+    image_service.delete(image_id)

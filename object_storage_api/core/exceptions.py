@@ -53,3 +53,12 @@ class InvalidImageFileError(BaseAPIException):
 
     status_code = 422
     response_detail = "File given is not a valid image"
+
+
+class MissingRecordError(DatabaseError):
+    """
+    A specific database record was requested but could not be found.
+    """
+
+    status_code = 422
+    response_detail = "Requested Record was not found"

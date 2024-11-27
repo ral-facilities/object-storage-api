@@ -37,3 +37,9 @@ class ImageStore:
         )
 
         return object_key
+
+    def delete(self, object_key: str) -> None:
+        s3_client.delete_object(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=object_key,
+        )

@@ -10,6 +10,7 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 
 logger = logging.getLogger()
@@ -82,3 +83,17 @@ class ImageRepo:
 
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
+
+    def delete(self, image_id: str, session: ClientSession = None) -> str:
+        try:
+            new_image_id = CustomObjectId(image_id)
+        except InvalidObjectIdError as exc:
+            exc.response_detail = f"Invalid image_id given: {image_id}"
+            raise exc
+        response = self._images_collection.find_one_and_delete(
+            filter={"_id": new_image_id}, projection={"object_key": True}, session=session
+        )
+        if response is None:
+            exc = MissingRecordError(f"Requested Image was not found: Image ID {image_id}")
+            raise exc
+        return response["object_key"]
