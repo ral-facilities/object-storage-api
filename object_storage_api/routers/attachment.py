@@ -4,7 +4,7 @@ service.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Query, status
 
