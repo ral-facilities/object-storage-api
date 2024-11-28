@@ -131,7 +131,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
 class TestCreatePresignedURL(CreatePresignedURLDSL):
     """Tests for creating a presigned url for an image."""
 
-    def test_create_presigned_post(self):
+    def test_create_presigned_get(self):
         """Test creating a presigned url for an image."""
 
         self.mock_create_presigned_get(IMAGE_IN_DATA_ALL_VALUES)
