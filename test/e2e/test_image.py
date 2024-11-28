@@ -259,3 +259,60 @@ class TestList(ListDSL):
             "Input should be a valid boolean, unable to interpret input",
             self._get_response_image.json()["detail"][0]["msg"],
         )
+
+
+class DeleteDSL(ListDSL):
+    """Base class for delete tests."""
+
+    _delete_response_image: Response
+
+    def delete_image(self, image_id: str) -> None:
+        """
+        Deletes an image with the given ID.
+
+        :param image_id: ID of the image to be deleted.
+        """
+
+        self._delete_response_image = self.test_client.delete(f"/images/{image_id}")
+
+    def check_delete_image_success(self) -> None:
+        """Checks that a prior call to `delete_image` gave a successful response with the expected data
+        returned."""
+
+        assert self._delete_response_image.status_code == 200
+
+    def check_delete_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `delete_image` gave a failed response with the expected code and
+        error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected detail given in the response.
+        """
+
+        assert self._delete_response_image.status_code == status_code
+        assert self._delete_response_image.json()["detail"] == detail
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an image."""
+
+    def test_delete(self):
+        """Test deleting an image."""
+
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
+
+        self.delete_image(image_id)
+        self.check_delete_image_success()
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent item."""
+
+        self.delete_image(str(ObjectId()))
+        self.check_delete_item_failed_with_detail(404, "Image not found")
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting an item with an invalid ID."""
+
+        self.delete_image("invalid_id")
+        self.check_delete_item_failed_with_detail(404, "Image not found")

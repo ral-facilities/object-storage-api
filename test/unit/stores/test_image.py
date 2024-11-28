@@ -82,3 +82,30 @@ class TestUpload(UploadDSL):
         self.mock_upload(IMAGE_POST_METADATA_DATA_ALL_VALUES)
         self.call_upload()
         self.check_upload_success()
+
+
+class DeleteDSL(ImageStoreDSL):
+    """Base class for `delete` tests."""
+
+    def call_delete(self) -> None:
+        """Calls the `ImageStore` `delete` method."""
+
+        self.image_store.delete("object_key")
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.mock_s3_client.delete_object.assert_called_once_with(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key="object_key",
+        )
+
+
+class TestDelete(DeleteDSL):
+    """Tests for creating a presigned url for an image."""
+
+    def test_create_presigned_post(self):
+        """Test creating a presigned url for an image."""
+
+        self.call_delete()
+        self.check_delete_success()

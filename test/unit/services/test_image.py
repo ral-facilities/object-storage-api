@@ -203,3 +203,32 @@ class TestList(ListDSL):
         self.mock_list()
         self.call_list(entity_id=str(ObjectId()), primary=False)
         self.check_list_success()
+
+
+class DeleteDSL(ImageServiceDSL):
+    """Base class for `delete` tests."""
+
+    _delete_image_id: str
+
+    def call_delete(self, image_id: str) -> None:
+        """
+        Calls the `ImageService` `delete` method.
+
+        :param image_id: ID of the image to be deleted.
+        """
+
+        self._delete_image_id = image_id
+        self.image_service.delete(image_id)
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.mock_image_repository.delete.assert_called_once_with(self._delete_image_id)
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting images."""
+
+    def test_delete(self):
+        self.call_delete("test_image_id")
+        self.check_delete_success()
