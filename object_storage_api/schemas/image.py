@@ -19,9 +19,9 @@ class ImagePostMetadataSchema(BaseModel):
     description: Optional[str] = Field(default=None, description="Description of the image")
 
 
-class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
+class ImageMetadataSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
     """
-    Schema model for an image get request response.
+    Schema model for an image's metadata.
     """
 
     id: str = Field(description="ID of the image")
@@ -30,9 +30,9 @@ class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
     thumbnail_base64: str = Field(description="Thumbnail of the image as a base64 encoded byte string")
 
 
-class ImageGetUrlInfoSchema(ImageSchema):
+class ImageSchema(ImageMetadataSchema):
     """
-    Schema model for an image get request response with a presigned url
+    Schema model for an image get request response.
     """
 
-    url: HttpUrl = Field(description="Pre-signed get URL to get the image file")
+    url: HttpUrl = Field(description="Presigned get URL to get the image file")

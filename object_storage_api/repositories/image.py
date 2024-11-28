@@ -50,20 +50,20 @@ class ImageRepo:
         :param image_id: ID of the image to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
         :return: Retrieved image or `None` if not found.
-        :raises MissingRecordError: If the supplied image_id is invalid or non-existent.
+        :raises MissingRecordError: If the supplied `image_id` is invalid or non-existent.
         """
         logger.info("Retrieving image with ID: %s from the database", image_id)
+        message = f"Image with image_id {image_id} was not found."
+        entity_name = "image"
         try:
             image_id = CustomObjectId(image_id)
             image = self._images_collection.find_one({"_id": image_id}, session=session)
         except InvalidObjectIdError as e:
-            exc = MissingRecordError(f"The image_id {image_id} is not valid.")
-            exc.response_detail = f"Invalid image_id format: {image_id}"
+            exc = MissingRecordError(detail=message, entity_name=entity_name)
             raise exc from e
         if image:
             return ImageOut(**image)
-        exc = MissingRecordError(f"Image with image_id {image_id} was not found.")
-        exc.response_detail = f"Image with image_id {image_id} was not found."
+        exc = MissingRecordError(detail=message, entity_name=entity_name)
         raise exc
 
     def list(self, entity_id: Optional[str], primary: Optional[bool], session: ClientSession = None) -> list[ImageOut]:

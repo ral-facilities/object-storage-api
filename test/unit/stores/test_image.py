@@ -89,16 +89,18 @@ class TestUpload(UploadDSL):
 class CreatePresignedURLDSL(ImageStoreDSL):
     """Base class for `create` tests."""
 
-    _image: ImageOut
+    _image_out: ImageOut
     _expected_presigned_url: HttpUrl
     _obtained_presigned_url: HttpUrl
 
-    def mock_create_presigned_get(self) -> None:
+    def mock_create_presigned_get(self, image_in_data: dict) -> None:
         """
         Mocks object store methods appropriately to test the `create_presigned_get` store method.
 
+        :param image_in_data: Dictionary containing the image  data as would be required for an
+        `ImageIn`.
         """
-        self._image = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
+        self._image_out = ImageOut(**ImageIn(**image_in_data).model_dump())
 
         # Mock presigned url generation
         self._expected_presigned_url = "example_presigned_url"
@@ -108,7 +110,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
         """Calls the `ImageStore` `create_presigned_get` method with the appropriate data from a prior call to
         `mock_create_presigned_get`."""
 
-        self._obtained_presigned_url = self.image_store.create_presigned_get(self._image)
+        self._obtained_presigned_url = self.image_store.create_presigned_get(self._image_out)
 
     def check_create_presigned_get_success(self) -> None:
         """Checks that a prior call to `call_create_presigned_get` worked as expected."""
@@ -117,8 +119,8 @@ class CreatePresignedURLDSL(ImageStoreDSL):
             "get_object",
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
-                "Key": self._image.object_key,
-                "ResponseContentDisposition": f'inline; filename="{self._image.file_name}"',
+                "Key": self._image_out.object_key,
+                "ResponseContentDisposition": f'inline; filename="{self._image_out.file_name}"',
             },
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
@@ -132,6 +134,6 @@ class TestCreatePresignedURL(CreatePresignedURLDSL):
     def test_create_presigned_post(self):
         """Test creating a presigned url for an image."""
 
-        self.mock_create_presigned_get()
+        self.mock_create_presigned_get(image_in_data=IMAGE_IN_DATA_ALL_VALUES)
         self.call_create_presigned_get()
         self.check_create_presigned_get_success()

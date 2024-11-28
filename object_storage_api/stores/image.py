@@ -5,7 +5,6 @@ Module for providing a store for managing images in an S3 object store.
 import logging
 
 from fastapi import UploadFile
-from pydantic import HttpUrl
 
 from object_storage_api.core.object_store import object_storage_config, s3_client
 from object_storage_api.models.image import ImageOut
@@ -40,11 +39,11 @@ class ImageStore:
 
         return object_key
 
-    def create_presigned_get(self, image: ImageOut) -> HttpUrl:
+    def create_presigned_get(self, image: ImageOut) -> str:
         """Generate a presigned URL to share an S3 object.
 
         :param image: `ImageOut` model of the image.
-        :return: Image metadata with a presigned url.
+        :return: Presigned url to get the image.
         """
 
         response = s3_client.generate_presigned_url(

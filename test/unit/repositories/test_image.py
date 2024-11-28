@@ -10,6 +10,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from bson import ObjectId
 
+from object_storage_api.core.exceptions import MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.repositories.image import ImageRepo
 
@@ -91,35 +92,73 @@ class TestCreate(CreateDSL):
 class GetDSL(ImageRepoDSL):
     """Base class for `get` tests."""
 
-    _image_id: str
+    _obtained_image_id: str
     _expected_image_out: ImageOut
     _obtained_image_out: ImageOut
+    _get_exception: pytest.ExceptionInfo
 
-    def mock_get(self, image_in_data: dict) -> None:
+    def mock_get(self, image_id: str, image_in_data: dict) -> None:
         """
         Mocks database methods appropriately to test the `get` repo method.
 
+        :param image_id: ID of the image to obtain.
         :param image_in_data: Dictionary containing the image data as would be required for an
-            `ImageIn` database model (i.e. no ID or created and modified times required).
+            `ImageIn` database model (i.e. no created and modified times required).
         """
-        self._expected_image_out = ImageOut(**ImageIn(**image_in_data).model_dump())
+        if image_in_data:
+            image_in_data["id"] = image_id
+        self._expected_image_out = ImageOut(**ImageIn(**image_in_data).model_dump()) if image_in_data else None
 
-        RepositoryTestHelpers.mock_find_one(self.images_collection, self._expected_image_out.model_dump())
+        RepositoryTestHelpers.mock_find_one(
+            self.images_collection, self._expected_image_out.model_dump() if self._expected_image_out else None
+        )
 
     def call_get(self, image_id: str) -> None:
-        """Calls the `ImageRepo` `get method` method.
+        """Calls the `ImageRepo` `get` method.
 
-        :param image_id: The ID of the image to retrieve.
+        :param image_id: The ID of the image to obtain.
         """
-        self._image_id = image_id
-        self._obtained_image_out = self.image_repository.get(session=self.mock_session, image_id=image_id)
+        self._obtained_image_id = image_id
+        self._obtained_image_out = self.image_repository.get(image_id=image_id, session=self.mock_session)
+
+    def call_get_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ImageRepo` `get` method with the appropriate data from a prior call to `mock_get`
+        while expecting an error to be raised.
+
+        :param image_id: ID of the image to be obtained.
+        :param error_type: Expected exception to be raised.
+        """
+        self._obtained_image_id = image_id
+        with pytest.raises(error_type) as exc:
+            self.image_repository.get(image_id, session=self.mock_session)
+        self._get_exception = exc
 
     def check_get_success(self) -> None:
         """Checks that a prior call to `call_get` worked as expected."""
-        expected_query = {"_id": ObjectId(self._image_id)}
 
-        self.images_collection.find_one.assert_called_once_with(expected_query, session=self.mock_session)
+        self.images_collection.find_one.assert_called_once_with(
+            {"_id": ObjectId(self._obtained_image_id)}, session=self.mock_session
+        )
         assert self._obtained_image_out == self._expected_image_out
+
+    def check_get_failed_with_exception(self, image_id: str, assert_find: bool) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param image_id: ID of the expected image to appear in the exception detail.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made,
+            else it asserts that no call was made.
+        """
+        if assert_find:
+            self.images_collection.find_one.assert_called_once_with(
+                {"_id": ObjectId(self._obtained_image_id)}, session=self.mock_session
+            )
+        else:
+            self.images_collection.find_one.assert_not_called()
+
+        assert str(self._get_exception.value) == f"Image with image_id {image_id} was not found."
 
 
 class TestGet(GetDSL):
@@ -127,9 +166,29 @@ class TestGet(GetDSL):
 
     def test_get(self):
         """Test getting an image."""
-        self.mock_get(IMAGE_IN_DATA_ALL_VALUES)
-        self.call_get(image_id=IMAGE_IN_DATA_ALL_VALUES["id"])
+
+        image_id = str(ObjectId())
+
+        self.mock_get(image_id, IMAGE_IN_DATA_ALL_VALUES)
+        self.call_get(image_id)
         self.check_get_success()
+
+    def test_get_with_non_existent_id(self):
+        """Test getting an image with a non-existent image ID."""
+
+        image_id = str(ObjectId())
+
+        self.mock_get(image_id, None)
+        self.call_get_expecting_error(image_id, MissingRecordError)
+        self.check_get_failed_with_exception(image_id=image_id, assert_find=True)
+
+    def test_get_with_invalid_id(self):
+        """Test getting an image with an invalid image ID."""
+        image_id = "agafgsdg"
+
+        self.mock_get(image_id, None)
+        self.call_get_expecting_error(image_id, MissingRecordError)
+        self.check_get_failed_with_exception(image_id=image_id, assert_find=False)
 
 
 class ListDSL(ImageRepoDSL):

@@ -13,7 +13,7 @@ from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
-from object_storage_api.schemas.image import ImageGetUrlInfoSchema, ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import ImageMetadataSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.stores.image import ImageStore
 
 logger = logging.getLogger()
@@ -38,7 +38,7 @@ class ImageService:
         self._image_repository = image_repository
         self._image_store = image_store
 
-    def create(self, image_metadata: ImagePostMetadataSchema, upload_file: UploadFile) -> ImageSchema:
+    def create(self, image_metadata: ImagePostMetadataSchema, upload_file: UploadFile) -> ImageMetadataSchema:
         """
         Create a new image.
 
@@ -73,19 +73,20 @@ class ImageService:
 
         image_out = self._image_repository.create(image_in)
 
-        return ImageSchema(**image_out.model_dump())
+        return ImageMetadataSchema(**image_out.model_dump())
 
-    def get(self, image_id: str) -> ImageGetUrlInfoSchema:
+    def get(self, image_id: str) -> ImageSchema:
         """
         Retrieve an image with its presigned url by its ID.
-        :param: ID of the image to retrieve.
+
+        :param image_id: ID of the image to retrieve.
         :return: An image or None if no image is retrieved.
         """
         image = self._image_repository.get(image_id=image_id)
         presigned_url = self._image_store.create_presigned_get(image)
-        return ImageGetUrlInfoSchema(**image.model_dump(), url=presigned_url)
+        return ImageSchema(**image.model_dump(), url=presigned_url)
 
-    def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageSchema]:
+    def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageMetadataSchema]:
         """
         Retrieve a list of images based on the provided filters.
 
@@ -94,4 +95,4 @@ class ImageService:
         :return: List of images or an empty list if no images are retrieved.
         """
         images = self._image_repository.list(entity_id, primary)
-        return [ImageSchema(**image.model_dump()) for image in images]
+        return [ImageMetadataSchema(**image.model_dump()) for image in images]

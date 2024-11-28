@@ -12,7 +12,7 @@ from fastapi import UploadFile
 
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.image import ImageIn, ImageOut
-from object_storage_api.schemas.image import ImageGetUrlInfoSchema, ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import ImageMetadataSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
 
@@ -58,8 +58,8 @@ class CreateDSL(ImageServiceDSL):
     _upload_file: UploadFile
     _expected_image_id: ObjectId
     _expected_image_in: ImageIn
-    _expected_image: ImageSchema
-    _created_image: ImageSchema
+    _expected_image: ImageMetadataSchema
+    _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
     def mock_create(self, image_post_metadata_data: dict) -> None:
@@ -98,7 +98,7 @@ class CreateDSL(ImageServiceDSL):
             expected_image_out = ImageOut(**self._expected_image_in.model_dump(by_alias=True))
             self.mock_image_repository.create.return_value = expected_image_out
 
-            self._expected_image = ImageSchema(**expected_image_out.model_dump())
+            self._expected_image = ImageMetadataSchema(**expected_image_out.model_dump())
 
     def call_create(self) -> None:
         """Calls the `ImageService` `create` method with the appropriate data from a prior call to
@@ -166,29 +166,33 @@ class TestCreate(CreateDSL):
 class GetDSL(ImageServiceDSL):
     """Base class for `get` tests."""
 
-    _image_id: str
-    _expected_image: ImageGetUrlInfoSchema
-    _obtained_image: ImageGetUrlInfoSchema
+    _obtained_image_id: str
+    _expected_image_out: ImageOut
+    _expected_image: ImageSchema
+    _obtained_image: ImageSchema
 
     def mock_get(self) -> None:
         """Mocks repo methods appropriately to test the `get` service method."""
 
-        image_out = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
-        self.mock_image_repository.get.return_value = image_out
+        self._expected_image_out = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
+        self.mock_image_repository.get.return_value = self._expected_image_out
         self.mock_image_store.create_presigned_get.return_value = "https://fakepresignedurl.co.uk"
-        self._expected_image = ImageGetUrlInfoSchema(**image_out.model_dump(), url="https://fakepresignedurl.co.uk")
+        self._expected_image = ImageSchema(
+            **self._expected_image_out.model_dump(), url="https://fakepresignedurl.co.uk"
+        )
 
     def call_get(self, image_id: str) -> None:
         """Calls the `ImageService` `get` method.
 
-        :param image_id: The ID of the image to retrieve.
+        :param image_id: The ID of the image to obtain.
         """
-        self._image_id = image_id
+        self._obtained_image_id = image_id
         self._obtained_image = self.image_service.get(image_id=image_id)
 
     def check_get_success(self) -> None:
         """Checks that a prior call to `call_get` worked as expected."""
-        self.mock_image_repository.get.assert_called_once_with(image_id=self._image_id)
+        self.mock_image_repository.get.assert_called_once_with(image_id=self._obtained_image_id)
+        self.mock_image_store.create_presigned_get.assert_called_once_with(self._expected_image_out)
         assert self._obtained_image == self._expected_image
 
 
@@ -207,8 +211,8 @@ class ListDSL(ImageServiceDSL):
 
     _entity_id_filter: Optional[str]
     _primary_filter: Optional[str]
-    _expected_images: List[ImageSchema]
-    _obtained_images: List[ImageSchema]
+    _expected_images: List[ImageMetadataSchema]
+    _obtained_images: List[ImageMetadataSchema]
 
     def mock_list(self) -> None:
         """Mocks repo methods appropriately to test the `list` service method."""
@@ -216,7 +220,7 @@ class ListDSL(ImageServiceDSL):
         # Just returns the result after converting it to the schemas currently, so actual value doesn't matter here
         images_out = [ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())]
         self.mock_image_repository.list.return_value = images_out
-        self._expected_images = [ImageSchema(**image_out.model_dump()) for image_out in images_out]
+        self._expected_images = [ImageMetadataSchema(**image_out.model_dump()) for image_out in images_out]
 
     def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
         """Calls the `ImageService` `list` method.
