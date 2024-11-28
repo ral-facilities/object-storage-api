@@ -19,16 +19,20 @@ class BaseAPIException(Exception):
 
     detail: str
 
-    def __init__(self, detail: str):
+    def __init__(self, detail: str, response_detail: str = None):
         """
         Initialise the exception.
 
         :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
                        and not returned in a response).
+        :param response_detail: Generic detail of the exception that will be returned in a response.
         """
         super().__init__(detail)
 
         self.detail = detail
+
+        if response_detail is not None:
+            self.response_detail = response_detail
 
 
 class DatabaseError(BaseAPIException):
@@ -60,5 +64,18 @@ class MissingRecordError(DatabaseError):
     A specific database record was requested but could not be found.
     """
 
-    status_code = 422
-    response_detail = "Requested Record was not found"
+    status_code = 404
+    response_detail = "Requested record was not found"
+
+    def __init__(self, detail: str, entity_name: str = None):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
+                       and not returned in a response).
+        :param entity_name: Name of the entity to include in the response.
+        """
+        super().__init__(detail)
+
+        if entity_name is not None:
+            self.response_detail = f"{entity_name.capitalize()} not found"

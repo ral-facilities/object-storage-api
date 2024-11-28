@@ -87,13 +87,13 @@ class ImageRepo:
     def delete(self, image_id: str, session: ClientSession = None) -> str:
         try:
             new_image_id = CustomObjectId(image_id)
-        except InvalidObjectIdError as exc:
-            exc.response_detail = f"Invalid image_id given: {image_id}"
-            raise exc
+        except InvalidObjectIdError as e:
+            exc = MissingRecordError(f"Invalid image_id given: {image_id}", "image")
+            raise exc from e
         response = self._images_collection.find_one_and_delete(
             filter={"_id": new_image_id}, projection={"object_key": True}, session=session
         )
         if response is None:
-            exc = MissingRecordError(f"Requested Image was not found: Image ID {image_id}")
+            exc = MissingRecordError(f"Requested Image was not found: {image_id}", "image")
             raise exc
         return response["object_key"]
