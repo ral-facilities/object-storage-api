@@ -142,7 +142,7 @@ class GetDSL(ImageRepoDSL):
         )
         assert self._obtained_image_out == self._expected_image_out
 
-    def check_get_failed_with_exception(self, image_id: str, assert_find: bool) -> None:
+    def check_get_failed_with_exception(self, assert_find: bool = False) -> None:
         """
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
@@ -158,7 +158,7 @@ class GetDSL(ImageRepoDSL):
         else:
             self.images_collection.find_one.assert_not_called()
 
-        assert str(self._get_exception.value) == f"Image with image_id {image_id} was not found."
+        assert str(self._get_exception.value) == f"Image with image_id {self._obtained_image_id} was not found."
 
 
 class TestGet(GetDSL):
@@ -180,7 +180,7 @@ class TestGet(GetDSL):
 
         self.mock_get(image_id, None)
         self.call_get_expecting_error(image_id, MissingRecordError)
-        self.check_get_failed_with_exception(image_id=image_id, assert_find=True)
+        self.check_get_failed_with_exception(True)
 
     def test_get_with_invalid_id(self):
         """Test getting an image with an invalid image ID."""
@@ -188,7 +188,7 @@ class TestGet(GetDSL):
 
         self.mock_get(image_id, None)
         self.call_get_expecting_error(image_id, MissingRecordError)
-        self.check_get_failed_with_exception(image_id=image_id, assert_find=False)
+        self.check_get_failed_with_exception()
 
 
 class ListDSL(ImageRepoDSL):

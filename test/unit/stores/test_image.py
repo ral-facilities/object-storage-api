@@ -134,6 +134,6 @@ class TestCreatePresignedURL(CreatePresignedURLDSL):
     def test_create_presigned_post(self):
         """Test creating a presigned url for an image."""
 
-        self.mock_create_presigned_get(image_in_data=IMAGE_IN_DATA_ALL_VALUES)
+        self.mock_create_presigned_get(IMAGE_IN_DATA_ALL_VALUES)
         self.call_create_presigned_get()
         self.check_create_presigned_get_success()

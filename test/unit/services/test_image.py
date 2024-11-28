@@ -202,7 +202,7 @@ class TestGet(GetDSL):
     def test_get(self):
         """Test getting images."""
         self.mock_get()
-        self.call_get(image_id=str(ObjectId()))
+        self.call_get(str(ObjectId()))
         self.check_get_success()
 
 

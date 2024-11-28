@@ -58,13 +58,11 @@ class ImageRepo:
         try:
             image_id = CustomObjectId(image_id)
             image = self._images_collection.find_one({"_id": image_id}, session=session)
-        except InvalidObjectIdError as e:
-            exc = MissingRecordError(detail=message, entity_name=entity_name)
-            raise exc from e
+        except InvalidObjectIdError as exc:
+            raise MissingRecordError(detail=message, entity_name=entity_name) from exc
         if image:
             return ImageOut(**image)
-        exc = MissingRecordError(detail=message, entity_name=entity_name)
-        raise exc
+        raise MissingRecordError(detail=message, entity_name=entity_name)
 
     def list(self, entity_id: Optional[str], primary: Optional[bool], session: ClientSession = None) -> list[ImageOut]:
         """
