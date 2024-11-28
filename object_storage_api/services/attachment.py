@@ -72,4 +72,11 @@ class AttachmentService:
         """
 
         attachments = self._attachment_repository.list(entity_id)
-        return [AttachmentPostResponseSchema(**attachment.model_dump()) for attachment in attachments]
+
+        attachments_list = []
+
+        for attachment in attachments:
+            object_key, upload_info = self._attachment_store.create_presigned_post(attachment.id, attachment)
+            attachments_list.append(AttachmentPostResponseSchema(**attachment.model_dump(), upload_info=upload_info))
+
+        return attachments_list
