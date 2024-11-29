@@ -227,8 +227,9 @@ class DeleteDSL(ImageServiceDSL):
 
 
 class TestDelete(DeleteDSL):
-    """Tests for deleting images."""
+    """Tests for deleting an image."""
 
     def test_delete(self):
+        """Test for deleting an image."""
         self.call_delete("test_image_id")
         self.check_delete_success()

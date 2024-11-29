@@ -69,11 +69,11 @@ def get_images(
     return image_service.list(entity_id, primary)
 
 
-@router.delete(
-    path="/{image_id}", summary="Delete an image by its ID", response_description="Successfully deleted image"
-)
+@router.delete(path="/{image_id}", summary="Delete an image by ID", response_description="Image deleted Sucessfully")
 def delete_image(
+    image_id: Annotated[str, Path(description="The ID of the image to delete")],
     image_service: ImageServiceDep,
-    image_id: Annotated[str, Path(description="The ID of the image that is to be deleted")],
 ) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting image with ID: %s", image_id)
     image_service.delete(image_id)

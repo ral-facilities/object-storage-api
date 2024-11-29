@@ -281,7 +281,7 @@ class DeleteDSL(ListDSL):
 
         assert self._delete_response_image.status_code == 200
 
-    def check_delete_item_failed_with_detail(self, status_code: int, detail: str) -> None:
+    def check_delete_item_failed_with_detail(self) -> None:
         """
         Checks that a prior call to `delete_image` gave a failed response with the expected code and
         error message.
@@ -290,8 +290,8 @@ class DeleteDSL(ListDSL):
         :param detail: Expected detail given in the response.
         """
 
-        assert self._delete_response_image.status_code == status_code
-        assert self._delete_response_image.json()["detail"] == detail
+        assert self._delete_response_image.status_code == 404
+        assert self._delete_response_image.json()["detail"] == "Image not found"
 
 
 class TestDelete(DeleteDSL):
@@ -309,10 +309,10 @@ class TestDelete(DeleteDSL):
         """Test deleting a non-existent item."""
 
         self.delete_image(str(ObjectId()))
-        self.check_delete_item_failed_with_detail(404, "Image not found")
+        self.check_delete_item_failed_with_detail()
 
     def test_delete_with_invalid_id(self):
         """Test deleting an item with an invalid ID."""
 
         self.delete_image("invalid_id")
-        self.check_delete_item_failed_with_detail(404, "Image not found")
+        self.check_delete_item_failed_with_detail()

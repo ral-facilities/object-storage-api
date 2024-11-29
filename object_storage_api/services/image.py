@@ -87,5 +87,11 @@ class ImageService:
         return [ImageSchema(**image.model_dump()) for image in images]
 
     def delete(self, image_id: str) -> None:
+        """
+        Delete an image by its ID.
+
+        :param image_id: The ID of the image to delete.
+        """
+
         object_key = self._image_repository.delete(image_id)
         self._image_store.delete(object_key)

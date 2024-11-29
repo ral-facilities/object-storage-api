@@ -78,12 +78,13 @@ class RepositoryTestHelpers:
         cursor_mock.__iter__.return_value = iter(documents)
         collection_mock.find.return_value = cursor_mock
 
+    @staticmethod
     def mock_find_one_and_delete(collection_mock: Mock, document: dict | None) -> None:
         """
-        Mocks the `find_one` method of the MongoDB database collection mock to return a specific document.
+        Mocks the `find_one_and_delete` method of the MongoDB database collection mock to return a specific document.
 
         :param collection_mock: Mocked MongoDB database collection instance.
-        :param document: The document to be returned by the `find_one` method.
+        :param document: The document to be returned by the `find_one_and_delete` method.
         """
         if collection_mock.find_one_and_delete.side_effect is None:
             collection_mock.find_one_and_delete.side_effect = [document]

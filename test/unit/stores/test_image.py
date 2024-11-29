@@ -102,10 +102,10 @@ class DeleteDSL(ImageStoreDSL):
 
 
 class TestDelete(DeleteDSL):
-    """Tests for creating a presigned url for an image."""
+    """Tests for deleting an image from object storage."""
 
     def test_create_presigned_post(self):
-        """Test creating a presigned url for an image."""
+        """Test for deleting an image from object storage."""
 
         self.call_delete()
         self.check_delete_success()

@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.exceptions import MissingRecordError
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.repositories.image import ImageRepo
 
@@ -48,7 +48,7 @@ class CreateDSL(ImageRepoDSL):
         """
         Mocks database methods appropriately to test the `create` repo method.
 
-        :param image_in_data: Dictionary containing the image data as would be required for a `ImageIn`
+        :param image_in_data: Dictionary containing the image data as would be required for an `ImageIn`
                                    database model (i.e. no created and modified times required).
         """
 
@@ -102,7 +102,7 @@ class ListDSL(ImageRepoDSL):
         Mocks database methods appropriately to test the `list` repo method.
 
         :param image_in_data: List of dictionaries containing the image data as would be required for an
-            `ImageIn` database model (i.e. no ID or created and modified times required).
+            `ImageIn` database model (i.e. no created and modified times required).
         """
         self._expected_image_out = [
             ImageOut(**ImageIn(**image_in_data).model_dump()) for image_in_data in image_in_data
@@ -184,7 +184,9 @@ class DeleteDSL(ImageRepoDSL):
         """
         Mocks database methods appropriately to test the `delete` repo method.
 
-        :param deleted_count: Number of documents deleted successfully.
+        :param image_id: ID of the image to delete.
+        :param image_in_data: Dictionary containing the image data as would be required for an `ImageIn`
+                                   database model (i.e. no created and modified times required).
         """
         if image_in_data:
             image_in_data["id"] = image_id
@@ -224,7 +226,7 @@ class DeleteDSL(ImageRepoDSL):
         self.images_collection.find_one_and_delete.assert_called_once_with(
             filter={"_id": ObjectId(self._delete_image_id)}, projection={"object_key": True}, session=self.mock_session
         )
-        self._obtained_object_key = self._expected_object_key
+        assert self._obtained_object_key == self._expected_object_key
 
     def check_delete_failed_with_exception(self, message: str, assert_delete: bool = False) -> None:
         """
@@ -232,7 +234,7 @@ class DeleteDSL(ImageRepoDSL):
         with the correct message.
 
         :param message: Expected message of the raised exception.
-        :param assert_delete: Whether the `delete_one` method is expected to be called or not.
+        :param assert_delete: Whether the `find_one_and_delete` method is expected to be called or not.
         """
 
         if not assert_delete:
@@ -272,5 +274,5 @@ class TestDelete(DeleteDSL):
 
         image_id = "invalid-id"
 
-        self.call_delete_expecting_error(image_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"Invalid image_id given: {image_id}")
+        self.call_delete_expecting_error(image_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception(f"Invalid ObjectId value '{image_id}'")

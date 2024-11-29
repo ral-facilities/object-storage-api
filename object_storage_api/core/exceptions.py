@@ -6,6 +6,9 @@ Module for custom exception classes.
 # TODO: Some of this file is identical to the one in inventory-management-system-api - Use common repo?
 
 
+from typing import Optional
+
+
 class BaseAPIException(Exception):
     """
     Base exception for API errors.
@@ -19,7 +22,7 @@ class BaseAPIException(Exception):
 
     detail: str
 
-    def __init__(self, detail: str, response_detail: str = None):
+    def __init__(self, detail: str, response_detail: Optional[str] = None):
         """
         Initialise the exception.
 
@@ -67,13 +70,13 @@ class MissingRecordError(DatabaseError):
     status_code = 404
     response_detail = "Requested record was not found"
 
-    def __init__(self, detail: str, entity_name: str = None):
+    def __init__(self, detail: str, entity_name: Optional[str] = None):
         """
         Initialise the exception.
 
         :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
                        and not returned in a response).
-        :param entity_name: Name of the entity to include in the response.
+        :param entity_name: Name of the entity to include in the response detail.
         """
         super().__init__(detail)
 
