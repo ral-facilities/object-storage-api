@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.exceptions import MissingRecordError
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.repositories.image import ImageRepo
 
@@ -142,7 +142,7 @@ class GetDSL(ImageRepoDSL):
         )
         assert self._obtained_image_out == self._expected_image_out
 
-    def check_get_failed_with_exception(self, assert_find: bool = False) -> None:
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
         """
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
@@ -158,7 +158,7 @@ class GetDSL(ImageRepoDSL):
         else:
             self.images_collection.find_one.assert_not_called()
 
-        assert str(self._get_exception.value) == f"Image with image_id {self._obtained_image_id} was not found."
+        assert str(self._get_exception.value) == message
 
 
 class TestGet(GetDSL):
@@ -180,15 +180,15 @@ class TestGet(GetDSL):
 
         self.mock_get(image_id, None)
         self.call_get_expecting_error(image_id, MissingRecordError)
-        self.check_get_failed_with_exception(True)
+        self.check_get_failed_with_exception(f"Image with image_id {image_id} was not found.", True)
 
     def test_get_with_invalid_id(self):
         """Test getting an image with an invalid image ID."""
-        image_id = "agafgsdg"
+        image_id = "invalid-id"
 
         self.mock_get(image_id, None)
-        self.call_get_expecting_error(image_id, MissingRecordError)
-        self.check_get_failed_with_exception()
+        self.call_get_expecting_error(image_id, InvalidObjectIdError)
+        self.check_get_failed_with_exception(f"Invalid ObjectId value '{image_id}'")
 
 
 class ListDSL(ImageRepoDSL):

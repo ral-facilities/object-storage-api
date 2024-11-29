@@ -8,7 +8,6 @@ from unittest.mock import MagicMock, patch
 import pytest
 from bson import ObjectId
 from fastapi import UploadFile
-from pydantic import HttpUrl
 
 from object_storage_api.core.object_store import object_storage_config
 from object_storage_api.models.image import ImageIn, ImageOut
@@ -90,8 +89,8 @@ class CreatePresignedURLDSL(ImageStoreDSL):
     """Base class for `create` tests."""
 
     _image_out: ImageOut
-    _expected_presigned_url: HttpUrl
-    _obtained_presigned_url: HttpUrl
+    _expected_presigned_url: str
+    _obtained_presigned_url: str
 
     def mock_create_presigned_get(self, image_in_data: dict) -> None:
         """
