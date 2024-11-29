@@ -45,7 +45,7 @@ class ImageStore:
         :param image: `ImageOut` model of the image.
         :return: Presigned url to get the image.
         """
-
+        logger.info("Generating presigned url to get image from object storage")
         response = s3_client.generate_presigned_url(
             "get_object",
             Params={
