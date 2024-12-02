@@ -8,7 +8,11 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, Query, status
 
-from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
+from object_storage_api.schemas.attachment import (
+    AttachmentMetadataSchema,
+    AttachmentPostResponseSchema,
+    AttachmentPostSchema,
+)
 from object_storage_api.services.attachment import AttachmentService
 
 logger = logging.getLogger()
@@ -42,7 +46,7 @@ def create_attachment(
 def get_attachments(
     attachment_service: AttachmentServiceDep,
     entity_id: Annotated[Optional[str], Query(description="Filter attachments by entity ID")] = None,
-) -> list[AttachmentPostResponseSchema]:
+) -> list[AttachmentMetadataSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting attachments")
 

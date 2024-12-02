@@ -12,7 +12,11 @@ from fastapi import Depends
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
-from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
+from object_storage_api.schemas.attachment import (
+    AttachmentMetadataSchema,
+    AttachmentPostResponseSchema,
+    AttachmentPostSchema,
+)
 from object_storage_api.stores.attachment import AttachmentStore
 
 logger = logging.getLogger()
@@ -63,7 +67,7 @@ class AttachmentService:
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)
 
-    def list(self, entity_id: Optional[str] = None) -> list[AttachmentPostResponseSchema]:
+    def list(self, entity_id: Optional[str] = None) -> list[AttachmentMetadataSchema]:
         """
         Retrieve a list of attachments based on the provided filters.
 
@@ -73,10 +77,4 @@ class AttachmentService:
 
         attachments = self._attachment_repository.list(entity_id)
 
-        attachments_list = []
-
-        for attachment in attachments:
-            object_key, upload_info = self._attachment_store.create_presigned_post(attachment.id, attachment)
-            attachments_list.append(AttachmentPostResponseSchema(**attachment.model_dump(), upload_info=upload_info))
-
-        return attachments_list
+        return [AttachmentMetadataSchema(**attachment.model_dump()) for attachment in attachments]
