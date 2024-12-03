@@ -132,3 +132,85 @@ class TestCreate(CreateDSL):
 
         self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": "invalid-id"})
         self.check_post_attachment_failed_with_detail(422, "Invalid `entity_id` given")
+
+
+class ListDSL(CreateDSL):
+    """Base class for list tests."""
+
+    _get_response_attachment: Response
+
+    def get_attachments(self, filters: Optional[dict] = None) -> None:
+        """
+        Gets a list of attachments with the given filters.
+
+        :param filters: Filters to use in the request.
+        """
+        self._get_response_attachment = self.test_client.get("/attachments", params=filters)
+
+    def post_test_attachments(self) -> list[dict]:
+        """
+        Posts three attachments. The first two attachments have the same entity ID, the last attachment has a different
+        one.
+
+        :return: List of dictionaries containing the expected item data returned from a get endpoint in
+                 the form of an `AttachmentMetadataSchema`.
+        """
+        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
+
+        # First item
+        attachment_a_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+        )
+
+        # Second item
+        attachment_b_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+        )
+
+        # Third item
+        attachment_c_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_b,
+            },
+        )
+
+        return [
+            {
+                **ATTACHMENT_GET_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+                "id": attachment_a_id
+            },
+            {
+                **ATTACHMENT_GET_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+                "id": attachment_b_id
+            },
+            {
+                **ATTACHMENT_GET_DATA_ALL_VALUES,
+                "entity_id": entity_id_b,
+                "id": attachment_c_id
+            }
+        ]
+
+    def check_get_attachments_success(self, expected_attachments_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `get_attachments` gave a successful response with the expected data returned.
+
+        :param expected_attachments_get_data: List of dictionaries containing the expected attachment data as would
+            be required for an `AttachmentMetadataSchema`.
+        """
+        assert self._get_response_attachment.status_code == 200
+        assert self._get_response_attachment.json() == expected_attachments_get_data
+
+    def check_attachments_list_response_failed_with_message(self, status_code, expected_detail, obtained_detail):
+        """Checks the response of listing attachments failed as expected."""
+
+        assert self._get_response_attachment.status_code == status_code
+        assert obtained_detail == expected_detail
