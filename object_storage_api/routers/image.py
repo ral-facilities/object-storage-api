@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
 
-from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import ImagePatchMetadataSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
 logger = logging.getLogger()
@@ -67,3 +67,14 @@ def get_images(
         logger.debug("Primary filter: '%s'", primary)
 
     return image_service.list(entity_id, primary)
+
+
+@router.patch(
+    path="/{image_id}",
+    summary="Update image",
+    response_description="Updated Image",
+)
+def partial_update_image(image_service: ImageServiceDep, image_id: str, image: ImagePatchMetadataSchema) -> ImageSchema:
+    logger.info("Updating images")
+
+    return image_service.update(image_id, image)

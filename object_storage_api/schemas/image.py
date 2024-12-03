@@ -9,14 +9,21 @@ from pydantic import BaseModel, Field
 from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
-class ImagePostMetadataSchema(BaseModel):
+class ImagePatchMetadataSchema(BaseModel):
+    """
+    Base schema model for an image.
+    """
+
+    title: Optional[str] = Field(default=None, description="Title of the image")
+    description: Optional[str] = Field(default=None, description="Description of the image")
+
+
+class ImagePostMetadataSchema(ImagePatchMetadataSchema):
     """
     Base schema model for an image.
     """
 
     entity_id: str = Field(description="ID of the entity the image relates to")
-    title: Optional[str] = Field(default=None, description="Title of the image")
-    description: Optional[str] = Field(default=None, description="Description of the image")
 
 
 class ImageSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):

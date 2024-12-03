@@ -13,7 +13,7 @@ from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
-from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import ImagePatchMetadataSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.stores.image import ImageStore
 
 logger = logging.getLogger()
@@ -85,3 +85,21 @@ class ImageService:
         """
         images = self._image_repository.list(entity_id, primary)
         return [ImageSchema(**image.model_dump()) for image in images]
+
+    def update(self, image_id: str, image: ImagePatchMetadataSchema) -> ImageSchema:
+        """
+        Update an image based on its ID.
+
+        :param image_id: The ID of the image to updtae.
+        :param image: The new update data for the image.
+        :return: List of images or an empty list if no images are retrieved.
+        """
+        update_data = image.model_dump(exclude_unset=True)
+
+        stored_image = self._image_repository.get(image_id=image_id)
+
+        updated_image = self._image_repository.update(
+            image_id=image_id, image=ImageIn(**{**stored_image.model_dump(), **update_data})
+        )
+
+        return ImageSchema(**updated_image.model_dump())

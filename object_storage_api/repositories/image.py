@@ -82,3 +82,22 @@ class ImageRepo:
 
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
+
+    def update(self, image_id: str, image: ImageIn, session: ClientSession = None) -> ImageOut:
+        """
+        Updates an image from a MongoDB database.
+
+        :param image_id: The ID of the image to update.
+        :param image: The new image metadata.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: List of images or an empty list if no images are retrieved.
+        """
+
+        logger.info("Updating image metadata with ID: %s", image_id)
+        image_id = CustomObjectId(image_id)
+
+        self._images_collection.update_one(
+            {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
+        )
+        image = self.get(image_id=str(image_id), session=session)
+        return image
