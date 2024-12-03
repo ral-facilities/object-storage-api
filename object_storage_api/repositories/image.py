@@ -54,16 +54,15 @@ class ImageRepo:
         :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
         logger.info("Retrieving image with ID: %s from the database", image_id)
+        entity_name = "image"
         try:
             image_id = CustomObjectId(image_id)
             image = self._images_collection.find_one({"_id": image_id}, session=session)
         except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "Image not found"
-            raise exc
+            raise InvalidObjectIdError(detail=f"Invalid ObjectId value '{image_id}'", entity_name=entity_name) from exc
         if image:
             return ImageOut(**image)
-        raise MissingRecordError(detail=f"Image with image_id {image_id} was not found.", entity_name="image")
+        raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_name=entity_name)
 
     def list(self, entity_id: Optional[str], primary: Optional[bool], session: ClientSession = None) -> list[ImageOut]:
         """

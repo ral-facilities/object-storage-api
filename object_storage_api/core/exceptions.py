@@ -49,8 +49,22 @@ class InvalidObjectIdError(DatabaseError):
     The provided value is not a valid ObjectId.
     """
 
-    status_code = 422
+    status_code = 404
     response_detail = "Invalid ID given"
+
+    def __init__(self, detail: str, response_detail: Optional[str] = None, entity_name: Optional[str] = None):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
+                       and not returned in a response).
+        :param response_detail: Generic detail of the exception to be returned in the response.
+        :param entity_name: Name of the entity to include in the response detail.
+        """
+        super().__init__(detail, response_detail)
+
+        if entity_name is not None:
+            self.response_detail = f"{entity_name.capitalize()} not found"
 
 
 class InvalidImageFileError(BaseAPIException):
@@ -70,15 +84,16 @@ class MissingRecordError(DatabaseError):
     status_code = 404
     response_detail = "Requested record was not found"
 
-    def __init__(self, detail: str, entity_name: Optional[str] = None):
+    def __init__(self, detail: str, response_detail: Optional[str] = None, entity_name: Optional[str] = None):
         """
         Initialise the exception.
 
         :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
                        and not returned in a response).
+        :param response_detail: Generic detail of the exception to be returned in the response.
         :param entity_name: Name of the entity to include in the response detail.
         """
-        super().__init__(detail)
+        super().__init__(detail, response_detail)
 
         if entity_name is not None:
             self.response_detail = f"{entity_name.capitalize()} not found"

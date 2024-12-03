@@ -74,6 +74,6 @@ def get_image(
     image_id: Annotated[str, Path(description="ID of the image to get")], image_service: ImageServiceDep
 ) -> ImageSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Getting image with ID %s", image_id)
+    logger.info("Getting image with ID: %s", image_id)
 
     return image_service.get(image_id)
