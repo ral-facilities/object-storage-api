@@ -69,7 +69,12 @@ def get_images(
     return image_service.list(entity_id, primary)
 
 
-@router.delete(path="/{image_id}", summary="Delete an image by ID", response_description="Image deleted Sucessfully")
+@router.delete(
+    path="/{image_id}",
+    summary="Delete an image by ID",
+    response_description="Image deleted Sucessfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
 def delete_image(
     image_id: Annotated[str, Path(description="The ID of the image to delete")],
     image_service: ImageServiceDep,

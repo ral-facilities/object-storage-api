@@ -175,27 +175,14 @@ class DeleteDSL(ImageRepoDSL):
 
     _delete_image_id: str
     _delete_exception: pytest.ExceptionInfo
-    _expected_image_out: ImageOut
-    _obtained_image_out: ImageOut
-    _expected_object_key: str
-    _obtained_object_key: str
 
-    def mock_delete(self, image_id: str, image_in_data: dict = None) -> None:
+    def mock_delete(self, deleted_count: int) -> None:
         """
         Mocks database methods appropriately to test the `delete` repo method.
 
-        :param image_id: ID of the image to delete.
-        :param image_in_data: Dictionary containing the image data as would be required for an `ImageIn`
-                                   database model (i.e. no created and modified times required).
+        :param deleted_count: Expected count of the number of delete imges.
         """
-        if image_in_data:
-            image_in_data["id"] = image_id
-        self._expected_image_out = ImageOut(**ImageIn(**image_in_data).model_dump()) if image_in_data else None
-        RepositoryTestHelpers.mock_find_one_and_delete(
-            self.images_collection, self._expected_image_out.model_dump() if image_in_data else None
-        )
-        if self._expected_image_out:
-            self._expected_object_key = self._expected_image_out.object_key
+        RepositoryTestHelpers.mock_delete_one(self.images_collection, deleted_count)
 
     def call_delete(self, image_id: str) -> None:
         """
@@ -205,7 +192,7 @@ class DeleteDSL(ImageRepoDSL):
         """
 
         self._delete_image_id = image_id
-        self._obtained_object_key = self.image_repository.delete(image_id, session=self.mock_session)
+        self.image_repository.delete(image_id, session=self.mock_session)
 
     def call_delete_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
         """
@@ -223,10 +210,9 @@ class DeleteDSL(ImageRepoDSL):
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
-        self.images_collection.find_one_and_delete.assert_called_once_with(
-            filter={"_id": ObjectId(self._delete_image_id)}, projection={"object_key": True}, session=self.mock_session
+        self.images_collection.delete_one.assert_called_once_with(
+            filter={"_id": ObjectId(self._delete_image_id)}, session=self.mock_session
         )
-        assert self._obtained_object_key == self._expected_object_key
 
     def check_delete_failed_with_exception(self, message: str, assert_delete: bool = False) -> None:
         """
@@ -238,11 +224,10 @@ class DeleteDSL(ImageRepoDSL):
         """
 
         if not assert_delete:
-            self.images_collection.find_one_and_delete.assert_not_called()
+            self.images_collection.delete_one.assert_not_called()
         else:
-            self.images_collection.find_one_and_delete.assert_called_once_with(
+            self.images_collection.delete_one.assert_called_once_with(
                 filter={"_id": ObjectId(self._delete_image_id)},
-                projection={"object_key": True},
                 session=self.mock_session,
             )
 
@@ -254,10 +239,9 @@ class TestDelete(DeleteDSL):
 
     def test_delete(self):
         """Test deleting an image."""
-        image_id = str(ObjectId())
 
-        self.mock_delete(image_id, IMAGE_IN_DATA_ALL_VALUES)
-        self.call_delete(image_id)
+        self.mock_delete(1)
+        self.call_delete(str(ObjectId()))
         self.check_delete_success()
 
     def test_delete_non_existent_id(self):
@@ -265,7 +249,7 @@ class TestDelete(DeleteDSL):
 
         image_id = str(ObjectId())
 
-        self.mock_delete(image_id, None)
+        self.mock_delete(0)
         self.call_delete_expecting_error(image_id, MissingRecordError)
         self.check_delete_failed_with_exception(f"Requested Image was not found: {image_id}", assert_delete=True)
 

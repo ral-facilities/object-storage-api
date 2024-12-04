@@ -92,6 +92,6 @@ class ImageService:
 
         :param image_id: The ID of the image to delete.
         """
-
-        object_key = self._image_repository.delete(image_id)
-        self._image_store.delete(object_key)
+        stored_image = self._image_repository.get(image_id)
+        self._image_store.delete(stored_image.object_key)
+        self._image_repository.delete(image_id)
