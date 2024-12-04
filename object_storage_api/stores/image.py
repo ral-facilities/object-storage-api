@@ -40,7 +40,8 @@ class ImageStore:
         return object_key
 
     def create_presigned_get(self, image: ImageOut) -> str:
-        """Generate a presigned URL to share an S3 object.
+        """
+        Generate a presigned URL to share an S3 object.
 
         :param image: `ImageOut` model of the image.
         :return: Presigned url to get the image.

@@ -10,9 +10,7 @@ from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
 class ImagePostMetadataSchema(BaseModel):
-    """
-    Base schema model for an image.
-    """
+    """Base schema model for an image."""
 
     entity_id: str = Field(description="ID of the entity the image relates to")
     title: Optional[str] = Field(default=None, description="Title of the image")
@@ -20,9 +18,7 @@ class ImagePostMetadataSchema(BaseModel):
 
 
 class ImageMetadataSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
-    """
-    Schema model for an image's metadata.
-    """
+    """Schema model for an image's metadata."""
 
     id: str = Field(description="ID of the image")
     file_name: str = Field(description="File name of the image")
@@ -31,8 +27,6 @@ class ImageMetadataSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
 
 
 class ImageSchema(ImageMetadataSchema):
-    """
-    Schema model for an image get request response.
-    """
+    """Schema model for an image get request response."""
 
     url: HttpUrl = Field(description="Presigned get URL to get the image file")

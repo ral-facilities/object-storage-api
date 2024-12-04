@@ -96,8 +96,8 @@ class CreatePresignedURLDSL(ImageStoreDSL):
         """
         Mocks object store methods appropriately to test the `create_presigned_get` store method.
 
-        :param image_in_data: Dictionary containing the image  data as would be required for an
-        `ImageIn`.
+        :param image_in_data: Dictionary containing the image data as would be required for an
+            `ImageIn`.
         """
         self._image_out = ImageOut(**ImageIn(**image_in_data).model_dump())
 
@@ -106,8 +106,9 @@ class CreatePresignedURLDSL(ImageStoreDSL):
         self.mock_s3_client.generate_presigned_url.return_value = self._expected_presigned_url
 
     def call_create_presigned_get(self) -> None:
-        """Calls the `ImageStore` `create_presigned_get` method with the appropriate data from a prior call to
-        `mock_create_presigned_get`."""
+        """
+        Calls the `ImageStore` `create_presigned_get` method with the appropriate data from a prior call to
+            `mock_create_presigned_get`."""
 
         self._obtained_presigned_url = self.image_store.create_presigned_get(self._image_out)
 

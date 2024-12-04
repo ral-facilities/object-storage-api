@@ -123,16 +123,14 @@ class GetDSL(CreateDSL):
         assert self._get_response_image.json() == expected_image_data
 
     def check_get_image_failed(self) -> None:
-        """
-        Checks that prior call to `get_image` gave a failed response.
+        """Checks that prior call to `get_image` gave a failed response."""
 
-        """
         assert self._get_response_image.status_code == 404
         assert self._get_response_image.json()["detail"] == "Image not found"
 
 
 class TestGet(GetDSL):
-    "Tests for getting an image."
+    """Tests for getting an image."""
 
     def test_get_with_valid_image_id(self):
         """Test getting an image with a valid image ID."""

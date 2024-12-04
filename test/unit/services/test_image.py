@@ -182,7 +182,8 @@ class GetDSL(ImageServiceDSL):
         )
 
     def call_get(self, image_id: str) -> None:
-        """Calls the `ImageService` `get` method.
+        """
+        Calls the `ImageService` `get` method.
 
         :param image_id: The ID of the image to obtain.
         """
