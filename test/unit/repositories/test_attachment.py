@@ -4,9 +4,11 @@ Unit tests for the `AttachmentRepo` repository.
 
 from test.mock_data import ATTACHMENT_IN_DATA_ALL_VALUES
 from test.unit.repositories.conftest import RepositoryTestHelpers
+from typing import Optional
 from unittest.mock import MagicMock, Mock
 
 import pytest
+from bson import ObjectId
 
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.repositories.attachment import AttachmentRepo
@@ -86,3 +88,73 @@ class TestCreate(CreateDSL):
         self.mock_create(ATTACHMENT_IN_DATA_ALL_VALUES)
         self.call_create()
         self.check_create_success()
+
+
+class ListDSL(AttachmentRepoDSL):
+    """Base class for `list` tests."""
+
+    _expected_attachment_out: list[AttachmentOut]
+    _entity_id_filter: Optional[str]
+    _obtained_attachment_out: list[AttachmentOut]
+
+    def mock_list(self, attachment_in_data: list[dict]) -> None:
+        """
+        Mocks database methods appropriately to test the `list` repo method.
+
+        :param attachment_in_data: List of dictionaries containing the attachment data as would be required for an
+            `AttachmentIn` database model (i.e. no ID or created and modified times required).
+        """
+        self._expected_attachment_out = [
+            AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump())
+            for attachment_in_data in attachment_in_data
+        ]
+
+        RepositoryTestHelpers.mock_find(
+            self.attachments_collection,
+            [
+                attachment_out.model_dump()
+                for attachment_out in self._expected_attachment_out
+            ]
+        )
+
+    def call_list(self, entity_id: Optional[str] = None) -> None:
+        """
+        Calls the `AttachmentRepo` `list method` method.
+
+        :param entity_id: The ID of the entity to filter attachments by.
+        """
+        self._entity_id_filter = entity_id
+        self._obtained_attachment_out = self.attachment_repository.list(
+            session=self.mock_session, entity_id=entity_id
+        )
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+        expected_query = {}
+        if self._entity_id_filter is not None:
+            expected_query["entity_id"] = ObjectId(self._entity_id_filter)
+
+        self.attachments_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
+        assert self._obtained_attachment_out == self._expected_attachment_out
+
+
+class TestList(ListDSL):
+    """Tests for listing attachments."""
+
+    def test_list(self):
+        """Test listing all attachments."""
+        self.mock_list([ATTACHMENT_IN_DATA_ALL_VALUES])
+        self.call_list()
+        self.check_list_success()
+
+    def test_list_with_no_results(self):
+        """Test listing all attachments returning no results."""
+        self.mock_list([])
+        self.call_list()
+        self.check_list_success()
+
+    def test_list_with_entity_id(self):
+        """Test listing all attachments with an `entity_id` argument."""
+        self.mock_list([ATTACHMENT_IN_DATA_ALL_VALUES])
+        self.call_list(entity_id=ATTACHMENT_IN_DATA_ALL_VALUES["entity_id"])
+        self.check_list_success()
