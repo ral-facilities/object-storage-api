@@ -180,7 +180,7 @@ class TestGet(GetDSL):
 
         self.mock_get(image_id, None)
         self.call_get_expecting_error(image_id, MissingRecordError)
-        self.check_get_failed_with_exception(f"Image with image_id {image_id} was not found.", True)
+        self.check_get_failed_with_exception(f"No image found with ID: {image_id}", True)
 
     def test_get_with_invalid_id(self):
         """Test getting an image with an invalid image ID."""

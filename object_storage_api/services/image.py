@@ -80,7 +80,7 @@ class ImageService:
         Retrieve an image's metadata with its presigned get url by its ID.
 
         :param image_id: ID of the image to retrieve.
-        :return: An image's metadata with a presigned get url if it is obtained.
+        :return: An image's metadata with a presigned get url.
         """
         image = self._image_repository.get(image_id=image_id)
         presigned_url = self._image_store.create_presigned_get(image)

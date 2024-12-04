@@ -71,7 +71,8 @@ def get_images(
 
 @router.get(path="/{image_id}", summary="Get an image by ID", response_description="Single image")
 def get_image(
-    image_id: Annotated[str, Path(description="ID of the image to get")], image_service: ImageServiceDep
+    image_id: Annotated[str, Path(description="ID of the image to get")],
+    image_service: ImageServiceDep,
 ) -> ImageSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Getting image with ID: %s", image_id)
