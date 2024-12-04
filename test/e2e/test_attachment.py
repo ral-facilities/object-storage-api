@@ -3,6 +3,7 @@ End-to-End tests for the attachment router.
 """
 
 from test.mock_data import (
+    ATTACHMENT_GET_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES,
@@ -11,6 +12,7 @@ from test.mock_data import (
 from typing import Optional
 
 import pytest
+from bson import ObjectId
 import requests
 from fastapi.testclient import TestClient
 from httpx import Response
@@ -214,3 +216,53 @@ class ListDSL(CreateDSL):
 
         assert self._get_response_attachment.status_code == status_code
         assert obtained_detail == expected_detail
+
+
+class TestList(ListDSL):
+    """Tests for getting a list of attachments."""
+
+    def test_list_with_no_filters(self):
+        """
+        Test getting a list of all attachments with no filters provided.
+
+        Posts three attachments and expects all of them to be returned.
+        """
+
+        attachments = self.post_test_attachments()
+        self.get_attachments()
+        self.check_get_attachments_success(attachments)
+
+    def test_list_with_entity_id_filter(self):
+        """
+        Test getting a list of all attachments with an `entity_id` filter provided.
+
+        Posts three attachments and then filter using the `entity_id`.
+        """
+
+        attachments = self.post_test_attachments()
+        self.get_attachments(filters={"entity_id": attachments[0]["entity_id"]})
+        self.check_get_attachments_success(attachments[:2])
+
+    def test_list_with_entity_id_filter_with_no_matching_results(self):
+        """
+        Test getting a list of all attachments with an `entity_id` filter provided.
+
+        Posts three attachments and expects no results.
+        """
+
+        self.post_test_attachments()
+        self.get_attachments(filters={"entity_id": ObjectId()})
+        self.check_get_attachments_success([])
+
+    def test_list_with_invalid_entity_id_filter(self):
+        """
+        Test getting a list of all attachments with an invalid `entity_id` filter provided.
+
+        Posts three attachments and expects a 422 status code.
+        """
+
+        self. post_test_attachments()
+        self.get_attachments(filters={"entity_id": False})
+        self.check_attachments_list_response_failed_with_message(
+            422, "Invalid ID given", self._get_response_attachment.json()["detail"]
+        )
