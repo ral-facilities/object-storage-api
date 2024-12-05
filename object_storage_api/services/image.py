@@ -90,7 +90,7 @@ class ImageService:
         """
         Update an image based on its ID.
 
-        :param image_id: The ID of the image to updtae.
+        :param image_id: The ID of the image to update.
         :param image: The new update data for the image.
         :return: List of images or an empty list if no images are retrieved.
         """

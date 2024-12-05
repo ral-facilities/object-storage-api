@@ -10,6 +10,7 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
+from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.image import ImageIn, ImageOut
 
 logger = logging.getLogger()
@@ -94,10 +95,16 @@ class ImageRepo:
         """
 
         logger.info("Updating image metadata with ID: %s", image_id)
-        image_id = CustomObjectId(image_id)
+        entity_name = "image"
+        try:
+            image_id = CustomObjectId(image_id)
+            self._images_collection.update_one(
+                {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
+            )
+        except InvalidObjectIdError as exc:
+            raise InvalidObjectIdError(detail=f"Invalid ObjectId value '{image_id}'", entity_name=entity_name) from exc
 
-        self._images_collection.update_one(
-            {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
-        )
         image = self.get(image_id=str(image_id), session=session)
+        if image is None:
+            raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_name=entity_name)
         return image
