@@ -39,19 +39,6 @@ class ImageStore:
 
         return object_key
 
-    def delete(self, object_key: str) -> None:
-        """
-        Deletes a given image from object storage.
-
-        :param object_key: Key of the image to delete.
-        """
-
-        logger.info("Deleting image file from the object storage")
-        s3_client.delete_object(
-            Bucket=object_storage_config.bucket_name.get_secret_value(),
-            Key=object_key,
-        )
-
     def create_presigned_get(self, image: ImageOut) -> str:
         """
         Generate a presigned URL to share an S3 object.
@@ -71,3 +58,16 @@ class ImageStore:
         )
 
         return response
+
+    def delete(self, object_key: str) -> None:
+        """
+        Deletes a given image from object storage.
+
+        :param object_key: Key of the image to delete.
+        """
+
+        logger.info("Deleting image file from the object storage")
+        s3_client.delete_object(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=object_key,
+        )

@@ -69,6 +69,17 @@ def get_images(
     return image_service.list(entity_id, primary)
 
 
+@router.get(path="/{image_id}", summary="Get an image by ID", response_description="Single image")
+def get_image(
+    image_id: Annotated[str, Path(description="ID of the image to get")],
+    image_service: ImageServiceDep,
+) -> ImageSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting image with ID: %s", image_id)
+
+    return image_service.get(image_id)
+
+
 @router.delete(
     path="/{image_id}",
     summary="Delete an image by ID",
@@ -82,14 +93,3 @@ def delete_image(
     # pylint: disable=missing-function-docstring
     logger.info("Deleting image with ID: %s", image_id)
     image_service.delete(image_id)
-
-
-@router.get(path="/{image_id}", summary="Get an image by ID", response_description="Single image")
-def get_image(
-    image_id: Annotated[str, Path(description="ID of the image to get")],
-    image_service: ImageServiceDep,
-) -> ImageSchema:
-    # pylint: disable=missing-function-docstring
-    logger.info("Getting image with ID: %s", image_id)
-
-    return image_service.get(image_id)

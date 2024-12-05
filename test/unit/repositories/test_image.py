@@ -283,7 +283,7 @@ class DeleteDSL(ImageRepoDSL):
         """
         Mocks database methods appropriately to test the `delete` repo method.
 
-        :param deleted_count: Expected count of the number of delete imges.
+        :param deleted_count: Number of documents deleted successfully.
         """
         RepositoryTestHelpers.mock_delete_one(self.images_collection, deleted_count)
 
@@ -354,7 +354,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(0)
         self.call_delete_expecting_error(image_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"Requested Image was not found: {image_id}", assert_delete=True)
+        self.check_delete_failed_with_exception(f"No image found with ID: {image_id}", assert_delete=True)
 
     def test_delete_invalid_id(self):
         """Test deleting an image with an invalid ID."""

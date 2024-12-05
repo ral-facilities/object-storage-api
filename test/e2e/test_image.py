@@ -165,15 +165,15 @@ class ListDSL(GetDSL):
         """
         Posts three images. The first two images have the same entity ID, the last image has a different one.
 
-        :return: List of dictionaries containing the expected item data returned from a get endpoint in
+        :return: List of dictionaries containing the expected image data returned from a get endpoint in
                  the form of an `ImageMetadataSchema`.
         """
         entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
 
-        # First item
+        # First image
         image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
 
-        # Second item
+        # Second image
         image_b_id = self.post_image(
             {
                 **IMAGE_POST_METADATA_DATA_ALL_VALUES,
@@ -182,7 +182,7 @@ class ListDSL(GetDSL):
             "image.jpg",
         )
 
-        # Third item
+        # Third image
         image_c_id = self.post_image(
             {
                 **IMAGE_POST_METADATA_DATA_ALL_VALUES,
@@ -327,9 +327,9 @@ class DeleteDSL(ListDSL):
         """Checks that a prior call to `delete_image` gave a successful response with the expected data
         returned."""
 
-        assert self._delete_response_image.status_code == 200
+        assert self._delete_response_image.status_code == 204
 
-    def check_delete_item_failed_with_detail(self) -> None:
+    def check_delete_image_failed_with_detail(self) -> None:
         """
         Checks that a prior call to `delete_image` gave a failed response with the expected code and
         error message.
@@ -353,14 +353,17 @@ class TestDelete(DeleteDSL):
         self.delete_image(image_id)
         self.check_delete_image_success()
 
+        self.get_image(image_id)
+        self.check_get_image_failed()
+
     def test_delete_with_non_existent_id(self):
-        """Test deleting a non-existent item."""
+        """Test deleting a non-existent image."""
 
         self.delete_image(str(ObjectId()))
-        self.check_delete_item_failed_with_detail()
+        self.check_delete_image_failed_with_detail()
 
     def test_delete_with_invalid_id(self):
-        """Test deleting an item with an invalid ID."""
+        """Test deleting an image with an invalid ID."""
 
         self.delete_image("invalid_id")
-        self.check_delete_item_failed_with_detail()
+        self.check_delete_image_failed_with_detail()
