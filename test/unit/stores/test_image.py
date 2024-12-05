@@ -108,7 +108,8 @@ class CreatePresignedURLDSL(ImageStoreDSL):
     def call_create_presigned_get(self) -> None:
         """
         Calls the `ImageStore` `create_presigned_get` method with the appropriate data from a prior call to
-            `mock_create_presigned_get`."""
+            `mock_create_presigned_get`.
+        """
 
         self._obtained_presigned_url = self.image_store.create_presigned_get(self._image_out)
 
