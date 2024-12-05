@@ -184,21 +184,9 @@ class ListDSL(CreateDSL):
         )
 
         return [
-            {
-                **ATTACHMENT_GET_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": attachment_a_id
-            },
-            {
-                **ATTACHMENT_GET_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": attachment_b_id
-            },
-            {
-                **ATTACHMENT_GET_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-                "id": attachment_c_id
-            }
+            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
+            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
+            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
         ]
 
     def check_get_attachments_success(self, expected_attachments_get_data: list[dict]) -> None:
@@ -261,7 +249,7 @@ class TestList(ListDSL):
         Posts three attachments and expects a 422 status code.
         """
 
-        self. post_test_attachments()
+        self.post_test_attachments()
         self.get_attachments(filters={"entity_id": False})
         self.check_attachments_list_response_failed_with_message(
             422, "Invalid ID given", self._get_response_attachment.json()["detail"]

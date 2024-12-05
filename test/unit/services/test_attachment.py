@@ -171,8 +171,7 @@ class ListDSL(AttachmentServiceDSL):
         attachments_out = [AttachmentOut(**AttachmentIn(**ATTACHMENT_IN_DATA_ALL_VALUES).model_dump())]
         self.mock_attachment_repository.list.return_value = attachments_out
         self._expected_attachments = [
-            AttachmentMetadataSchema(**attachment_out.model_dump())
-            for attachment_out in attachments_out
+            AttachmentMetadataSchema(**attachment_out.model_dump()) for attachment_out in attachments_out
         ]
 
     def call_list(self, entity_id: Optional[str] = None) -> None:

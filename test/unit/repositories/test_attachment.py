@@ -111,10 +111,7 @@ class ListDSL(AttachmentRepoDSL):
 
         RepositoryTestHelpers.mock_find(
             self.attachments_collection,
-            [
-                attachment_out.model_dump()
-                for attachment_out in self._expected_attachment_out
-            ]
+            [attachment_out.model_dump() for attachment_out in self._expected_attachment_out],
         )
 
     def call_list(self, entity_id: Optional[str] = None) -> None:
@@ -124,9 +121,7 @@ class ListDSL(AttachmentRepoDSL):
         :param entity_id: The ID of the entity to filter attachments by.
         """
         self._entity_id_filter = entity_id
-        self._obtained_attachment_out = self.attachment_repository.list(
-            session=self.mock_session, entity_id=entity_id
-        )
+        self._obtained_attachment_out = self.attachment_repository.list(session=self.mock_session, entity_id=entity_id)
 
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""

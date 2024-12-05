@@ -38,6 +38,7 @@ def create_attachment(
 
     return attachment_service.create(attachment)
 
+
 @router.get(
     path="",
     summary="Get attachments",

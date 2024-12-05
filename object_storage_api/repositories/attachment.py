@@ -69,13 +69,13 @@ class AttachmentRepo:
         query = {}
         if entity_id is not None:
             query["entity_id"] = CustomObjectId(entity_id)
-        
+
         message = "Retrieving all attachments from the database"
         if not query:
             logger.info(message)
         else:
             logger.info("%s matching the provided filter(s)", message)
             logger.debug("Provided filter(s): %s", query)
-        
+
         attachments = self._attachments_collection.find(query, session=session)
         return [AttachmentOut(**attachment) for attachment in attachments]
