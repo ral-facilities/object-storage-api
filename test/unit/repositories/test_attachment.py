@@ -2,6 +2,9 @@
 Unit tests for the `AttachmentRepo` repository.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import ATTACHMENT_IN_DATA_ALL_VALUES
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional

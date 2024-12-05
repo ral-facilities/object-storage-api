@@ -2,6 +2,9 @@
 Module for providing a repository for managing images in a MongoDB database.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 import logging
 from typing import Optional
 
