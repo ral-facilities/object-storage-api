@@ -8,7 +8,7 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
-from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import ImageMetadataSchema, ImagePostMetadataSchema, ImageSchema
 from object_storage_api.services.image import ImageService
 
 logger = logging.getLogger()
@@ -36,7 +36,7 @@ def create_image(
     upload_file: Annotated[UploadFile, File(description="Image file")],
     title: Annotated[Optional[str], Form(description="Title of the image")] = None,
     description: Annotated[Optional[str], Form(description="Description of the image")] = None,
-) -> ImageSchema:
+) -> ImageMetadataSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new image")
 
@@ -57,7 +57,7 @@ def get_images(
     image_service: ImageServiceDep,
     entity_id: Annotated[Optional[str], Query(description="Filter images by entity ID")] = None,
     primary: Annotated[Optional[bool], Query(description="Filter images by primary")] = None,
-) -> list[ImageSchema]:
+) -> list[ImageMetadataSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting images")
 
@@ -82,3 +82,14 @@ def delete_image(
     # pylint: disable=missing-function-docstring
     logger.info("Deleting image with ID: %s", image_id)
     image_service.delete(image_id)
+
+
+@router.get(path="/{image_id}", summary="Get an image by ID", response_description="Single image")
+def get_image(
+    image_id: Annotated[str, Path(description="ID of the image to get")],
+    image_service: ImageServiceDep,
+) -> ImageSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting image with ID: %s", image_id)
+
+    return image_service.get(image_id)

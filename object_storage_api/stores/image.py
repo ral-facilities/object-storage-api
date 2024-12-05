@@ -7,6 +7,7 @@ import logging
 from fastapi import UploadFile
 
 from object_storage_api.core.object_store import object_storage_config, s3_client
+from object_storage_api.models.image import ImageOut
 from object_storage_api.schemas.image import ImagePostMetadataSchema
 
 logger = logging.getLogger()
@@ -50,3 +51,23 @@ class ImageStore:
             Bucket=object_storage_config.bucket_name.get_secret_value(),
             Key=object_key,
         )
+
+    def create_presigned_get(self, image: ImageOut) -> str:
+        """
+        Generate a presigned URL to share an S3 object.
+
+        :param image: `ImageOut` model of the image.
+        :return: Presigned url to get the image.
+        """
+        logger.info("Generating presigned url to get image from object storage")
+        response = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": image.object_key,
+                "ResponseContentDisposition": f'inline; filename="{image.file_name}"',
+            },
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+        )
+
+        return response
