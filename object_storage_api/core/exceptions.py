@@ -10,9 +10,7 @@ from typing import Optional
 
 
 class BaseAPIException(Exception):
-    """
-    Base exception for API errors.
-    """
+    """Base exception for API errors."""
 
     # Status code to return if this exception is raised
     status_code: int
@@ -39,15 +37,11 @@ class BaseAPIException(Exception):
 
 
 class DatabaseError(BaseAPIException):
-    """
-    Database related error.
-    """
+    """Database related error."""
 
 
 class InvalidObjectIdError(DatabaseError):
-    """
-    The provided value is not a valid ObjectId.
-    """
+    """The provided value is not a valid ObjectId."""
 
     status_code = 404
     response_detail = "Invalid ID given"
@@ -68,18 +62,14 @@ class InvalidObjectIdError(DatabaseError):
 
 
 class InvalidImageFileError(BaseAPIException):
-    """
-    The provided image file is not valid.
-    """
+    """The provided image file is not valid."""
 
     status_code = 422
     response_detail = "File given is not a valid image"
 
 
 class MissingRecordError(DatabaseError):
-    """
-    A specific database record was requested but could not be found.
-    """
+    """A specific database record was requested but could not be found."""
 
     status_code = 404
     response_detail = "Requested record was not found"

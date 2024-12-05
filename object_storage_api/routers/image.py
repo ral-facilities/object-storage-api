@@ -6,9 +6,14 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
-from object_storage_api.schemas.image import ImagePatchMetadataSchema, ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import (
+    ImageMetadataSchema,
+    ImagePatchMetadataSchema,
+    ImagePostMetadataSchema,
+    ImageSchema,
+)
 from object_storage_api.services.image import ImageService
 
 logger = logging.getLogger()
@@ -36,7 +41,7 @@ def create_image(
     upload_file: Annotated[UploadFile, File(description="Image file")],
     title: Annotated[Optional[str], Form(description="Title of the image")] = None,
     description: Annotated[Optional[str], Form(description="Description of the image")] = None,
-) -> ImageSchema:
+) -> ImageMetadataSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new image")
 
@@ -57,7 +62,7 @@ def get_images(
     image_service: ImageServiceDep,
     entity_id: Annotated[Optional[str], Query(description="Filter images by entity ID")] = None,
     primary: Annotated[Optional[bool], Query(description="Filter images by primary")] = None,
-) -> list[ImageSchema]:
+) -> list[ImageMetadataSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting images")
 
@@ -69,12 +74,27 @@ def get_images(
     return image_service.list(entity_id, primary)
 
 
+@router.get(path="/{image_id}", summary="Get an image by ID", response_description="Single image")
+def get_image(
+    image_id: Annotated[str, Path(description="ID of the image to get")],
+    image_service: ImageServiceDep,
+) -> ImageSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting image with ID: %s", image_id)
+
+    return image_service.get(image_id)
+
+
 @router.patch(
     path="/{image_id}",
     summary="Update image",
     response_description="Updated Image",
 )
-def partial_update_image(image_service: ImageServiceDep, image_id: str, image: ImagePatchMetadataSchema) -> ImageSchema:
+def partial_update_image(
+    image_id: Annotated[str, Path(description="ID of the image to update")],
+    image: ImagePatchMetadataSchema,
+    image_service: ImageServiceDep,
+) -> ImageMetadataSchema:
     logger.info("Updating images")
 
     return image_service.update(image_id, image)
