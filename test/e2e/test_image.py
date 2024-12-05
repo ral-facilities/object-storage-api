@@ -4,7 +4,8 @@ End-to-End tests for the image router.
 
 from test.mock_data import (
     IMAGE_GET_DATA_ALL_VALUES,
-    IMAGE_GET_DATA_REQUIRED_VALUES_ONLY,
+    IMAGE_GET_METADATA_ALL_VALUES,
+    IMAGE_GET_METADATA_REQUIRED_VALUES_ONLY,
     IMAGE_POST_METADATA_DATA_ALL_VALUES,
     IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
 )
@@ -52,7 +53,7 @@ class CreateDSL:
         Checks that a prior call to `post_image` gave a successful response with the expected data returned.
 
         :param expected_image_get_data: Dictionary containing the expected image data returned as would be
-                                        required for an `ImageSchema`.
+                                        required for an `ImageMetadataSchema`.
         """
 
         assert self._post_response_image.status_code == 201
@@ -77,13 +78,13 @@ class TestCreate(CreateDSL):
         """Test creating an image with only required values provided."""
 
         self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
-        self.check_post_image_success(IMAGE_GET_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_image_success(IMAGE_GET_METADATA_REQUIRED_VALUES_ONLY)
 
     def test_create_with_all_values_provided(self):
         """Test creating an image with all values provided."""
 
         self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
-        self.check_post_image_success(IMAGE_GET_DATA_ALL_VALUES)
+        self.check_post_image_success(IMAGE_GET_METADATA_ALL_VALUES)
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
@@ -98,12 +99,59 @@ class TestCreate(CreateDSL):
         self.check_post_image_failed_with_detail(422, "File given is not a valid image")
 
 
-# pylint:disable=fixme
-# TODO: Inherit from GetDSL when added
-class ListDSL(CreateDSL):
-    """Base class for list tests."""
+class GetDSL(CreateDSL):
+    """Base class for get tests."""
 
     _get_response_image: Response
+
+    def get_image(self, image_id: str) -> None:
+        """
+        Gets an image with the given ID.
+
+        :param image_id: The ID of the image to be obtained.
+        """
+        self._get_response_image = self.test_client.get(f"/images/{image_id}")
+
+    def check_get_image_success(self, expected_image_data: dict) -> None:
+        """
+        Checks that a prior call to `get_image` gave a successful response with the expected data returned.
+
+        :param expected_image_data: Dictionary containing the expected image data as would be required
+            for an `ImageMetadataSchema`.
+        """
+        assert self._get_response_image.status_code == 200
+        assert self._get_response_image.json() == expected_image_data
+
+    def check_get_image_failed(self) -> None:
+        """Checks that prior call to `get_image` gave a failed response."""
+
+        assert self._get_response_image.status_code == 404
+        assert self._get_response_image.json()["detail"] == "Image not found"
+
+
+class TestGet(GetDSL):
+    """Tests for getting an image."""
+
+    def test_get_with_valid_image_id(self):
+        """Test getting an image with a valid image ID."""
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        self.get_image(image_id)
+        self.check_get_image_success(IMAGE_GET_DATA_ALL_VALUES)
+
+    def test_get_with_invalid_image_id(self):
+        """Test getting an image with an invalid image ID."""
+        self.get_image("sdfgfsdg")
+        self.check_get_image_failed()
+
+    def test_get_with_non_existent_image_id(self):
+        """Test getting an image with a non-existent image ID."""
+        image_id = str(ObjectId())
+        self.get_image(image_id)
+        self.check_get_image_failed()
+
+
+class ListDSL(GetDSL):
+    """Base class for list tests."""
 
     def get_images(self, filters: Optional[dict] = None) -> None:
         """
@@ -118,7 +166,7 @@ class ListDSL(CreateDSL):
         Posts three images. The first two images have the same entity ID, the last image has a different one.
 
         :return: List of dictionaries containing the expected item data returned from a get endpoint in
-                 the form of an `ImageSchema`.
+                 the form of an `ImageMetadataSchema`.
         """
         entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
 
@@ -145,17 +193,17 @@ class ListDSL(CreateDSL):
 
         return [
             {
-                **IMAGE_GET_DATA_ALL_VALUES,
+                **IMAGE_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": image_a_id,
             },
             {
-                **IMAGE_GET_DATA_ALL_VALUES,
+                **IMAGE_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": image_b_id,
             },
             {
-                **IMAGE_GET_DATA_ALL_VALUES,
+                **IMAGE_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_b,
                 "id": image_c_id,
             },
@@ -166,7 +214,7 @@ class ListDSL(CreateDSL):
         Checks that a prior call to `get_images` gave a successful response with the expected data returned.
 
         :param expected_images_get_data: List of dictionaries containing the expected image data as would
-            be required for an `ImageSchema`.
+            be required for an `ImageMetadataSchema`.
         """
         assert self._get_response_image.status_code == 200
         assert self._get_response_image.json() == expected_images_get_data
