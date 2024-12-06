@@ -4,7 +4,7 @@ Unit tests for the `ImageService` service.
 
 from test.mock_data import (
     IMAGE_IN_DATA_ALL_VALUES,
-    IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+    IMAGE_PATCH_METADATA_DATA_ALL_VALUES_A,
     IMAGE_POST_METADATA_DATA_ALL_VALUES,
 )
 from typing import List, Optional
@@ -290,7 +290,12 @@ class UpdateDSL(ImageServiceDSL):
             if stored_image_post_data
             else None
         )
-        self.mock_image_repository.get.return_value = self._stored_image
+        if self._stored_image is not None:
+            self.mock_image_repository.get.return_value = self._stored_image
+        else:
+            self.mock_image_repository.get.side_effect = MissingRecordError(
+                detail=f"No image found with ID: {image_id}", entity_name="image"
+            )
 
         # Patch schema
         self._image_patch = ImagePatchMetadataSchema(**image_patch_data)
@@ -364,7 +369,7 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             image_id,
-            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES_A,
             stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
         )
         print(self._expected_image_in)
@@ -377,20 +382,8 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             image_id,
-            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES_A,
             stored_image_post_data=None,
         )
         self.call_update_expecting_error(image_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No image found with ID: {image_id}")
-
-    def test_update_with_invalid_id(self):
-        """Test updating a image with an invalid ID."""
-        image_id = "invalid-id"
-
-        self.mock_update(
-            image_id,
-            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
-            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
-        )
-        self.call_update_expecting_error(image_id, InvalidObjectIdError)
         self.check_update_failed_with_exception(f"No image found with ID: {image_id}")

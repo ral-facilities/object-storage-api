@@ -102,7 +102,6 @@ class ImageRepo:
         """
 
         logger.info("Updating image metadata with ID: %s", image_id)
-        entity_name = "image"
         try:
             image_id = CustomObjectId(image_id)
             self._images_collection.update_one(
@@ -112,7 +111,4 @@ class ImageRepo:
             exc.status_code = 404
             exc.response_detail = "Image not found"
             raise exc
-        image = self.get(image_id=str(image_id), session=session)
-        if image is None:
-            raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_name=entity_name)
-        return image
+        return self.get(image_id=str(image_id), session=session)
