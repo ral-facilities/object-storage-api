@@ -29,7 +29,7 @@ class ImageStore:
         """
         object_key = f"images/{image_metadata.entity_id}/{image_id}"
 
-        logger.info("Uploading image file to the object storage")
+        logger.info("Uploading image file with object key: %s to the object store", object_key)
         s3_client.upload_fileobj(
             upload_file.file,
             Bucket=object_storage_config.bucket_name.get_secret_value(),
@@ -46,7 +46,7 @@ class ImageStore:
         :param image: `ImageOut` model of the image.
         :return: Presigned url to get the image.
         """
-        logger.info("Generating presigned url to get image from object storage")
+        logger.info("Generating presigned url to get image with object key: %s from the object store", image.object_key)
         response = s3_client.generate_presigned_url(
             "get_object",
             Params={
@@ -66,7 +66,7 @@ class ImageStore:
         :param object_key: Key of the image to delete.
         """
 
-        logger.info("Deleting image file from the object storage")
+        logger.info("Deleting image file with object key: %s from the object store", object_key)
         s3_client.delete_object(
             Bucket=object_storage_config.bucket_name.get_secret_value(),
             Key=object_key,

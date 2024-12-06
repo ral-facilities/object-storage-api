@@ -88,27 +88,29 @@ class TestUpload(UploadDSL):
 class DeleteDSL(ImageStoreDSL):
     """Base class for `delete` tests."""
 
-    def call_delete(self) -> None:
-        """Calls the `ImageStore` `delete` method."""
+    _delete_object_key: str
 
-        self.image_store.delete("object_key")
+    def call_delete(self, object_key: str) -> None:
+        """Calls the `ImageStore` `delete` method."""
+        self._delete_object_key = object_key
+        self.image_store.delete(object_key)
 
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
         self.mock_s3_client.delete_object.assert_called_once_with(
             Bucket=object_storage_config.bucket_name.get_secret_value(),
-            Key="object_key",
+            Key=self._delete_object_key,
         )
 
 
 class TestDelete(DeleteDSL):
     """Tests for deleting an image from object storage."""
 
-    def test_create_presigned_post(self):
+    def test_delete(self):
         """Test for deleting an image from object storage."""
 
-        self.call_delete()
+        self.call_delete("object-key")
         self.check_delete_success()
 
 

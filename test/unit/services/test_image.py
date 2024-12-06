@@ -253,21 +253,32 @@ class DeleteDSL(ImageServiceDSL):
     """Base class for `delete` tests."""
 
     _delete_image_id: str
+    _expected_image_out: ImageOut
+    _delete_image_id: str
+    _delete_image_object_key: str
 
-    def call_delete(self, image_id: str) -> None:
+    def mock_delete(self, image_in_data: dict) -> None:
         """
-        Calls the `ImageService` `delete` method.
+        Mocks repo methods appropriately to test the `delete` service method.
 
-        :param image_id: ID of the image to be deleted.
+        :param image_in_data: Dictionary containing the image data as would be required for an `ImageIn`
+                                   database model (i.e. no created and modified times required).
         """
+        self._expected_image_out = ImageOut(**ImageIn(**image_in_data).model_dump())
+        self.mock_image_repository.get.return_value = self._expected_image_out
+        self._delete_image_id = self._expected_image_out.id
+        self._delete_image_object_key = self._expected_image_out.object_key
 
-        self._delete_image_id = image_id
-        self.image_service.delete(image_id)
+    def call_delete(self) -> None:
+        """Calls the `ImageService` `delete` method."""
+
+        self.image_service.delete(self._delete_image_id)
 
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
         self.mock_image_repository.delete.assert_called_once_with(self._delete_image_id)
+        self.mock_image_store.delete.assert_called_once_with(self._delete_image_object_key)
 
 
 class TestDelete(DeleteDSL):
@@ -275,5 +286,6 @@ class TestDelete(DeleteDSL):
 
     def test_delete(self):
         """Test for deleting an image."""
-        self.call_delete("test_image_id")
+        self.mock_delete(IMAGE_IN_DATA_ALL_VALUES)
+        self.call_delete()
         self.check_delete_success()

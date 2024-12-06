@@ -31,7 +31,10 @@ class AttachmentStore:
         """
         object_key = f"attachments/{attachment.entity_id}/{attachment_id}"
 
-        logger.info("Generating a presigned URL for uploading the attachment")
+        logger.info(
+            "Generating a presigned URL for uploading the attachment with object key: %s to the object store",
+            object_key,
+        )
         presigned_post_response = s3_client.generate_presigned_post(
             Bucket=object_storage_config.bucket_name.get_secret_value(),
             Key=object_key,
