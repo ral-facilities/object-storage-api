@@ -109,8 +109,9 @@ class ImageRepo:
                 {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
             )
         except InvalidObjectIdError as exc:
-            raise InvalidObjectIdError(detail=f"Invalid ObjectId value '{image_id}'", entity_name=entity_name) from exc
-
+            exc.status_code = 404
+            exc.response_detail = "Image not found"
+            raise exc
         image = self.get(image_id=str(image_id), session=session)
         if image is None:
             raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_name=entity_name)

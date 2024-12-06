@@ -2,7 +2,11 @@
 Unit tests for the `ImageService` service.
 """
 
-from test.mock_data import IMAGE_IN_DATA_ALL_VALUES, IMAGE_POST_METADATA_DATA_ALL_VALUES
+from test.mock_data import (
+    IMAGE_IN_DATA_ALL_VALUES,
+    IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+    IMAGE_POST_METADATA_DATA_ALL_VALUES,
+)
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -10,9 +14,14 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
-from object_storage_api.schemas.image import ImageMetadataSchema, ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import (
+    ImageMetadataSchema,
+    ImagePatchMetadataSchema,
+    ImagePostMetadataSchema,
+    ImageSchema,
+)
 from object_storage_api.services.image import ImageService
 
 
@@ -247,3 +256,141 @@ class TestList(ListDSL):
         self.mock_list()
         self.call_list(entity_id=str(ObjectId()), primary=False)
         self.check_list_success()
+
+
+class UpdateDSL(ImageServiceDSL):
+    """Base class for `update` tests."""
+
+    _stored_image: Optional[ImageOut]
+    _image_patch: ImagePatchMetadataSchema
+    _expected_image_in: ImageIn
+    _expected_image_out: ImageOut
+    _updated_image_id: str
+    _updated_image: MagicMock
+    _update_exception: pytest.ExceptionInfo
+
+    def mock_update(self, image_id: str, image_patch_data: dict, stored_image_post_data: Optional[dict]) -> None:
+        """
+        Mocks the repository methods appropriately to test the `update` service method.
+
+        :param image_id: ID of the image to be updated.
+        :param image_patch_data: Dictionary containing the patch data as would be required for a
+            `ImagePatchMetadataSchema` (i.e. no ID, or created and modified times required).
+        :param stored_image_post_data: Dictionary containing the image data for the existing stored
+            image as would be required for `ImagePostMetadataSchema` (i.e. no ID, or created and modified
+            times required).
+        """
+        # Stored image
+        self._stored_image = (
+            ImageOut(
+                **ImageIn(
+                    **stored_image_post_data,
+                ).model_dump(),
+            )
+            if stored_image_post_data
+            else None
+        )
+        self.mock_image_repository.get.return_value = self._stored_image
+
+        # Patch schema
+        self._image_patch = ImagePatchMetadataSchema(**image_patch_data)
+
+        # Updated image
+        image_out = (
+            ImageOut(
+                **ImageIn(**{**stored_image_post_data, **image_patch_data}).model_dump(),
+            )
+            if stored_image_post_data
+            else None
+        )
+        self.mock_image_repository.update.return_value = image_out
+
+        self._expected_image_out = ImageMetadataSchema(**image_out.model_dump()) if stored_image_post_data else None
+
+        # Construct the expected input for the repository
+        merged_image_data = {**(stored_image_post_data or {}), **image_patch_data}
+        self._expected_image_in = ImageIn(**merged_image_data) if stored_image_post_data else None
+
+    def call_update(self, image_id: str) -> None:
+        """
+        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`.
+
+        :param image_id: ID of the image to be updated.
+        """
+        self._updated_image_id = image_id
+        self._updated_image = self.image_service.update(image_id, self._image_patch)
+
+    def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
+        """
+        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`
+        while expecting an error to be raised.
+
+        :param image_id: ID of the image to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+        with pytest.raises(error_type) as exc:
+            self.image_service.update(image_id, self._image_patch)
+        self._update_exception = exc
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as updated."""
+        # Ensure obtained old image
+        self.mock_image_repository.get.assert_called_once_with(image_id=self._updated_image_id)
+
+        # Ensure updated with expected data
+        self.mock_image_repository.update.assert_called_once_with(
+            image_id=self._updated_image_id, image=self._expected_image_in
+        )
+
+        assert self._updated_image == self._expected_image_out
+
+    def check_update_failed_with_exception(self, message: str):
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception with the
+        correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+        self.mock_image_repository.update.assert_not_called()
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating a image."""
+
+    def test_update(self):
+        """Test updating all fields of a image."""
+        image_id = str(ObjectId())
+
+        self.mock_update(
+            image_id,
+            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
+        )
+        print(self._expected_image_in)
+        self.call_update(image_id)
+        self.check_update_success()
+
+    def test_update_with_non_existent_id(self):
+        """Test updating a image with a non-existent ID."""
+        image_id = str(ObjectId())
+
+        self.mock_update(
+            image_id,
+            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+            stored_image_post_data=None,
+        )
+        self.call_update_expecting_error(image_id, MissingRecordError)
+        self.check_update_failed_with_exception(f"No image found with ID: {image_id}")
+
+    def test_update_with_invalid_id(self):
+        """Test updating a image with an invalid ID."""
+        image_id = "invalid-id"
+
+        self.mock_update(
+            image_id,
+            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
+        )
+        self.call_update_expecting_error(image_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception(f"No image found with ID: {image_id}")

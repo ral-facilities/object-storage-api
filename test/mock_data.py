@@ -127,11 +127,14 @@ IMAGE_GET_DATA_REQUIRED_VALUES_ONLY = {
     "url": ANY,
 }
 
+IMAGE_PATCH_METADATA_DATA_ALL_VALUES = {
+    "title": "Report Title",
+    "description": "A damage report.",
+}
 
 IMAGE_POST_METADATA_DATA_ALL_VALUES = {
     **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
-    "title": "Report Title",
-    "description": "A damage report.",
+    **IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
 }
 
 IMAGE_IN_DATA_ALL_VALUES = {

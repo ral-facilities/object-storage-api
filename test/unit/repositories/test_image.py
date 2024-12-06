@@ -271,3 +271,112 @@ class TestList(ListDSL):
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=True, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
+
+
+class UpdateDSL(ImageRepoDSL):
+    """Base class for `update` tests."""
+
+    _image_in: ImageIn
+    _expected_image_out: ImageOut
+    _updated_image_id: str
+    _updated_image: ImageOut
+    _update_exception: pytest.ExceptionInfo
+
+    def set_update_data(self, new_image_in_data: dict):
+        """
+        Assigns the update data to use during a call to `call_update`.
+
+        :param new_image_in_data: New image data as would be required for an `ImageIn` database model to supply to the
+                                 `ImageRepo` `update` method.
+        """
+        self._image_in = ImageIn(**new_image_in_data)
+
+    def mock_update(
+        self,
+        image_id: str,
+        new_image_in_data: dict,
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `update` repo method.
+
+        :param image_id: ID of the image that will be updated.
+        :param new_image_in_data: Dictionary containing the new image data as would be required for an `ImageIn` database
+                                 model (i.e. no created and modified times required).
+        """
+        self.set_update_data(new_image_in_data)
+
+        self._expected_image_out = ImageOut(**self._image_in.model_dump())
+        RepositoryTestHelpers.mock_find_one(self.images_collection, self._expected_image_out.model_dump(by_alias=True))
+
+    def call_update(self, image_id: str) -> None:
+        """
+        Calls the `ImageRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`).
+
+        :param image_id: ID of the image to be updated.
+        """
+
+        self._updated_image_id = image_id
+        self._updated_image = self.image_repository.update(image_id, self._image_in, session=self.mock_session)
+
+    def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ImageRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`) while expecting an error to be raised.
+
+        :param image_id: ID of the image to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.image_repository.update(image_id, self._image_in)
+        self._update_exception = exc
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
+
+        self.images_collection.update_one.assert_called_once_with(
+            {
+                "_id": ObjectId(self._updated_image_id),
+            },
+            {
+                "$set": self._image_in.model_dump(by_alias=True),
+            },
+            session=self.mock_session,
+        )
+
+        assert self._updated_image == self._expected_image_out
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.images_collection.update_one.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating an image."""
+
+    def test_update(self):
+        """Test updating an image."""
+
+        image_id = str(ObjectId())
+
+        self.mock_update(image_id, IMAGE_IN_DATA_ALL_VALUES)
+        self.call_update(image_id)
+        self.check_update_success()
+
+    def test_update_with_invalid_id(self):
+        """Test updating an image with an invalid ID."""
+
+        image_id = "invalid-id"
+
+        self.set_update_data(IMAGE_IN_DATA_ALL_VALUES)
+        self.call_update_expecting_error(image_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
