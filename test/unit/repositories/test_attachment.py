@@ -132,8 +132,10 @@ class ListDSL(AttachmentRepoDSL):
         self.attachments_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_attachment_out == self._expected_attachment_out
 
+
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+
 
 class TestList(ListDSL):
     """Tests for listing attachments."""
@@ -155,5 +157,6 @@ class TestList(ListDSL):
         self.mock_list([ATTACHMENT_IN_DATA_ALL_VALUES])
         self.call_list(entity_id=ATTACHMENT_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
+
 
 # pylint: enable=duplicate-code

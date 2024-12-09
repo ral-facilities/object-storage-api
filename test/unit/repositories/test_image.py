@@ -134,8 +134,10 @@ class ListDSL(ImageRepoDSL):
         self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
 
+
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
+
 
 class TestList(ListDSL):
     """Tests for listing images."""
@@ -169,5 +171,6 @@ class TestList(ListDSL):
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=True, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
+
 
 # pylint: enable=duplicate-code
