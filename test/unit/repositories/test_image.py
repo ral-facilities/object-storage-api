@@ -282,28 +282,27 @@ class UpdateDSL(ImageRepoDSL):
     _updated_image: ImageOut
     _update_exception: pytest.ExceptionInfo
 
-    def set_update_data(self, new_image_in_data: dict):
+    def set_update_data(self, image_in_data: dict):
         """
         Assigns the update data to use during a call to `call_update`.
 
-        :param new_image_in_data: New image data as would be required for an `ImageIn` database model to supply to the
+        :param image_in_data: New image data as would be required for an `ImageIn` database model to supply to the
                                  `ImageRepo` `update` method.
         """
-        self._image_in = ImageIn(**new_image_in_data)
+        self._image_in = ImageIn(**image_in_data)
 
     def mock_update(
         self,
-        image_id: str,
-        new_image_in_data: dict,
+        image_in_data: dict,
     ) -> None:
         """
         Mocks database methods appropriately to test the `update` repo method.
 
         :param image_id: ID of the image that will be updated.
-        :param new_image_in_data: Dictionary containing the new image data as would be required for an `ImageIn` database
+        :param image_in_data: Dictionary containing the new image data as would be required for an `ImageIn` database
                                  model (i.e. no created and modified times required).
         """
-        self.set_update_data(new_image_in_data)
+        self.set_update_data(image_in_data)
 
         self._expected_image_out = ImageOut(**self._image_in.model_dump())
         RepositoryTestHelpers.mock_find_one(self.images_collection, self._expected_image_out.model_dump(by_alias=True))
@@ -368,7 +367,7 @@ class TestUpdate(UpdateDSL):
 
         image_id = str(ObjectId())
 
-        self.mock_update(image_id, IMAGE_IN_DATA_ALL_VALUES)
+        self.mock_update(IMAGE_IN_DATA_ALL_VALUES)
         self.call_update(image_id)
         self.check_update_success()
 

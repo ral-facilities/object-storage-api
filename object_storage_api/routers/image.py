@@ -95,6 +95,7 @@ def partial_update_image(
     image: ImagePatchMetadataSchema,
     image_service: ImageServiceDep,
 ) -> ImageMetadataSchema:
+    # pylint: disable=missing-function-docstring
     logger.info("Updating images")
 
     return image_service.update(image_id, image)
