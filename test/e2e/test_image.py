@@ -348,10 +348,10 @@ class UpdateDSL(ListDSL):
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a image."""
+    """Tests for updating an image."""
 
     def test_partial_update_all_fields(self):
-        """Test updating every field of a image."""
+        """Test updating every field of an image."""
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES_B)
         self.check_patch_image_success(IMAGE_GET_METADATA_ALL_VALUES_B)
@@ -362,6 +362,6 @@ class TestUpdate(UpdateDSL):
         self.check_patch_image_failed_with_detail(404, "Image not found")
 
     def test_partial_update_invalid_id(self):
-        """Test updating a image with an invalid ID."""
+        """Test updating an image with an invalid ID."""
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")

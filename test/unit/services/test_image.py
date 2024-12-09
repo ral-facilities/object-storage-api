@@ -267,17 +267,16 @@ class UpdateDSL(ImageServiceDSL):
     _expected_image_out: ImageOut
     _updated_image_id: str
     _updated_image: MagicMock
-    _update_exception: pytest.ExceptionInfo
 
-    def mock_update(self, image_id: str, image_patch_data: dict, stored_image_post_data: Optional[dict]) -> None:
+    def mock_update(self, image_patch_data: dict, stored_image_post_data: Optional[dict]) -> None:
         """
         Mocks the repository methods appropriately to test the `update` service method.
 
         :param image_id: ID of the image to be updated.
         :param image_patch_data: Dictionary containing the patch data as would be required for a
-            `ImagePatchMetadataSchema` (i.e. no ID, or created and modified times required).
+            `ImagePatchMetadataSchema` (i.e. no created and modified times required).
         :param stored_image_post_data: Dictionary containing the image data for the existing stored
-            image as would be required for `ImagePostMetadataSchema` (i.e. no ID, or created and modified
+            image as would be required for `ImagePostMetadataSchema` (i.e. no created and modified
             times required).
         """
         # Stored image
@@ -290,31 +289,23 @@ class UpdateDSL(ImageServiceDSL):
             if stored_image_post_data
             else None
         )
-        if self._stored_image is not None:
-            self.mock_image_repository.get.return_value = self._stored_image
-        else:
-            self.mock_image_repository.get.side_effect = MissingRecordError(
-                detail=f"No image found with ID: {image_id}", entity_name="image"
-            )
+        self.mock_image_repository.get.return_value = self._stored_image
 
         # Patch schema
         self._image_patch = ImagePatchMetadataSchema(**image_patch_data)
 
-        # Updated image
-        image_out = (
-            ImageOut(
-                **ImageIn(**{**stored_image_post_data, **image_patch_data}).model_dump(),
-            )
-            if stored_image_post_data
-            else None
-        )
-        self.mock_image_repository.update.return_value = image_out
-
-        self._expected_image_out = ImageMetadataSchema(**image_out.model_dump()) if stored_image_post_data else None
-
         # Construct the expected input for the repository
         merged_image_data = {**(stored_image_post_data or {}), **image_patch_data}
-        self._expected_image_in = ImageIn(**merged_image_data) if stored_image_post_data else None
+        self._expected_image_in = ImageIn(**merged_image_data)
+
+        # Updated image
+        image_out = ImageOut(
+            **self._expected_image_in.model_dump(),
+        )
+
+        self.mock_image_repository.update.return_value = image_out
+
+        self._expected_image_out = ImageMetadataSchema(**image_out.model_dump())
 
     def call_update(self, image_id: str) -> None:
         """
@@ -324,18 +315,6 @@ class UpdateDSL(ImageServiceDSL):
         """
         self._updated_image_id = image_id
         self._updated_image = self.image_service.update(image_id, self._image_patch)
-
-    def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
-        """
-        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`
-        while expecting an error to be raised.
-
-        :param image_id: ID of the image to be updated.
-        :param error_type: Expected exception to be raised.
-        """
-        with pytest.raises(error_type) as exc:
-            self.image_service.update(image_id, self._image_patch)
-        self._update_exception = exc
 
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as updated."""
@@ -349,16 +328,6 @@ class UpdateDSL(ImageServiceDSL):
 
         assert self._updated_image == self._expected_image_out
 
-    def check_update_failed_with_exception(self, message: str):
-        """
-        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception with the
-        correct message.
-
-        :param message: Expected message of the raised exception.
-        """
-        self.mock_image_repository.update.assert_not_called()
-        assert str(self._update_exception.value) == message
-
 
 class TestUpdate(UpdateDSL):
     """Tests for updating a image."""
@@ -368,22 +337,8 @@ class TestUpdate(UpdateDSL):
         image_id = str(ObjectId())
 
         self.mock_update(
-            image_id,
             image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES_A,
             stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
         )
-        print(self._expected_image_in)
         self.call_update(image_id)
         self.check_update_success()
-
-    def test_update_with_non_existent_id(self):
-        """Test updating a image with a non-existent ID."""
-        image_id = str(ObjectId())
-
-        self.mock_update(
-            image_id,
-            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES_A,
-            stored_image_post_data=None,
-        )
-        self.call_update_expecting_error(image_id, MissingRecordError)
-        self.check_update_failed_with_exception(f"No image found with ID: {image_id}")
