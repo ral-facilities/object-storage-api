@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
-from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
     ImageMetadataSchema,
