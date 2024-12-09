@@ -96,9 +96,10 @@ class ImageRepo:
         Updates an image from a MongoDB database.
 
         :param image_id: The ID of the image to update.
-        :param image: The new image metadata.
+        :param image: The image containing the update data.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: List of images or an empty list if no images are retrieved.
+        :return: The updated image.
+        :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
 
         logger.info("Updating image metadata with ID: %s", image_id)

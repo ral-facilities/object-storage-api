@@ -104,15 +104,15 @@ class ImageService:
 
     def update(self, image_id: str, image: ImagePatchMetadataSchema) -> ImageMetadataSchema:
         """
-        Update an image based on its ID.
+        Update an image based by its ID.
 
         :param image_id: The ID of the image to update.
-        :param image: The new update data for the image.
-        :return: List of images or an empty list if no images are retrieved.
+        :param image: The image containing the fields to be updated.
+        :return: The updated image.
         """
-        update_data = image.model_dump(exclude_unset=True)
-
         stored_image = self._image_repository.get(image_id=image_id)
+
+        update_data = image.model_dump(exclude_unset=True)
 
         updated_image = self._image_repository.update(
             image_id=image_id, image=ImageIn(**{**stored_image.model_dump(), **update_data})

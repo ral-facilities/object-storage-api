@@ -87,15 +87,16 @@ def get_image(
 
 @router.patch(
     path="/{image_id}",
-    summary="Update image",
-    response_description="Updated Image",
+    summary="Update an image partially by ID",
+    response_description="Image updated successfully",
 )
 def partial_update_image(
-    image_id: Annotated[str, Path(description="ID of the image to update")],
     image: ImagePatchMetadataSchema,
+    image_id: Annotated[str, Path(description="ID of the image to update")],
     image_service: ImageServiceDep,
 ) -> ImageMetadataSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Updating images")
+    logger.info("Partially updating image with ID: %s", image_id)
+    logger.debug("Image data: %s", image)
 
     return image_service.update(image_id, image)
