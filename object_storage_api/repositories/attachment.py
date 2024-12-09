@@ -2,9 +2,6 @@
 Module for providing a repository for managing attachments in a MongoDB database.
 """
 
-# Expect some duplicate code inside tests as the tests for the different entities can be very similar
-# pylint: disable=duplicate-code
-
 import logging
 from typing import Optional
 
@@ -69,6 +66,9 @@ class AttachmentRepo:
         :return: List of attachments or an empty list if no attachments are retrieved.
         """
 
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
+
         query = {}
         if entity_id is not None:
             query["entity_id"] = CustomObjectId(entity_id)
@@ -79,6 +79,8 @@ class AttachmentRepo:
         else:
             logger.info("%s matching the provided filter(s)", message)
             logger.debug("Provided filter(s): %s", query)
+
+        # pylint: enable=duplicate-code
 
         attachments = self._attachments_collection.find(query, session=session)
         return [AttachmentOut(**attachment) for attachment in attachments]

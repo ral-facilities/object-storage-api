@@ -199,8 +199,8 @@ class ListDSL(CreateDSL):
         assert self._get_response_attachment.status_code == 200
         assert self._get_response_attachment.json() == expected_attachments_get_data
 
-    def check_attachments_list_response_failed_with_message(self, status_code, expected_detail, obtained_detail):
-        """Checks the response of listing attachments failed as expected."""
+    def check_get_attachments_failed_with_message(self, status_code, expected_detail, obtained_detail):
+        """Checks the response of listing attachments failed with the expected message."""
 
         assert self._get_response_attachment.status_code == status_code
         assert obtained_detail == expected_detail
@@ -251,6 +251,6 @@ class TestList(ListDSL):
 
         self.post_test_attachments()
         self.get_attachments(filters={"entity_id": False})
-        self.check_attachments_list_response_failed_with_message(
+        self.check_get_attachments_failed_with_message(
             422, "Invalid ID given", self._get_response_attachment.json()["detail"]
         )
