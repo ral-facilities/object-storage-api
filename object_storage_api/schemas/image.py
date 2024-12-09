@@ -10,17 +10,18 @@ from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
 class ImagePatchMetadataSchema(BaseModel):
-    """
-    Base schema model for an image.
-    """
+    """Base schema model for an image."""
 
     title: Optional[str] = Field(default=None, description="Title of the image")
     description: Optional[str] = Field(default=None, description="Description of the image")
+    file_name: Optional[str] = Field(default=None, description="File name of the image")
 
 
-class ImagePostMetadataSchema(ImagePatchMetadataSchema):
+class ImagePostMetadataSchema(BaseModel):
     """Base schema model for an image."""
 
+    title: Optional[str] = Field(default=None, description="Title of the image")
+    description: Optional[str] = Field(default=None, description="Description of the image")
     entity_id: str = Field(description="ID of the entity the image relates to")
 
 
