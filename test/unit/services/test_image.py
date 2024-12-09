@@ -277,8 +277,8 @@ class DeleteDSL(ImageServiceDSL):
     def check_delete_success(self) -> None:
         """Checks that a prior call to `call_delete` worked as expected."""
 
-        self.mock_image_repository.delete.assert_called_once_with(self._delete_image_id)
         self.mock_image_store.delete.assert_called_once_with(self._delete_image_object_key)
+        self.mock_image_repository.delete.assert_called_once_with(self._delete_image_id)
 
 
 class TestDelete(DeleteDSL):
