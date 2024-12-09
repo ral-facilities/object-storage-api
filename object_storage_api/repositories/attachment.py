@@ -10,7 +10,6 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
-from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 
 logger = logging.getLogger()
@@ -65,21 +64,14 @@ class AttachmentRepo:
         :param session: PyMongo ClientSession to use for database operations.
         :param entity_id: The ID of the entity to filter attachments by.
         :return: List of attachments or an empty list if no attachments are retrieved.
-        :raises InvalidObjectIdError: If the supplied `entity_id` is invalid.
         """
 
         # There is some duplicate code here, due to the attachments and images methods being very similar
         # pylint: disable=duplicate-code
 
         query = {}
-
         if entity_id is not None:
-            try:
-                query["entity_id"] = CustomObjectId(entity_id)
-            except InvalidObjectIdError as exc:
-                exc.status_code = 422
-                exc.response_detail = "Attachment not found"
-                raise exc
+            query["entity_id"] = CustomObjectId(entity_id)
 
         message = "Retrieving all attachments from the database"
         if not query:

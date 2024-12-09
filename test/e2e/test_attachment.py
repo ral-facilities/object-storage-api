@@ -252,5 +252,5 @@ class TestList(ListDSL):
         self.post_test_attachments()
         self.get_attachments(filters={"entity_id": False})
         self.check_get_attachments_failed_with_message(
-            422, "Attachment not found", self._get_response_attachment.json()["detail"]
+            422, "Invalid ID given", self._get_response_attachment.json()["detail"]
         )
