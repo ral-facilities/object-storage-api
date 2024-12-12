@@ -3,6 +3,7 @@ End-to-End tests for the attachment router.
 """
 
 from test.mock_data import (
+    ATTACHMENT_GET_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES,
@@ -11,6 +12,7 @@ from test.mock_data import (
 from typing import Optional
 
 import pytest
+from bson import ObjectId
 import requests
 from fastapi.testclient import TestClient
 from httpx import Response
@@ -132,3 +134,123 @@ class TestCreate(CreateDSL):
 
         self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": "invalid-id"})
         self.check_post_attachment_failed_with_detail(422, "Invalid `entity_id` given")
+
+
+class ListDSL(CreateDSL):
+    """Base class for list tests."""
+
+    _get_response_attachment: Response
+
+    def get_attachments(self, filters: Optional[dict] = None) -> None:
+        """
+        Gets a list of attachments with the given filters.
+
+        :param filters: Filters to use in the request.
+        """
+        self._get_response_attachment = self.test_client.get("/attachments", params=filters)
+
+    def post_test_attachments(self) -> list[dict]:
+        """
+        Posts three attachments. The first two attachments have the same entity ID, the last attachment has a different
+        one.
+
+        :return: List of dictionaries containing the expected item data returned from a get endpoint in
+                 the form of an `AttachmentMetadataSchema`.
+        """
+        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
+
+        # First item
+        attachment_a_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+        )
+
+        # Second item
+        attachment_b_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+        )
+
+        # Third item
+        attachment_c_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_b,
+            },
+        )
+
+        return [
+            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
+            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
+            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
+        ]
+
+    def check_get_attachments_success(self, expected_attachments_get_data: list[dict]) -> None:
+        """
+        Checks that a prior call to `get_attachments` gave a successful response with the expected data returned.
+
+        :param expected_attachments_get_data: List of dictionaries containing the expected attachment data as would
+            be required for an `AttachmentMetadataSchema`.
+        """
+        assert self._get_response_attachment.status_code == 200
+        assert self._get_response_attachment.json() == expected_attachments_get_data
+
+    def check_get_attachments_failed_with_message(self, status_code, expected_detail, obtained_detail):
+        """Checks the response of listing attachments failed with the expected message."""
+
+        assert self._get_response_attachment.status_code == status_code
+        assert obtained_detail == expected_detail
+
+
+class TestList(ListDSL):
+    """Tests for getting a list of attachments."""
+
+    def test_list_with_no_filters(self):
+        """
+        Test getting a list of all attachments with no filters provided.
+
+        Posts three attachments and expects all of them to be returned.
+        """
+
+        attachments = self.post_test_attachments()
+        self.get_attachments()
+        self.check_get_attachments_success(attachments)
+
+    def test_list_with_entity_id_filter(self):
+        """
+        Test getting a list of all attachments with an `entity_id` filter provided.
+
+        Posts three attachments and then filter using the `entity_id`.
+        """
+
+        attachments = self.post_test_attachments()
+        self.get_attachments(filters={"entity_id": attachments[0]["entity_id"]})
+        self.check_get_attachments_success(attachments[:2])
+
+    def test_list_with_entity_id_filter_with_no_matching_results(self):
+        """
+        Test getting a list of all attachments with an `entity_id` filter provided.
+
+        Posts three attachments and expects no results.
+        """
+
+        self.post_test_attachments()
+        self.get_attachments(filters={"entity_id": ObjectId()})
+        self.check_get_attachments_success([])
+
+    def test_list_with_invalid_entity_id_filter(self):
+        """
+        Test getting a list of all attachments with an invalid `entity_id` filter provided.
+
+        Posts three attachments and expects a 422 status code.
+        """
+
+        self.post_test_attachments()
+        self.get_attachments(filters={"entity_id": False})
+        self.check_get_attachments_failed_with_message(
+            422, "Invalid ID given", self._get_response_attachment.json()["detail"]
+        )

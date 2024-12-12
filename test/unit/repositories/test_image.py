@@ -205,7 +205,7 @@ class ListDSL(ImageRepoDSL):
         Mocks database methods appropriately to test the `list` repo method.
 
         :param image_in_data: List of dictionaries containing the image data as would be required for an
-            `ImageIn` database model (i.e. no ID or created and modified times required).
+            `ImageIn` database model (i.e. no created and modified times required).
         """
         self._expected_image_out = [
             ImageOut(**ImageIn(**image_in_data).model_dump()) for image_in_data in image_in_data
@@ -237,6 +237,10 @@ class ListDSL(ImageRepoDSL):
 
         self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
+
+
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
 
 
 class TestList(ListDSL):
@@ -271,3 +275,6 @@ class TestList(ListDSL):
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=True, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
+
+
+# pylint: enable=duplicate-code
