@@ -327,7 +327,10 @@ class DeleteDSL(ListDSL):
         assert self._delete_response_image.status_code == 204
 
     def check_delete_image_failed_with_detail(self) -> None:
-        """Checks that a prior call to `delete_image` gave a failed response with the expected code and error message."""
+        """
+        Checks that a prior call to `delete_image` gave a failed response with the expected code and
+        error message.
+        """
 
         assert self._delete_response_image.status_code == 404
         assert self._delete_response_image.json()["detail"] == "Image not found"
