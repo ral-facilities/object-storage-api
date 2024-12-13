@@ -83,7 +83,7 @@ def get_image(
 @router.delete(
     path="/{image_id}",
     summary="Delete an image by ID",
-    response_description="Image deleted sucessfully",
+    response_description="Image deleted successfully",
     status_code=status.HTTP_204_NO_CONTENT,
 )
 def delete_image(
