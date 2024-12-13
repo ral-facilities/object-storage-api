@@ -4,11 +4,15 @@ service.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, status
+from fastapi import APIRouter, Depends, Query, status
 
-from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
+from object_storage_api.schemas.attachment import (
+    AttachmentMetadataSchema,
+    AttachmentPostResponseSchema,
+    AttachmentPostSchema,
+)
 from object_storage_api.services.attachment import AttachmentService
 
 logger = logging.getLogger()
@@ -33,3 +37,21 @@ def create_attachment(
     logger.debug("Attachment data: %s", attachment)
 
     return attachment_service.create(attachment)
+
+
+@router.get(
+    path="",
+    summary="Get attachments",
+    response_description="List of attachments",
+)
+def get_attachments(
+    attachment_service: AttachmentServiceDep,
+    entity_id: Annotated[Optional[str], Query(description="Filter attachments by entity ID")] = None,
+) -> list[AttachmentMetadataSchema]:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting attachments")
+
+    if entity_id is not None:
+        logger.debug("Entity ID filter: '%s'", entity_id)
+
+    return attachment_service.list(entity_id)

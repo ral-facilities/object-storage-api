@@ -56,3 +56,31 @@ class AttachmentRepo:
         if attachment:
             return AttachmentOut(**attachment)
         return None
+
+    def list(self, entity_id: Optional[str], session: ClientSession = None) -> list[AttachmentOut]:
+        """
+        Retrieve attachments from a MongoDB database.
+
+        :param session: PyMongo ClientSession to use for database operations.
+        :param entity_id: The ID of the entity to filter attachments by.
+        :return: List of attachments or an empty list if no attachments are retrieved.
+        """
+
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
+
+        query = {}
+        if entity_id is not None:
+            query["entity_id"] = CustomObjectId(entity_id)
+
+        message = "Retrieving all attachments from the database"
+        if not query:
+            logger.info(message)
+        else:
+            logger.info("%s matching the provided filter(s)", message)
+            logger.debug("Provided filter(s): %s", query)
+
+        # pylint: enable=duplicate-code
+
+        attachments = self._attachments_collection.find(query, session=session)
+        return [AttachmentOut(**attachment) for attachment in attachments]

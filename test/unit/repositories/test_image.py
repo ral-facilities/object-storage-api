@@ -239,6 +239,10 @@ class ListDSL(ImageRepoDSL):
         assert self._obtained_image_out == self._expected_image_out
 
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
 class TestList(ListDSL):
     """Tests for listing images."""
 
@@ -363,3 +367,6 @@ class TestDelete(DeleteDSL):
 
         self.call_delete_expecting_error(image_id, InvalidObjectIdError)
         self.check_delete_failed_with_exception(f"Invalid ObjectId value '{image_id}'")
+
+
+# pylint: enable=duplicate-code

@@ -75,6 +75,9 @@ class ImageRepo:
         :return: List of images or an empty list if no images are retrieved.
         """
 
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
+
         query = {}
         if entity_id is not None:
             query["entity_id"] = CustomObjectId(entity_id)
@@ -87,6 +90,8 @@ class ImageRepo:
         else:
             logger.info("%s matching the provided filter(s)", message)
             logger.debug("Provided filter(s): %s", query)
+
+        # pylint: enable=duplicate-code
 
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]

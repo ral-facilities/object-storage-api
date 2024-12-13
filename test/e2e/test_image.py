@@ -219,8 +219,8 @@ class ListDSL(GetDSL):
         assert self._get_response_image.status_code == 200
         assert self._get_response_image.json() == expected_images_get_data
 
-    def check_images_list_response_failed_with_message(self, status_code, expected_detail, obtained_detail):
-        """Checks the response of listing images failed as expected."""
+    def check_get_images_failed_with_message(self, status_code, expected_detail, obtained_detail):
+        """Checks the response of listing images failed with the expected message."""
 
         assert self._get_response_image.status_code == status_code
         assert obtained_detail == expected_detail
@@ -269,9 +269,7 @@ class TestList(ListDSL):
         """
         self.post_test_images()
         self.get_images(filters={"entity_id": False})
-        self.check_images_list_response_failed_with_message(
-            422, "Invalid ID given", self._get_response_image.json()["detail"]
-        )
+        self.check_get_images_failed_with_message(422, "Invalid ID given", self._get_response_image.json()["detail"])
 
     def test_list_with_primary_filter(self):
         """
@@ -302,7 +300,7 @@ class TestList(ListDSL):
         """
         self.post_test_images()
         self.get_images(filters={"primary": str(ObjectId())})
-        self.check_images_list_response_failed_with_message(
+        self.check_get_images_failed_with_message(
             422,
             "Input should be a valid boolean, unable to interpret input",
             self._get_response_image.json()["detail"][0]["msg"],
