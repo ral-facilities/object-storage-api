@@ -20,20 +20,20 @@ dependencies = [
 [project.optional-dependencies]
 code-analysis = [
     "black==24.10.0",
-    "pylint==3.3.1",
+    "pylint==3.3.2",
     "object-storage-api[test]"
 ]
 
 test = [
-    "pytest==8.3.3",
-    "pytest-asyncio==0.24.0",
+    "pytest==8.3.4",
+    "pytest-asyncio==0.25.0",
     "pytest-cov==6.0.0",
     "pytest-env==1.1.5",
     "requests==2.32.3"
 ]
 
 scripts = [
-    "faker==33.0.0",
+    "faker==33.1.0",
     "faker-file[pdf,docx,images]==0.17.14",
 ]
 
