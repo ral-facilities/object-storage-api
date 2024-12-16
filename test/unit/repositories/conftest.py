@@ -10,7 +10,7 @@ import pytest
 from bson import ObjectId
 from pymongo.collection import Collection
 from pymongo.database import Database
-from pymongo.results import InsertOneResult
+from pymongo.results import DeleteResult, InsertOneResult
 
 
 @pytest.fixture(name="database_mock")
@@ -77,3 +77,17 @@ class RepositoryTestHelpers:
         cursor_mock = MagicMock(Cursor)
         cursor_mock.__iter__.return_value = iter(documents)
         collection_mock.find.return_value = cursor_mock
+
+    @staticmethod
+    def mock_delete_one(collection_mock: Mock, deleted_count: int) -> None:
+        """
+        Mock the `delete_one` method of the MongoDB database collection mock to return a `DeleteResult` object. The
+        passed `deleted_count` value is returned as the `deleted_count` attribute of the `DeleteResult` object, enabling
+        for the code that relies on the `deleted_count` value to work.
+
+        :param collection_mock: Mocked MongoDB database collection instance.
+        :param deleted_count: The value to be assigned to the `deleted_count` attribute of the `DeleteResult` object
+        """
+        delete_result_mock = Mock(DeleteResult)
+        delete_result_mock.deleted_count = deleted_count
+        collection_mock.delete_one.return_value = delete_result_mock

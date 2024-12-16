@@ -96,3 +96,14 @@ class ImageService:
         """
         images = self._image_repository.list(entity_id, primary)
         return [ImageMetadataSchema(**image.model_dump()) for image in images]
+
+    def delete(self, image_id: str) -> None:
+        """
+        Delete an image by its ID.
+
+        :param image_id: The ID of the image to delete.
+        """
+        stored_image = self._image_repository.get(image_id)
+        # Deletes image from object store first to prevent unreferenced objects in storage
+        self._image_store.delete(stored_image.object_key)
+        self._image_repository.delete(image_id)

@@ -95,3 +95,23 @@ class ImageRepo:
 
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
+
+    def delete(self, image_id: str, session: ClientSession = None) -> None:
+        """
+        Delete an image by its ID from a MongoDB database.
+
+        :param image_id: The ID of the image to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        :raises MissingRecordError: If the supplied `image_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
+        """
+        logger.info("Deleting image with ID: %s from the database", image_id)
+        try:
+            image_id = CustomObjectId(image_id)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Image not found"
+            raise exc
+        response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
+        if response.deleted_count == 0:
+            raise MissingRecordError(f"No image found with ID: {image_id}", "image")

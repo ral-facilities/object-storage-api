@@ -78,3 +78,18 @@ def get_image(
     logger.info("Getting image with ID: %s", image_id)
 
     return image_service.get(image_id)
+
+
+@router.delete(
+    path="/{image_id}",
+    summary="Delete an image by ID",
+    response_description="Image deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_image(
+    image_id: Annotated[str, Path(description="The ID of the image to delete")],
+    image_service: ImageServiceDep,
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting image with ID: %s", image_id)
+    image_service.delete(image_id)
