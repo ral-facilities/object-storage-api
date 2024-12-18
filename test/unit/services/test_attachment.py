@@ -2,7 +2,8 @@
 Unit tests for the `AttachmentService` service.
 """
 
-from test.mock_data import ATTACHMENT_POST_DATA_ALL_VALUES
+from test.mock_data import ATTACHMENT_IN_DATA_ALL_VALUES, ATTACHMENT_POST_DATA_ALL_VALUES
+from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
 import pytest
@@ -11,6 +12,7 @@ from bson import ObjectId
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
+    AttachmentMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
     AttachmentPostUploadInfoSchema,
@@ -153,3 +155,45 @@ class TestCreate(CreateDSL):
         self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": "invalid-id"})
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class ListDSL(AttachmentServiceDSL):
+    """Base class for `list` tests."""
+
+    _entity_id_filter: Optional[str]
+    _expected_attachments: List[AttachmentMetadataSchema]
+    _obtained_attachments: List[AttachmentMetadataSchema]
+
+    def mock_list(self) -> None:
+        """Mocks repo methods appropriately to test the `list` service method."""
+
+        # Just returns the result after converting it to the schemas currently, so actual value doesn't matter here.
+        attachments_out = [AttachmentOut(**AttachmentIn(**ATTACHMENT_IN_DATA_ALL_VALUES).model_dump())]
+        self.mock_attachment_repository.list.return_value = attachments_out
+        self._expected_attachments = [
+            AttachmentMetadataSchema(**attachment_out.model_dump()) for attachment_out in attachments_out
+        ]
+
+    def call_list(self, entity_id: Optional[str] = None) -> None:
+        """
+        Calls the `AttachmentService` `list` method.
+
+        :param entity_id: The ID of the entity to filter attachments by.
+        """
+        self._entity_id_filter = entity_id
+        self._obtained_attachments = self.attachment_service.list(entity_id=entity_id)
+
+    def check_list_success(self) -> None:
+        """Checks that a prior call to `call_list` worked as expected."""
+        self.mock_attachment_repository.list.assert_called_once_with(self._entity_id_filter)
+        assert self._obtained_attachments == self._expected_attachments
+
+
+class TestList(ListDSL):
+    """Tests for listing attachments."""
+
+    def test_list(self):
+        """Test listing attachments."""
+        self.mock_list()
+        self.call_list(entity_id=str(ObjectId()))
+        self.check_list_success()

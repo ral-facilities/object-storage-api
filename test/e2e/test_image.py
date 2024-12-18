@@ -167,15 +167,15 @@ class ListDSL(GetDSL):
         """
         Posts three images. The first two images have the same entity ID, the last image has a different one.
 
-        :return: List of dictionaries containing the expected item data returned from a get endpoint in
+        :return: List of dictionaries containing the expected image data returned from a get endpoint in
                  the form of an `ImageMetadataSchema`.
         """
         entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
 
-        # First item
+        # First image
         image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
 
-        # Second item
+        # Second image
         image_b_id = self.post_image(
             {
                 **IMAGE_POST_METADATA_DATA_ALL_VALUES,
@@ -184,7 +184,7 @@ class ListDSL(GetDSL):
             "image.jpg",
         )
 
-        # Third item
+        # Third image
         image_c_id = self.post_image(
             {
                 **IMAGE_POST_METADATA_DATA_ALL_VALUES,
@@ -221,8 +221,8 @@ class ListDSL(GetDSL):
         assert self._get_response_image.status_code == 200
         assert self._get_response_image.json() == expected_images_get_data
 
-    def check_images_list_response_failed_with_message(self, status_code, expected_detail, obtained_detail):
-        """Checks the response of listing images failed as expected."""
+    def check_get_images_failed_with_message(self, status_code, expected_detail, obtained_detail):
+        """Checks the response of listing images failed with the expected message."""
 
         assert self._get_response_image.status_code == status_code
         assert obtained_detail == expected_detail
@@ -271,9 +271,7 @@ class TestList(ListDSL):
         """
         self.post_test_images()
         self.get_images(filters={"entity_id": False})
-        self.check_images_list_response_failed_with_message(
-            422, "Invalid ID given", self._get_response_image.json()["detail"]
-        )
+        self.check_get_images_failed_with_message(422, "Invalid ID given", self._get_response_image.json()["detail"])
 
     def test_list_with_primary_filter(self):
         """
@@ -304,7 +302,7 @@ class TestList(ListDSL):
         """
         self.post_test_images()
         self.get_images(filters={"primary": str(ObjectId())})
-        self.check_images_list_response_failed_with_message(
+        self.check_get_images_failed_with_message(
             422,
             "Input should be a valid boolean, unable to interpret input",
             self._get_response_image.json()["detail"][0]["msg"],
@@ -365,3 +363,59 @@ class TestUpdate(UpdateDSL):
         """Test updating an image with an invalid ID."""
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
+
+
+class DeleteDSL(ListDSL):
+    """Base class for delete tests."""
+
+    _delete_response_image: Response
+
+    def delete_image(self, image_id: str) -> None:
+        """
+        Deletes an image with the given ID.
+
+        :param image_id: ID of the image to be deleted.
+        """
+
+        self._delete_response_image = self.test_client.delete(f"/images/{image_id}")
+
+    def check_delete_image_success(self) -> None:
+        """Checks that a prior call to `delete_image` gave a successful response with the expected code."""
+
+        assert self._delete_response_image.status_code == 204
+
+    def check_delete_image_failed_with_detail(self) -> None:
+        """
+        Checks that a prior call to `delete_image` gave a failed response with the expected code and
+        error message.
+        """
+
+        assert self._delete_response_image.status_code == 404
+        assert self._delete_response_image.json()["detail"] == "Image not found"
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an image."""
+
+    def test_delete(self):
+        """Test deleting an image."""
+
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
+
+        self.delete_image(image_id)
+        self.check_delete_image_success()
+
+        self.get_image(image_id)
+        self.check_get_image_failed()
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent image."""
+
+        self.delete_image(str(ObjectId()))
+        self.check_delete_image_failed_with_detail()
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting an image with an invalid ID."""
+
+        self.delete_image("invalid_id")
+        self.check_delete_image_failed_with_detail()

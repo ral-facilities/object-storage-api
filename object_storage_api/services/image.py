@@ -111,11 +111,20 @@ class ImageService:
         :return: The updated image.
         """
         stored_image = self._image_repository.get(image_id=image_id)
-
         update_data = image.model_dump(exclude_unset=True)
-
         updated_image = self._image_repository.update(
             image_id=image_id, image=ImageIn(**{**stored_image.model_dump(), **update_data})
         )
 
         return ImageMetadataSchema(**updated_image.model_dump())
+
+    def delete(self, image_id: str) -> None:
+        """
+        Delete an image by its ID.
+
+        :param image_id: The ID of the image to delete.
+        """
+        stored_image = self._image_repository.get(image_id)
+        # Deletes image from object store first to prevent unreferenced objects in storage
+        self._image_store.delete(stored_image.object_key)
+        self._image_repository.delete(image_id)

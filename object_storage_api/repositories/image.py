@@ -75,6 +75,9 @@ class ImageRepo:
         :return: List of images or an empty list if no images are retrieved.
         """
 
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
+
         query = {}
         if entity_id is not None:
             query["entity_id"] = CustomObjectId(entity_id)
@@ -87,6 +90,8 @@ class ImageRepo:
         else:
             logger.info("%s matching the provided filter(s)", message)
             logger.debug("Provided filter(s): %s", query)
+
+        # pylint: enable=duplicate-code
 
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
@@ -113,3 +118,23 @@ class ImageRepo:
             exc.response_detail = "Image not found"
             raise exc
         return self.get(image_id=str(image_id), session=session)
+
+    def delete(self, image_id: str, session: ClientSession = None) -> None:
+        """
+        Delete an image by its ID from a MongoDB database.
+
+        :param image_id: The ID of the image to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        :raises MissingRecordError: If the supplied `image_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
+        """
+        logger.info("Deleting image with ID: %s from the database", image_id)
+        try:
+            image_id = CustomObjectId(image_id)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Image not found"
+            raise exc
+        response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
+        if response.deleted_count == 0:
+            raise MissingRecordError(f"No image found with ID: {image_id}", "image")
