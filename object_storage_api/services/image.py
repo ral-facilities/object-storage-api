@@ -104,7 +104,7 @@ class ImageService:
 
     def update(self, image_id: str, image: ImagePatchMetadataSchema) -> ImageMetadataSchema:
         """
-        Update an image based by its ID.
+        Update an image based on its ID.
 
         :param image_id: The ID of the image to update.
         :param image: The image containing the fields to be updated.

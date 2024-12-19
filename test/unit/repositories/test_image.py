@@ -354,7 +354,7 @@ class UpdateDSL(ImageRepoDSL):
 
     def check_update_failed_with_exception(self, message: str) -> None:
         """
-        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        Checks that a prior call to `call_update_expecting_error` failed as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.

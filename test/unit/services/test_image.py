@@ -273,10 +273,10 @@ class UpdateDSL(ImageServiceDSL):
         Mocks the repository methods appropriately to test the `update` service method.
 
         :param image_id: ID of the image to be updated.
-        :param image_patch_data: Dictionary containing the patch data as would be required for a
+        :param image_patch_data: Dictionary containing the patch data as would be required for an
             `ImagePatchMetadataSchema` (i.e. no created and modified times required).
         :param stored_image_post_data: Dictionary containing the image data for the existing stored
-            image as would be required for `ImagePostMetadataSchema` (i.e. no created and modified
+            image as would be required for an `ImagePostMetadataSchema` (i.e. no created and modified
             times required).
         """
         # Stored image
@@ -330,10 +330,10 @@ class UpdateDSL(ImageServiceDSL):
 
 
 class TestUpdate(UpdateDSL):
-    """Tests for updating a image."""
+    """Tests for updating an image."""
 
     def test_update(self):
-        """Test updating all fields of a image."""
+        """Test updating all fields of an image."""
         image_id = str(ObjectId())
 
         self.mock_update(

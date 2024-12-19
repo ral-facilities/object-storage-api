@@ -319,7 +319,7 @@ class UpdateDSL(ListDSL):
         Patches an image with the given ID.
 
         :param image_id: ID of the image to be updated.
-        :param image_patch_data: Dictionary containing the image patch data as would be required for a
+        :param image_patch_data: Dictionary containing the image patch data as would be required for an
             `ImagePatchSchema`.
         """
         self._patch_response_image = self.test_client.patch(f"/images/{image_id}", json=image_patch_data)
@@ -329,7 +329,7 @@ class UpdateDSL(ListDSL):
         Checks that a prior call to `patch_image` gave a successful response with the expected data returned.
 
         :param expected_image_get_data: Dictionaries containing the expected image data as would be
-            required for a `ImageMetadataSchema`.
+            required for an `ImageMetadataSchema`.
         """
         assert self._patch_response_image.status_code == 200
         assert self._patch_response_image.json() == expected_image_get_data
