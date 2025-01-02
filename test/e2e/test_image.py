@@ -4,10 +4,10 @@ End-to-End tests for the image router.
 
 from test.mock_data import (
     IMAGE_GET_DATA_ALL_VALUES,
-    IMAGE_GET_METADATA_ALL_VALUES_A,
-    IMAGE_GET_METADATA_ALL_VALUES_B,
+    IMAGE_GET_METADATA_ALL_VALUES,
+    IMAGE_GET_METADATA_ALL_VALUES_AFTER_PATCH,
     IMAGE_GET_METADATA_REQUIRED_VALUES_ONLY,
-    IMAGE_PATCH_METADATA_DATA_ALL_VALUES_B,
+    IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
     IMAGE_POST_METADATA_DATA_ALL_VALUES,
     IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
 )
@@ -86,7 +86,7 @@ class TestCreate(CreateDSL):
         """Test creating an image with all values provided."""
 
         self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
-        self.check_post_image_success(IMAGE_GET_METADATA_ALL_VALUES_A)
+        self.check_post_image_success(IMAGE_GET_METADATA_ALL_VALUES)
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
@@ -195,17 +195,17 @@ class ListDSL(GetDSL):
 
         return [
             {
-                **IMAGE_GET_METADATA_ALL_VALUES_A,
+                **IMAGE_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": image_a_id,
             },
             {
-                **IMAGE_GET_METADATA_ALL_VALUES_A,
+                **IMAGE_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": image_b_id,
             },
             {
-                **IMAGE_GET_METADATA_ALL_VALUES_A,
+                **IMAGE_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_b,
                 "id": image_c_id,
             },
@@ -351,8 +351,8 @@ class TestUpdate(UpdateDSL):
     def test_partial_update_all_fields(self):
         """Test updating every field of an image."""
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
-        self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES_B)
-        self.check_patch_image_success(IMAGE_GET_METADATA_ALL_VALUES_B)
+        self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES)
+        self.check_patch_image_success(IMAGE_GET_METADATA_ALL_VALUES_AFTER_PATCH)
 
     def test_partial_update_with_non_existent_id(self):
         """Test updating a non-existent image."""

@@ -4,7 +4,7 @@ Unit tests for the `ImageService` service.
 
 from test.mock_data import (
     IMAGE_IN_DATA_ALL_VALUES,
-    IMAGE_PATCH_METADATA_DATA_ALL_VALUES_A,
+    IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
     IMAGE_POST_METADATA_DATA_ALL_VALUES,
 )
 from typing import List, Optional
@@ -337,7 +337,7 @@ class TestUpdate(UpdateDSL):
         image_id = str(ObjectId())
 
         self.mock_update(
-            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES_A,
+            image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
             stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
         )
         self.call_update(image_id)

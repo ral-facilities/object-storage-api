@@ -98,7 +98,7 @@ class ImageRepo:
 
     def update(self, image_id: str, image: ImageIn, session: ClientSession = None) -> ImageOut:
         """
-        Updates an image from a MongoDB database.
+        Updates an image by its ID in a MongoDB database.
 
         :param image_id: The ID of the image to update.
         :param image: The image containing the update data.
