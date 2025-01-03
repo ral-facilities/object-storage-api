@@ -9,6 +9,14 @@ from pydantic import BaseModel, Field, HttpUrl
 from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
+class ImagePatchMetadataSchema(BaseModel):
+    """Schema model for an image update request."""
+
+    title: Optional[str] = Field(default=None, description="Title of the image")
+    description: Optional[str] = Field(default=None, description="Description of the image")
+    file_name: Optional[str] = Field(default=None, description="File name of the image")
+
+
 class ImagePostMetadataSchema(BaseModel):
     """Base schema model for an image."""
 

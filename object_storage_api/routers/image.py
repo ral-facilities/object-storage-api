@@ -8,7 +8,12 @@ from typing import Annotated, Optional
 
 from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
-from object_storage_api.schemas.image import ImageMetadataSchema, ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import (
+    ImageMetadataSchema,
+    ImagePatchMetadataSchema,
+    ImagePostMetadataSchema,
+    ImageSchema,
+)
 from object_storage_api.services.image import ImageService
 
 logger = logging.getLogger()
@@ -78,6 +83,23 @@ def get_image(
     logger.info("Getting image with ID: %s", image_id)
 
     return image_service.get(image_id)
+
+
+@router.patch(
+    path="/{image_id}",
+    summary="Update an image partially by ID",
+    response_description="Image updated successfully",
+)
+def partial_update_image(
+    image: ImagePatchMetadataSchema,
+    image_id: Annotated[str, Path(description="ID of the image to update")],
+    image_service: ImageServiceDep,
+) -> ImageMetadataSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating image with ID: %s", image_id)
+    logger.debug("Image data: %s", image)
+
+    return image_service.update(image_id, image)
 
 
 @router.delete(

@@ -96,6 +96,29 @@ class ImageRepo:
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
 
+    def update(self, image_id: str, image: ImageIn, session: ClientSession = None) -> ImageOut:
+        """
+        Updates an image by its ID in a MongoDB database.
+
+        :param image_id: The ID of the image to update.
+        :param image: The image containing the update data.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: The updated image.
+        :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
+        """
+
+        logger.info("Updating image metadata with ID: %s", image_id)
+        try:
+            image_id = CustomObjectId(image_id)
+            self._images_collection.update_one(
+                {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
+            )
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Image not found"
+            raise exc
+        return self.get(image_id=str(image_id), session=session)
+
     def delete(self, image_id: str, session: ClientSession = None) -> None:
         """
         Delete an image by its ID from a MongoDB database.
