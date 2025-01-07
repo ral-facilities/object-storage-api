@@ -77,7 +77,7 @@ router_dependencies = []
 # Add authentication middleware & dependency if enabled
 if config.authentication.enabled is True:
     # pylint:disable=import-outside-toplevel
-    from object_storage_api.auth.jwt_bearer import JWTMiddleware, security
+    from object_storage_api.auth.jwt_middleware import JWTMiddleware, security
 
     app.add_middleware(JWTMiddleware)
 

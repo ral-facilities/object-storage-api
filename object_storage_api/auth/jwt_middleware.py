@@ -4,9 +4,9 @@ Module for providing an implementation of the `JWTBearer` class.
 
 import logging
 
-from fastapi.responses import JSONResponse
 import jwt
-from fastapi import status
+from fastapi import HTTPException, status
+from fastapi.responses import JSONResponse
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from starlette.middleware.base import BaseHTTPMiddleware, RequestResponseEndpoint
 from starlette.requests import Request
@@ -42,10 +42,13 @@ class JWTMiddleware(BaseHTTPMiddleware):
             not request.url.path == f"{config.api.root_path}/docs"
             and not request.url.path == f"{config.api.root_path}/openapi.json"
         ):
-            credentials: HTTPAuthorizationCredentials = await security(request)
+            try:
+                credentials: HTTPAuthorizationCredentials = await security(request)
+            except HTTPException as exc:
+                # Cannot raise HttpException here, so must do manually
+                return JSONResponse(status_code=exc.status_code, content={"detail": exc.detail})
 
             if not self._is_jwt_access_token_valid(credentials.credentials):
-                # Cannot raise HttpException here, so must do manually
                 return JSONResponse(
                     status_code=status.HTTP_403_FORBIDDEN, content={"detail": "Invalid token or expired token"}
                 )
