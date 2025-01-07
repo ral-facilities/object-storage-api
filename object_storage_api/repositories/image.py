@@ -103,6 +103,7 @@ class ImageRepo:
 
         :param image_id: The ID of the image to update.
         :param image: The image containing the update data.
+        :param update_primary: Decides whether to set primary to False for other images.
         :param session: PyMongo ClientSession to use for database operations.
         :return: The updated image.
         :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
