@@ -15,6 +15,7 @@ class ImagePatchMetadataSchema(BaseModel):
     title: Optional[str] = Field(default=None, description="Title of the image")
     description: Optional[str] = Field(default=None, description="Description of the image")
     file_name: Optional[str] = Field(default=None, description="File name of the image")
+    primary: Optional[bool] = Field(default=None, description="Whether the image is the primary for its related entity")
 
 
 class ImagePostMetadataSchema(BaseModel):

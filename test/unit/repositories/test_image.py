@@ -9,6 +9,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
+from pymongo import UpdateOne
 
 from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
@@ -322,7 +323,9 @@ class UpdateDSL(ImageRepoDSL):
         """
 
         self._updated_image_id = image_id
-        self._updated_image = self.image_repository.update(image_id, self._image_in, session=self.mock_session)
+        self._updated_image = self.image_repository.update(
+            image_id, self._image_in, update_primary=False, session=self.mock_session
+        )
 
     def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
         """
@@ -334,22 +337,21 @@ class UpdateDSL(ImageRepoDSL):
         """
 
         with pytest.raises(error_type) as exc:
-            self.image_repository.update(image_id, self._image_in)
+            self.image_repository.update(image_id, self._image_in, update_primary=False)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
 
-        self.images_collection.update_one.assert_called_once_with(
-            {
-                "_id": ObjectId(self._updated_image_id),
-            },
-            {
-                "$set": self._image_in.model_dump(by_alias=True),
-            },
+        self.images_collection.bulk_write.assert_called_once_with(
+            [
+                UpdateOne(
+                    {"_id": ObjectId(self._updated_image_id)},
+                    {"$set": self._image_in.model_dump(by_alias=True)},
+                )
+            ],
             session=self.mock_session,
         )
-
         assert self._updated_image == self._expected_image_out
 
     def check_update_failed_with_exception(self, message: str) -> None:

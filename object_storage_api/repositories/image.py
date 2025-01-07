@@ -5,6 +5,7 @@ Module for providing a repository for managing images in a MongoDB database.
 import logging
 from typing import Optional
 
+from pymongo import UpdateMany, UpdateOne
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
@@ -96,7 +97,7 @@ class ImageRepo:
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
 
-    def update(self, image_id: str, image: ImageIn, session: ClientSession = None) -> ImageOut:
+    def update(self, image_id: str, image: ImageIn, update_primary: bool, session: ClientSession = None) -> ImageOut:
         """
         Updates an image by its ID in a MongoDB database.
 
@@ -110,8 +111,19 @@ class ImageRepo:
         logger.info("Updating image metadata with ID: %s", image_id)
         try:
             image_id = CustomObjectId(image_id)
-            self._images_collection.update_one(
-                {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
+            bulkwrite_update = [
+                UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
+            ]
+            if update_primary:
+                bulkwrite_update.insert(
+                    0,
+                    UpdateMany(
+                        filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}
+                    ),
+                )
+            self._images_collection.bulk_write(
+                bulkwrite_update,
+                session=session,
             )
         except InvalidObjectIdError as exc:
             exc.status_code = 404

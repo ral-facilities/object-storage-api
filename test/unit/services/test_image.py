@@ -323,7 +323,7 @@ class UpdateDSL(ImageServiceDSL):
 
         # Ensure updated with expected data
         self.mock_image_repository.update.assert_called_once_with(
-            image_id=self._updated_image_id, image=self._expected_image_in
+            image_id=self._updated_image_id, image=self._expected_image_in, update_primary=False
         )
 
         assert self._updated_image == self._expected_image_out

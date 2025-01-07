@@ -112,8 +112,12 @@ class ImageService:
         """
         stored_image = self._image_repository.get(image_id=image_id)
         update_data = image.model_dump(exclude_unset=True)
+
+        update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
         updated_image = self._image_repository.update(
-            image_id=image_id, image=ImageIn(**{**stored_image.model_dump(), **update_data})
+            image_id=image_id,
+            image=ImageIn(**{**stored_image.model_dump(), **update_data}),
+            update_primary=update_primary,
         )
 
         return ImageMetadataSchema(**updated_image.model_dump())
