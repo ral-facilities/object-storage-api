@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
-from pymongo import UpdateOne
+from pymongo import UpdateMany, UpdateOne
 
 from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
@@ -324,7 +324,7 @@ class UpdateDSL(ImageRepoDSL):
 
         self._updated_image_id = image_id
         self._updated_image = self.image_repository.update(
-            image_id, self._image_in, update_primary=False, session=self.mock_session
+            image_id, self._image_in, update_primary=True, session=self.mock_session
         )
 
     def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
@@ -345,10 +345,14 @@ class UpdateDSL(ImageRepoDSL):
 
         self.images_collection.bulk_write.assert_called_once_with(
             [
+                UpdateMany(
+                    {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
+                    {"$set": {"primary": False}},
+                ),
                 UpdateOne(
                     {"_id": ObjectId(self._updated_image_id)},
                     {"$set": self._image_in.model_dump(by_alias=True)},
-                )
+                ),
             ],
             session=self.mock_session,
         )
