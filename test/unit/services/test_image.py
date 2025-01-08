@@ -323,7 +323,9 @@ class UpdateDSL(ImageServiceDSL):
 
         # Ensure updated with expected data
         self.mock_image_repository.update.assert_called_once_with(
-            image_id=self._updated_image_id, image=self._expected_image_in, update_primary=False
+            image_id=self._updated_image_id,
+            image=self._expected_image_in,
+            update_primary=self._expected_image_out.primary,
         )
 
         assert self._updated_image == self._expected_image_out
@@ -338,6 +340,17 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
+        )
+        self.call_update(image_id)
+        self.check_update_success()
+
+    def test_update_primary(self):
+        """Test updating primary from false to true for an image."""
+        image_id = str(ObjectId())
+
+        self.mock_update(
+            image_patch_data={**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "primary": True},
             stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
         )
         self.call_update(image_id)

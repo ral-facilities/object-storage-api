@@ -112,20 +112,18 @@ class ImageRepo:
         logger.info("Updating image metadata with ID: %s", image_id)
         try:
             image_id = CustomObjectId(image_id)
-            bulkwrite_update = [
-                UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
-            ]
             if update_primary:
-                bulkwrite_update.insert(
-                    0,
+                bulkwrite_update = [
                     UpdateMany(
                         filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}
                     ),
+                    UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
+                ]
+                self._images_collection.bulk_write(bulkwrite_update, session=session)
+            else:
+                self._images_collection.update_one(
+                    {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
                 )
-            self._images_collection.bulk_write(
-                bulkwrite_update,
-                session=session,
-            )
         except InvalidObjectIdError as exc:
             exc.status_code = 404
             exc.response_detail = "Image not found"
