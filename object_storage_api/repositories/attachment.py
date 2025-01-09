@@ -29,7 +29,7 @@ class AttachmentRepo:
         self._database = database
         self._attachments_collection: Collection = self._database.attachments
 
-    def create(self, attachment: AttachmentIn, session: ClientSession = None) -> AttachmentOut:
+    def create(self, attachment: AttachmentIn, session: Optional[ClientSession] = None) -> AttachmentOut:
         """
         Create a new attachment in a MongoDB database.
 
@@ -42,7 +42,7 @@ class AttachmentRepo:
         result = self._attachments_collection.insert_one(attachment.model_dump(by_alias=True), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(self, attachment_id: str, session: ClientSession = None) -> Optional[AttachmentOut]:
+    def get(self, attachment_id: str, session: Optional[ClientSession] = None) -> Optional[AttachmentOut]:
         """
         Retrieve an attachment by its ID from a MongoDB database.
 
@@ -57,7 +57,7 @@ class AttachmentRepo:
             return AttachmentOut(**attachment)
         return None
 
-    def list(self, entity_id: Optional[str], session: ClientSession = None) -> list[AttachmentOut]:
+    def list(self, entity_id: Optional[str], session: Optional[ClientSession] = None) -> list[AttachmentOut]:
         """
         Retrieve attachments from a MongoDB database.
 

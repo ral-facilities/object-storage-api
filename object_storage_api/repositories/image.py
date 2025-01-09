@@ -30,7 +30,7 @@ class ImageRepo:
         self._database = database
         self._images_collection: Collection = self._database.images
 
-    def create(self, image: ImageIn, session: ClientSession = None) -> ImageOut:
+    def create(self, image: ImageIn, session: Optional[ClientSession] = None) -> ImageOut:
         """
         Create a new image in a MongoDB database.
 
@@ -43,7 +43,7 @@ class ImageRepo:
         result = self._images_collection.insert_one(image.model_dump(by_alias=True), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(self, image_id: str, session: ClientSession = None) -> ImageOut:
+    def get(self, image_id: str, session: Optional[ClientSession] = None) -> ImageOut:
         """
         Retrieve an image by its ID from a MongoDB database.
 
@@ -65,7 +65,9 @@ class ImageRepo:
             return ImageOut(**image)
         raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_name="image")
 
-    def list(self, entity_id: Optional[str], primary: Optional[bool], session: ClientSession = None) -> list[ImageOut]:
+    def list(
+        self, entity_id: Optional[str], primary: Optional[bool], session: Optional[ClientSession] = None
+    ) -> list[ImageOut]:
         """
         Retrieve images from a MongoDB database.
 
@@ -96,7 +98,7 @@ class ImageRepo:
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
 
-    def update(self, image_id: str, image: ImageIn, session: ClientSession = None) -> ImageOut:
+    def update(self, image_id: str, image: ImageIn, session: Optional[ClientSession] = None) -> ImageOut:
         """
         Updates an image by its ID in a MongoDB database.
 
@@ -119,7 +121,7 @@ class ImageRepo:
             raise exc
         return self.get(image_id=str(image_id), session=session)
 
-    def delete(self, image_id: str, session: ClientSession = None) -> None:
+    def delete(self, image_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete an image by its ID from a MongoDB database.
 
