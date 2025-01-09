@@ -16,6 +16,7 @@ from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
+    AttachmentSchema,
 )
 from object_storage_api.stores.attachment import AttachmentStore
 
@@ -66,6 +67,17 @@ class AttachmentService:
         attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)
+
+    def get(self, attachment_id: str) -> AttachmentSchema:
+        """
+        Retrieve an attachment's metadata with its presigned get url by its ID.
+
+        :param attachment_id: ID of the attachment to retrieve.
+        :return: An attachment's metadata with a presigned get url.
+        """
+        attachment = self._attachment_repository.get(attachment_id=attachment_id)
+        presigned_url = self._attachment_store.create_presigned_get(attachment)
+        return AttachmentSchema(**attachment.model_dump(), url=presigned_url)
 
     def list(self, entity_id: Optional[str] = None) -> list[AttachmentMetadataSchema]:
         """
