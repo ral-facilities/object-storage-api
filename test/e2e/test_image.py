@@ -4,8 +4,10 @@ End-to-End tests for the image router.
 
 from test.mock_data import (
     IMAGE_GET_DATA_ALL_VALUES,
-    IMAGE_GET_METADATA_ALL_VALUES,
-    IMAGE_GET_METADATA_REQUIRED_VALUES_ONLY,
+    IMAGE_GET_METADATA_DATA_ALL_VALUES,
+    IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH,
+    IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
     IMAGE_POST_METADATA_DATA_ALL_VALUES,
     IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
 )
@@ -78,13 +80,13 @@ class TestCreate(CreateDSL):
         """Test creating an image with only required values provided."""
 
         self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
-        self.check_post_image_success(IMAGE_GET_METADATA_REQUIRED_VALUES_ONLY)
+        self.check_post_image_success(IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY)
 
     def test_create_with_all_values_provided(self):
         """Test creating an image with all values provided."""
 
         self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
-        self.check_post_image_success(IMAGE_GET_METADATA_ALL_VALUES)
+        self.check_post_image_success(IMAGE_GET_METADATA_DATA_ALL_VALUES)
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
@@ -193,17 +195,17 @@ class ListDSL(GetDSL):
 
         return [
             {
-                **IMAGE_GET_METADATA_ALL_VALUES,
+                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": image_a_id,
             },
             {
-                **IMAGE_GET_METADATA_ALL_VALUES,
+                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": image_b_id,
             },
             {
-                **IMAGE_GET_METADATA_ALL_VALUES,
+                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
                 "entity_id": entity_id_b,
                 "id": image_c_id,
             },
@@ -305,6 +307,62 @@ class TestList(ListDSL):
             "Input should be a valid boolean, unable to interpret input",
             self._get_response_image.json()["detail"][0]["msg"],
         )
+
+
+class UpdateDSL(ListDSL):
+    """Base class for update tests."""
+
+    _patch_response_image: Response
+
+    def patch_image(self, image_id: str, image_patch_data: dict) -> None:
+        """
+        Patches an image with the given ID.
+
+        :param image_id: ID of the image to be updated.
+        :param image_patch_data: Dictionary containing the image patch data as would be required for an
+            `ImagePatchSchema`.
+        """
+        self._patch_response_image = self.test_client.patch(f"/images/{image_id}", json=image_patch_data)
+
+    def check_patch_image_success(self, expected_image_get_data: dict) -> None:
+        """
+        Checks that a prior call to `patch_image` gave a successful response with the expected data returned.
+
+        :param expected_image_get_data: Dictionaries containing the expected image data as would be
+            required for an `ImageMetadataSchema`.
+        """
+        assert self._patch_response_image.status_code == 200
+        assert self._patch_response_image.json() == expected_image_get_data
+
+    def check_patch_image_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that prior call to `patch_image` gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+        assert self._patch_response_image.status_code == status_code
+        assert self._patch_response_image.json()["detail"] == detail
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating an image."""
+
+    def test_partial_update_all_fields(self):
+        """Test updating every field of an image."""
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES)
+        self.check_patch_image_success(IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH)
+
+    def test_partial_update_with_non_existent_id(self):
+        """Test updating a non-existent image."""
+        self.patch_image(str(ObjectId()), {})
+        self.check_patch_image_failed_with_detail(404, "Image not found")
+
+    def test_partial_update_invalid_id(self):
+        """Test updating an image with an invalid ID."""
+        self.patch_image("invalid-id", {})
+        self.check_patch_image_failed_with_detail(404, "Image not found")
 
 
 class DeleteDSL(ListDSL):
