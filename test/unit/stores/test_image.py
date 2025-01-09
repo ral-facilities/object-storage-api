@@ -151,6 +151,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": self._image_out.object_key,
                 "ResponseContentDisposition": f'inline; filename="{self._image_out.file_name}"',
+                "ResponseContentType": "application/octet-stream",
             },
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
