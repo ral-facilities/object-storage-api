@@ -4,6 +4,7 @@ store.
 """
 
 import logging
+import mimetypes
 from typing import Annotated, Optional
 
 from bson import ObjectId
@@ -57,6 +58,12 @@ class ImageService:
 
         # Upload the full size image to object storage
         object_key = self._image_store.upload(image_id, image_metadata, upload_file)
+
+        expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
+        if expected_file_type != upload_file.content_type:
+            raise InvalidObjectIdError(
+                f"File extension `{upload_file.filename}` does not match content type `{upload_file.content_type}`"
+            )
 
         try:
             image_in = ImageIn(

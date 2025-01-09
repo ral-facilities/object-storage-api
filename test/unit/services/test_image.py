@@ -62,16 +62,18 @@ class CreateDSL(ImageServiceDSL):
     _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_post_metadata_data: dict) -> None:
+    def mock_create(self, image_post_metadata_data: dict, filename: str) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
+        :filename: Filename of the image.
         """
 
         self._image_post_metadata = ImagePostMetadataSchema(**image_post_metadata_data)
-        self._upload_file = UploadFile(MagicMock(), size=100, filename="test.png", headers=MagicMock())
+        header = {"content-type": "image/png"}
+        self._upload_file = UploadFile(MagicMock(), size=100, filename=filename, headers=header)
 
         self._expected_image_id = ObjectId()
         self.mock_object_id.return_value = self._expected_image_id
@@ -151,14 +153,24 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an image."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png")
         self.call_create()
         self.check_create_success()
+
+    def test_create_with_invalid_file(self):
+        """Test creating an image with an inconsistent file extension and content type."""
+
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
+        self.call_create_expecting_error(InvalidObjectIdError)
+        self.check_create_failed_with_exception(
+            f"File extension `{self._upload_file.filename}` does not match "
+            f"content type `{self._upload_file.content_type}`"
+        )
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
 
-        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"})
+        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png")
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
