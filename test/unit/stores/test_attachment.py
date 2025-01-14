@@ -2,7 +2,7 @@
 Unit tests for the `AttachmentStore` store.
 """
 
-from test.mock_data import ATTACHMENT_POST_DATA_ALL_VALUES
+from test.mock_data import ATTACHMENT_IN_DATA_ALL_VALUES, ATTACHMENT_POST_DATA_ALL_VALUES
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +10,7 @@ from bson import ObjectId
 
 from object_storage_api.core.config import config
 from object_storage_api.core.object_store import object_storage_config
+from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import AttachmentPostSchema, AttachmentPostUploadInfoSchema
 from object_storage_api.stores.attachment import AttachmentStore
 
@@ -92,3 +93,58 @@ class TestCreatePresignedPost(CreatePresignedPostDSL):
         self.mock_create_presigned_post(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.call_create_presigned_post()
         self.check_create_presigned_post_success()
+
+
+class CreatePresignedURLDSL(AttachmentStoreDSL):
+    """Base class for `create` tests."""
+
+    _attachment_out: AttachmentOut
+    _expected_presigned_url: str
+    _obtained_presigned_url: str
+
+    def mock_create_presigned_get(self, attachment_in_data: dict) -> None:
+        """
+        Mocks object store methods appropriately to test the `create_presigned_get` store method.
+
+        :param attachment_in_data: Dictionary containing the attachment data as would be required for an
+            `AttachmentIn`.
+        """
+        self._attachment_out = AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump())
+
+        # Mock presigned url generation
+        self._expected_presigned_url = "example_presigned_url"
+        self.mock_s3_client.generate_presigned_url.return_value = self._expected_presigned_url
+
+    def call_create_presigned_get(self) -> None:
+        """
+        Calls the `AttachmentStore` `create_presigned_get` method with the appropriate data from a prior call to
+            `mock_create_presigned_get`.
+        """
+
+        self._obtained_presigned_url = self.attachment_store.create_presigned_get(self._attachment_out)
+
+    def check_create_presigned_get_success(self) -> None:
+        """Checks that a prior call to `call_create_presigned_get` worked as expected."""
+
+        self.mock_s3_client.generate_presigned_url.assert_called_once_with(
+            "get_object",
+            Params={
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": self._attachment_out.object_key,
+                "ResponseContentDisposition": f'inline; filename="{self._attachment_out.file_name}"',
+            },
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+        )
+
+        assert self._obtained_presigned_url == self._expected_presigned_url
+
+
+class TestCreatePresignedURL(CreatePresignedURLDSL):
+    """Tests for creating a presigned url for an attachment."""
+
+    def test_create_presigned_get(self):
+        """Test creating a presigned url for an attachment."""
+
+        self.mock_create_presigned_get(ATTACHMENT_IN_DATA_ALL_VALUES)
+        self.call_create_presigned_get()
+        self.check_create_presigned_get_success()

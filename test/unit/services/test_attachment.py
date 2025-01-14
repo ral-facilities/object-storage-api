@@ -16,6 +16,7 @@ from object_storage_api.schemas.attachment import (
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
     AttachmentPostUploadInfoSchema,
+    AttachmentSchema,
 )
 from object_storage_api.services.attachment import AttachmentService
 
@@ -155,6 +156,50 @@ class TestCreate(CreateDSL):
         self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": "invalid-id"})
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class GetDSL(AttachmentServiceDSL):
+    """Base class for `get` tests."""
+
+    _obtained_attachment_id: str
+    _expected_attachment_out: AttachmentOut
+    _expected_attachment: AttachmentSchema
+    _obtained_attachment: AttachmentSchema
+
+    def mock_get(self) -> None:
+        """Mocks repo methods appropriately to test the `get` service method."""
+
+        self._expected_attachment_out = AttachmentOut(**AttachmentIn(**ATTACHMENT_IN_DATA_ALL_VALUES).model_dump())
+        self.mock_attachment_repository.get.return_value = self._expected_attachment_out
+        self.mock_attachment_store.create_presigned_get.return_value = "https://fakepresignedurl.co.uk"
+        self._expected_attachment = AttachmentSchema(
+            **self._expected_attachment_out.model_dump(), url="https://fakepresignedurl.co.uk"
+        )
+
+    def call_get(self, attachment_id: str) -> None:
+        """
+        Calls the `AttachmentService` `get` method.
+
+        :param attachment_id: The ID of the attachment to obtain.
+        """
+        self._obtained_attachment_id = attachment_id
+        self._obtained_attachment = self.attachment_service.get(attachment_id=attachment_id)
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+        self.mock_attachment_repository.get.assert_called_once_with(attachment_id=self._obtained_attachment_id)
+        self.mock_attachment_store.create_presigned_get.assert_called_once_with(self._expected_attachment_out)
+        assert seld._obtained_attachment == self._expected_attachment
+
+
+class TestGet(GetDSL):
+    """Tests for getting attachments."""
+
+    def test_get(self):
+        """Test getting attachments."""
+        self.mock_get()
+        self.call_get(str(ObjectId()))
+        self.check_get_success()
 
 
 class ListDSL(AttachmentServiceDSL):
