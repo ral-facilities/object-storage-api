@@ -38,10 +38,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
         :return: The JWT access token if authentication is successful.
         :raises HTTPException: If the supplied JWT access token is invalid or has expired.
         """
-        if (
-            not request.url.path == f"{config.api.root_path}/docs"
-            and not request.url.path == f"{config.api.root_path}/openapi.json"
-        ):
+        if request.url.path not in [f"{config.api.root_path}/docs", f"{config.api.root_path}/openapi.json"]:
             try:
                 credentials: HTTPAuthorizationCredentials = await security(request)
             except HTTPException as exc:
