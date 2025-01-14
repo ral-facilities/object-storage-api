@@ -166,7 +166,7 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
-    def test_create_with_invalid_file(self):
+    def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
 
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
@@ -394,7 +394,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(image_id)
         self.check_update_success()
 
-    def test_update_mismatch_file_extension(self):
+    def test_update_with_file_extension_content_type_mismatch(self):
         """Test updating filename to a mismatched file extension."""
         image_id = str(ObjectId())
 

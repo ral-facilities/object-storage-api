@@ -50,6 +50,25 @@ class CreateDSL:
             )
         return self._post_response_image.json()["id"] if self._post_response_image.status_code == 201 else None
 
+    def post_image_with_file_extension_content_type_mismatch(
+        self, image_post_metadata_data: dict, file_name: str
+    ) -> Optional[str]:
+        """
+        Posts an image with the given metadata and a test image file, changing the filename to a mismatched extension
+        and throwing an error.
+
+        :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
+                                         `ImagePostMetadataSchema`.
+        :param file_name: File name of the image to upload (relative to the 'test/files' directory).
+        :return: ID of the created image (or `None` if not successful).
+        """
+
+        with open(f"test/files/{file_name}", mode="rb") as file:
+            self._post_response_image = self.test_client.post(
+                "/images", data={**image_post_metadata_data}, files={"upload_file": ("image.png", file, "image/jpeg")}
+            )
+        return self._post_response_image.json()["id"] if self._post_response_image.status_code == 201 else None
+
     def check_post_image_success(self, expected_image_get_data: dict) -> None:
         """
         Checks that a prior call to `post_image` gave a successful response with the expected data returned.
@@ -99,6 +118,14 @@ class TestCreate(CreateDSL):
 
         self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "invalid_image.jpg")
         self.check_post_image_failed_with_detail(422, "File given is not a valid image")
+
+    def test_create_with_file_extension_content_type_mismatch(self):
+        """Test creating an image with a mismatched file extension."""
+
+        self.post_image_with_file_extension_content_type_mismatch(
+            IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg"
+        )
+        self.check_post_image_failed_with_detail(422, "Filename does not contain the correct extension")
 
 
 class GetDSL(CreateDSL):
@@ -364,7 +391,7 @@ class TestUpdate(UpdateDSL):
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
 
-    def test_partial_update_with_mismatched_extension(self):
+    def test_partial_update_with_file_extension_content_type_mismatch(self):
         """Test updating an image with a different extension."""
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"})
