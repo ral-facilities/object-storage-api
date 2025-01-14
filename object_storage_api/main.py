@@ -72,22 +72,21 @@ async def custom_general_exception_handler(_: Request, exc: Exception) -> JSONRe
 # pylint:disable=fixme
 # TODO: The auth code in this file is identical to the one in inventory-management-system-api - Use common repo?
 
+router_dependencies = []
 
-def get_router_dependencies() -> list:
-    """
-    Get the list of dependencies for the API routers.
-    :return: List of dependencies
-    """
-    dependencies = []
-    # Include the `JWTBearer` as a dependency if authentication is enabled
-    if config.authentication.enabled is True:
-        # pylint:disable=import-outside-toplevel
-        from object_storage_api.auth.jwt_bearer import JWTBearer
+# Add authentication middleware & dependency if enabled
+if config.authentication.enabled is True:
+    # pylint:disable=import-outside-toplevel
+    from object_storage_api.auth.jwt_middleware import JWTMiddleware, security
 
-        dependencies.append(Depends(JWTBearer()))
-    return dependencies
+    app.add_middleware(JWTMiddleware)
+
+    # This router dependency is still needed for the swagger docs show the authorise button, even though the actual
+    # auth is done in the middleware
+    router_dependencies.append(Depends(security))
 
 
+# Middlewares act in reverse order
 app.add_middleware(
     CORSMiddleware,
     allow_origins=config.api.allowed_cors_origins,
@@ -95,8 +94,6 @@ app.add_middleware(
     allow_methods=config.api.allowed_cors_methods,
     allow_headers=config.api.allowed_cors_headers,
 )
-
-router_dependencies = get_router_dependencies()
 
 app.include_router(attachment.router, dependencies=router_dependencies)
 app.include_router(image.router, dependencies=router_dependencies)
