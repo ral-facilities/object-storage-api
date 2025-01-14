@@ -127,7 +127,7 @@ class ImageService:
             update_type = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
                 raise InvalidFilenameExtension(
-                    f"Patch filename extension `{image.file_name}` does not match"
+                    f"Patch filename extension `{image.file_name}` does not match "
                     f"stored image `{stored_image.file_name}`"
                 )
 
