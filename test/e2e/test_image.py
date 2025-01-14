@@ -348,18 +348,18 @@ class UpdateDSL(ListDSL):
 class TestUpdate(UpdateDSL):
     """Tests for updating an image."""
 
-    def test_partial_update_all_fields(self):
+    def test_update_all_fields(self):
         """Test updating every field of an image."""
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES)
         self.check_patch_image_success(IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH)
 
-    def test_partial_update_with_non_existent_id(self):
+    def test_update_with_non_existent_id(self):
         """Test updating a non-existent image."""
         self.patch_image(str(ObjectId()), {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
 
-    def test_partial_update_invalid_id(self):
+    def test_update_invalid_id(self):
         """Test updating an image with an invalid ID."""
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
@@ -369,6 +369,26 @@ class TestUpdate(UpdateDSL):
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"})
         self.check_patch_image_failed_with_detail(422, "Filename does not contain the correct extension")
+
+    def test_update_primary(self):
+        """Test updating primary to True, triggering other database updates."""
+        image_id_a = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES}, "image.jpg")
+        entity_id = str(ObjectId())
+        image_id_b = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id}, "image.jpg")
+        image_id_c = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id}, "image.jpg")
+
+        self.patch_image(image_id_a, {"primary": True})
+        self.patch_image(image_id_b, {"primary": True})
+        self.patch_image(image_id_c, {"primary": True})
+
+        self.get_image(image_id_a)
+        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True})
+
+        self.get_image(image_id_b)
+        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": False, "entity_id": entity_id})
+
+        self.get_image(image_id_c)
+        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True, "entity_id": entity_id})
 
 
 class DeleteDSL(ListDSL):

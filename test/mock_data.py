@@ -136,6 +136,7 @@ IMAGE_PATCH_METADATA_DATA_ALL_VALUES = {
     "title": "Shattered Laser",
     "description": "An image of a shattered laser.",
     "file_name": "picture.jpg",
+    "primary": False,
 }
 
 IMAGE_POST_METADATA_DATA_ALL_VALUES = {

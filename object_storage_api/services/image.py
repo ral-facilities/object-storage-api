@@ -130,8 +130,12 @@ class ImageService:
                     f"Patch filename extension `{image.file_name}` does not match"
                     f"stored image `{stored_image.file_name}`"
                 )
+                
+        update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
         updated_image = self._image_repository.update(
-            image_id=image_id, image=ImageIn(**{**stored_image.model_dump(), **update_data})
+            image_id=image_id,
+            image=ImageIn(**{**stored_image.model_dump(), **update_data}),
+            update_primary=update_primary,
         )
 
         return ImageMetadataSchema(**updated_image.model_dump())
