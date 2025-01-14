@@ -18,12 +18,7 @@ class ImageStore:
     Store for managing images in an S3 object store.
     """
 
-    def upload(
-        self,
-        image_id: str,
-        image_metadata: ImagePostMetadataSchema,
-        upload_file: UploadFile,
-    ) -> str:
+    def upload(self, image_id: str, image_metadata: ImagePostMetadataSchema, upload_file: UploadFile) -> str:
         """
         Uploads a given image to object storage.
 
@@ -51,17 +46,13 @@ class ImageStore:
         :param image: `ImageOut` model of the image.
         :return: Presigned url to get the image.
         """
-        logger.info(
-            "Generating presigned url to get image with object key: %s from the object store",
-            image.object_key,
-        )
+        logger.info("Generating presigned url to get image with object key: %s from the object store", image.object_key)
         response = s3_client.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": image.object_key,
                 "ResponseContentDisposition": f'inline; filename="{image.file_name}"',
-                "ResponseContentType": "application/octet-stream",
             },
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
