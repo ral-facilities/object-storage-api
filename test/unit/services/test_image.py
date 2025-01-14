@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
     ImageMetadataSchema,
@@ -170,7 +170,7 @@ class TestCreate(CreateDSL):
         """Test creating an image with an inconsistent file extension and content type."""
 
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
-        self.call_create_expecting_error(InvalidObjectIdError)
+        self.call_create_expecting_error(InvalidFilenameExtension)
         self.check_create_failed_with_exception(
             f"File extension `{self._upload_file.filename}` does not match "
             f"content type `{self._upload_file.content_type}`"

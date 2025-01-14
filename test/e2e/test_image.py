@@ -364,6 +364,12 @@ class TestUpdate(UpdateDSL):
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
 
+    def test_partial_update_with_mismatched_extension(self):
+        """Test updating an image with a different extension."""
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"})
+        self.check_patch_image_failed_with_detail(422, "Filename does not contain the correct extension")
+
 
 class DeleteDSL(ListDSL):
     """Base class for delete tests."""
