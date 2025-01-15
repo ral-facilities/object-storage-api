@@ -7,6 +7,7 @@ import logging
 from fastapi import UploadFile
 
 from object_storage_api.core.object_store import object_storage_config, s3_client
+from object_storage_api.models.image import ImageOut
 from object_storage_api.schemas.image import ImagePostMetadataSchema
 
 logger = logging.getLogger()
@@ -28,7 +29,7 @@ class ImageStore:
         """
         object_key = f"images/{image_metadata.entity_id}/{image_id}"
 
-        logger.info("Uploading image file to the object storage")
+        logger.info("Uploading image file with object key: %s to the object store", object_key)
         s3_client.upload_fileobj(
             upload_file.file,
             Bucket=object_storage_config.bucket_name.get_secret_value(),
@@ -37,3 +38,36 @@ class ImageStore:
         )
 
         return object_key
+
+    def create_presigned_get(self, image: ImageOut) -> str:
+        """
+        Generate a presigned URL to share an S3 object.
+
+        :param image: `ImageOut` model of the image.
+        :return: Presigned url to get the image.
+        """
+        logger.info("Generating presigned url to get image with object key: %s from the object store", image.object_key)
+        response = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": image.object_key,
+                "ResponseContentDisposition": f'inline; filename="{image.file_name}"',
+            },
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+        )
+
+        return response
+
+    def delete(self, object_key: str) -> None:
+        """
+        Deletes a given image from object storage.
+
+        :param object_key: Key of the image to delete.
+        """
+
+        logger.info("Deleting image file with object key: %s from the object store", object_key)
+        s3_client.delete_object(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=object_key,
+        )

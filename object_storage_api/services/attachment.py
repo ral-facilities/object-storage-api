@@ -4,7 +4,7 @@ store.
 """
 
 import logging
-from typing import Annotated
+from typing import Annotated, Optional
 
 from bson import ObjectId
 from fastapi import Depends
@@ -12,7 +12,11 @@ from fastapi import Depends
 from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
-from object_storage_api.schemas.attachment import AttachmentPostResponseSchema, AttachmentPostSchema
+from object_storage_api.schemas.attachment import (
+    AttachmentMetadataSchema,
+    AttachmentPostResponseSchema,
+    AttachmentPostSchema,
+)
 from object_storage_api.stores.attachment import AttachmentStore
 
 logger = logging.getLogger()
@@ -62,3 +66,15 @@ class AttachmentService:
         attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)
+
+    def list(self, entity_id: Optional[str] = None) -> list[AttachmentMetadataSchema]:
+        """
+        Retrieve a list of attachments based on the provided filters.
+
+        :param entity_id: The ID of the entity to filter attachments by.
+        :return: List of attachments or an empty list if no attachments are retrieved.
+        """
+
+        attachments = self._attachment_repository.list(entity_id)
+
+        return [AttachmentMetadataSchema(**attachment.model_dump()) for attachment in attachments]

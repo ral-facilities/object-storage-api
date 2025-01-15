@@ -6,9 +6,14 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, File, Form, Query, UploadFile, status
+from fastapi import APIRouter, Depends, File, Form, Path, Query, UploadFile, status
 
-from object_storage_api.schemas.image import ImagePostMetadataSchema, ImageSchema
+from object_storage_api.schemas.image import (
+    ImageMetadataSchema,
+    ImagePatchMetadataSchema,
+    ImagePostMetadataSchema,
+    ImageSchema,
+)
 from object_storage_api.services.image import ImageService
 
 logger = logging.getLogger()
@@ -36,7 +41,7 @@ def create_image(
     upload_file: Annotated[UploadFile, File(description="Image file")],
     title: Annotated[Optional[str], Form(description="Title of the image")] = None,
     description: Annotated[Optional[str], Form(description="Description of the image")] = None,
-) -> ImageSchema:
+) -> ImageMetadataSchema:
     # pylint: disable=missing-function-docstring
     logger.info("Creating a new image")
 
@@ -57,7 +62,7 @@ def get_images(
     image_service: ImageServiceDep,
     entity_id: Annotated[Optional[str], Query(description="Filter images by entity ID")] = None,
     primary: Annotated[Optional[bool], Query(description="Filter images by primary")] = None,
-) -> list[ImageSchema]:
+) -> list[ImageMetadataSchema]:
     # pylint: disable=missing-function-docstring
     logger.info("Getting images")
 
@@ -67,3 +72,46 @@ def get_images(
         logger.debug("Primary filter: '%s'", primary)
 
     return image_service.list(entity_id, primary)
+
+
+@router.get(path="/{image_id}", summary="Get an image by ID", response_description="Single image")
+def get_image(
+    image_id: Annotated[str, Path(description="ID of the image to get")],
+    image_service: ImageServiceDep,
+) -> ImageSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting image with ID: %s", image_id)
+
+    return image_service.get(image_id)
+
+
+@router.patch(
+    path="/{image_id}",
+    summary="Update an image partially by ID",
+    response_description="Image updated successfully",
+)
+def partial_update_image(
+    image: ImagePatchMetadataSchema,
+    image_id: Annotated[str, Path(description="ID of the image to update")],
+    image_service: ImageServiceDep,
+) -> ImageMetadataSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating image with ID: %s", image_id)
+    logger.debug("Image data: %s", image)
+
+    return image_service.update(image_id, image)
+
+
+@router.delete(
+    path="/{image_id}",
+    summary="Delete an image by ID",
+    response_description="Image deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_image(
+    image_id: Annotated[str, Path(description="The ID of the image to delete")],
+    image_service: ImageServiceDep,
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting image with ID: %s", image_id)
+    image_service.delete(image_id)

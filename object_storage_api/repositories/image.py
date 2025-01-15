@@ -5,11 +5,13 @@ Module for providing a repository for managing images in a MongoDB database.
 import logging
 from typing import Optional
 
+from pymongo import UpdateMany, UpdateOne
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 
 logger = logging.getLogger()
@@ -29,7 +31,7 @@ class ImageRepo:
         self._database = database
         self._images_collection: Collection = self._database.images
 
-    def create(self, image: ImageIn, session: ClientSession = None) -> ImageOut:
+    def create(self, image: ImageIn, session: Optional[ClientSession] = None) -> ImageOut:
         """
         Create a new image in a MongoDB database.
 
@@ -42,22 +44,31 @@ class ImageRepo:
         result = self._images_collection.insert_one(image.model_dump(by_alias=True), session=session)
         return self.get(str(result.inserted_id), session=session)
 
-    def get(self, image_id: str, session: ClientSession = None) -> Optional[ImageOut]:
+    def get(self, image_id: str, session: Optional[ClientSession] = None) -> ImageOut:
         """
         Retrieve an image by its ID from a MongoDB database.
 
         :param image_id: ID of the image to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: Retrieved image or `None` if not found.
+        :return: Retrieved image if found.
+        :raises MissingRecordError: If the supplied `image_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
-        image_id = CustomObjectId(image_id)
         logger.info("Retrieving image with ID: %s from the database", image_id)
-        image = self._images_collection.find_one({"_id": image_id}, session=session)
+        try:
+            image_id = CustomObjectId(image_id)
+            image = self._images_collection.find_one({"_id": image_id}, session=session)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Image not found"
+            raise exc
         if image:
             return ImageOut(**image)
-        return None
+        raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_name="image")
 
-    def list(self, entity_id: Optional[str], primary: Optional[bool], session: ClientSession = None) -> list[ImageOut]:
+    def list(
+        self, entity_id: Optional[str], primary: Optional[bool], session: Optional[ClientSession] = None
+    ) -> list[ImageOut]:
         """
         Retrieve images from a MongoDB database.
 
@@ -66,6 +77,9 @@ class ImageRepo:
         :param primary: The primary value to filter images by.
         :return: List of images or an empty list if no images are retrieved.
         """
+
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
 
         query = {}
         if entity_id is not None:
@@ -80,5 +94,60 @@ class ImageRepo:
             logger.info("%s matching the provided filter(s)", message)
             logger.debug("Provided filter(s): %s", query)
 
+        # pylint: enable=duplicate-code
+
         images = self._images_collection.find(query, session=session)
         return [ImageOut(**image) for image in images]
+
+    def update(self, image_id: str, image: ImageIn, update_primary: bool, session: ClientSession = None) -> ImageOut:
+        """
+        Updates an image by its ID in a MongoDB database.
+
+        :param image_id: The ID of the image to update.
+        :param image: The image containing the update data.
+        :param update_primary: Decides whether to set primary to False for other images.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: The updated image.
+        :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
+        """
+
+        logger.info("Updating image metadata with ID: %s", image_id)
+        try:
+            image_id = CustomObjectId(image_id)
+            if update_primary:
+                bulkwrite_update = [
+                    UpdateMany(
+                        filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}
+                    ),
+                    UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
+                ]
+                self._images_collection.bulk_write(bulkwrite_update, session=session)
+            else:
+                self._images_collection.update_one(
+                    {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
+                )
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Image not found"
+            raise exc
+        return self.get(image_id=str(image_id), session=session)
+
+    def delete(self, image_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Delete an image by its ID from a MongoDB database.
+
+        :param image_id: The ID of the image to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        :raises MissingRecordError: If the supplied `image_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
+        """
+        logger.info("Deleting image with ID: %s from the database", image_id)
+        try:
+            image_id = CustomObjectId(image_id)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Image not found"
+            raise exc
+        response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
+        if response.deleted_count == 0:
+            raise MissingRecordError(f"No image found with ID: {image_id}", "image")

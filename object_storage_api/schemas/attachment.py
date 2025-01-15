@@ -29,12 +29,19 @@ class AttachmentPostUploadInfoSchema(BaseModel):
     fields: dict = Field(description="Form fields required for submitting the attachment file upload request")
 
 
-class AttachmentPostResponseSchema(CreatedModifiedSchemaMixin, AttachmentPostSchema):
+class AttachmentMetadataSchema(AttachmentPostSchema):
+    """
+    Schema model for an attachment's metadata.
+    """
+
+    id: str = Field(description="ID of the attachment")
+
+
+class AttachmentPostResponseSchema(CreatedModifiedSchemaMixin, AttachmentMetadataSchema):
     """
     Schema model for the response to an attachment creation request.
     """
 
-    id: str = Field(description="ID of the attachment")
     upload_info: AttachmentPostUploadInfoSchema = Field(
         description="Information required to upload the attachment file"
     )

@@ -9,7 +9,9 @@ from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
+from pymongo import UpdateMany, UpdateOne
 
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.repositories.image import ImageRepo
 
@@ -47,7 +49,7 @@ class CreateDSL(ImageRepoDSL):
         """
         Mocks database methods appropriately to test the `create` repo method.
 
-        :param image_in_data: Dictionary containing the image data as would be required for a `ImageIn`
+        :param image_in_data: Dictionary containing the image data as would be required for an `ImageIn`
                                    database model (i.e. no created and modified times required).
         """
 
@@ -88,6 +90,109 @@ class TestCreate(CreateDSL):
         self.check_create_success()
 
 
+class GetDSL(ImageRepoDSL):
+    """Base class for `get` tests."""
+
+    _obtained_image_id: str
+    _expected_image_out: ImageOut
+    _obtained_image_out: ImageOut
+    _get_exception: pytest.ExceptionInfo
+
+    def mock_get(self, image_id: str, image_in_data: dict) -> None:
+        """
+        Mocks database methods appropriately to test the `get` repo method.
+
+        :param image_id: ID of the image to obtain.
+        :param image_in_data: Dictionary containing the image data as would be required for an
+            `ImageIn` database model (i.e. no created and modified times required).
+        """
+        if image_in_data:
+            image_in_data["id"] = image_id
+        self._expected_image_out = ImageOut(**ImageIn(**image_in_data).model_dump()) if image_in_data else None
+
+        RepositoryTestHelpers.mock_find_one(
+            self.images_collection, self._expected_image_out.model_dump() if self._expected_image_out else None
+        )
+
+    def call_get(self, image_id: str) -> None:
+        """
+        Calls the `ImageRepo` `get` method.
+
+        :param image_id: The ID of the image to obtain.
+        """
+        self._obtained_image_id = image_id
+        self._obtained_image_out = self.image_repository.get(image_id=image_id, session=self.mock_session)
+
+    def call_get_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ImageRepo` `get` method with the appropriate data from a prior call to `mock_get`
+        while expecting an error to be raised.
+
+        :param image_id: ID of the image to be obtained.
+        :param error_type: Expected exception to be raised.
+        """
+        self._obtained_image_id = image_id
+        with pytest.raises(error_type) as exc:
+            self.image_repository.get(image_id, session=self.mock_session)
+        self._get_exception = exc
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+
+        self.images_collection.find_one.assert_called_once_with(
+            {"_id": ObjectId(self._obtained_image_id)}, session=self.mock_session
+        )
+        assert self._obtained_image_out == self._expected_image_out
+
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param image_id: ID of the expected image to appear in the exception detail.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made,
+            else it asserts that no call was made.
+        """
+        if assert_find:
+            self.images_collection.find_one.assert_called_once_with(
+                {"_id": ObjectId(self._obtained_image_id)}, session=self.mock_session
+            )
+        else:
+            self.images_collection.find_one.assert_not_called()
+
+        assert str(self._get_exception.value) == message
+
+
+class TestGet(GetDSL):
+    """Tests for getting images."""
+
+    def test_get(self):
+        """Test getting an image."""
+
+        image_id = str(ObjectId())
+
+        self.mock_get(image_id, IMAGE_IN_DATA_ALL_VALUES)
+        self.call_get(image_id)
+        self.check_get_success()
+
+    def test_get_with_non_existent_id(self):
+        """Test getting an image with a non-existent image ID."""
+
+        image_id = str(ObjectId())
+
+        self.mock_get(image_id, None)
+        self.call_get_expecting_error(image_id, MissingRecordError)
+        self.check_get_failed_with_exception(f"No image found with ID: {image_id}", True)
+
+    def test_get_with_invalid_id(self):
+        """Test getting an image with an invalid image ID."""
+        image_id = "invalid-id"
+
+        self.mock_get(image_id, None)
+        self.call_get_expecting_error(image_id, InvalidObjectIdError)
+        self.check_get_failed_with_exception(f"Invalid ObjectId value '{image_id}'")
+
+
 class ListDSL(ImageRepoDSL):
     """Base class for `list` tests."""
 
@@ -101,7 +206,7 @@ class ListDSL(ImageRepoDSL):
         Mocks database methods appropriately to test the `list` repo method.
 
         :param image_in_data: List of dictionaries containing the image data as would be required for an
-            `ImageIn` database model (i.e. no ID or created and modified times required).
+            `ImageIn` database model (i.e. no created and modified times required).
         """
         self._expected_image_out = [
             ImageOut(**ImageIn(**image_in_data).model_dump()) for image_in_data in image_in_data
@@ -133,6 +238,10 @@ class ListDSL(ImageRepoDSL):
 
         self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
+
+
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
 
 
 class TestList(ListDSL):
@@ -167,3 +276,229 @@ class TestList(ListDSL):
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=True, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
+
+
+# pylint: enable=duplicate-code
+
+
+class UpdateDSL(ImageRepoDSL):
+    """Base class for `update` tests."""
+
+    _image_in: ImageIn
+    _expected_image_out: ImageOut
+    _updated_image_id: str
+    _updated_image: ImageOut
+    _update_exception: pytest.ExceptionInfo
+
+    def set_update_data(self, new_image_in_data: dict):
+        """
+        Assigns the update data to use during a call to `call_update`.
+
+        :param new_image_in_data: New image data as would be required for an `ImageIn` database model to supply to the
+                                 `ImageRepo` `update` method.
+        """
+        self._image_in = ImageIn(**new_image_in_data)
+
+    def mock_update(
+        self,
+        new_image_in_data: dict,
+    ) -> None:
+        """
+        Mocks database methods appropriately to test the `update` repo method.
+
+        :param new_image_in_data: Dictionary containing the new image data as would be required for an `ImageIn`
+                                    database model (i.e. no created and modified times required).
+        """
+        self.set_update_data(new_image_in_data)
+
+        self._expected_image_out = ImageOut(**self._image_in.model_dump())
+        RepositoryTestHelpers.mock_find_one(self.images_collection, self._expected_image_out.model_dump(by_alias=True))
+
+    def call_update(self, image_id: str) -> None:
+        """
+        Calls the `ImageRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`).
+
+        :param image_id: ID of the image to be updated.
+        """
+
+        self._updated_image_id = image_id
+        self._updated_image = self.image_repository.update(
+            image_id, self._image_in, update_primary=self._expected_image_out.primary, session=self.mock_session
+        )
+
+    def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ImageRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`) while expecting an error to be raised.
+
+        :param image_id: ID of the image to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.image_repository.update(image_id, self._image_in, update_primary=False)
+        self._update_exception = exc
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
+        if self._expected_image_out.primary is True:
+            self.images_collection.bulk_write.assert_called_once_with(
+                [
+                    UpdateMany(
+                        {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
+                        {"$set": {"primary": False}},
+                    ),
+                    UpdateOne(
+                        {"_id": ObjectId(self._updated_image_id)},
+                        {"$set": self._image_in.model_dump(by_alias=True)},
+                    ),
+                ],
+                session=self.mock_session,
+            )
+        else:
+            self.images_collection.update_one.assert_called_once_with(
+                {
+                    "_id": ObjectId(self._updated_image_id),
+                },
+                {
+                    "$set": self._image_in.model_dump(by_alias=True),
+                },
+                session=self.mock_session,
+            )
+        assert self._updated_image == self._expected_image_out
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` failed as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.images_collection.update_one.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating an image."""
+
+    def test_update(self):
+        """Test updating an image."""
+
+        image_id = str(ObjectId())
+
+        self.mock_update(IMAGE_IN_DATA_ALL_VALUES)
+        self.call_update(image_id)
+        self.check_update_success()
+
+    def test_update_primary(self):
+        """Test updating an image's primary from false to true"""
+
+        image_id = str(ObjectId())
+
+        self.mock_update({**IMAGE_IN_DATA_ALL_VALUES, "primary": True})
+        self.call_update(image_id)
+        self.check_update_success()
+
+    def test_update_with_invalid_id(self):
+        """Test updating an image with an invalid ID."""
+
+        image_id = "invalid-id"
+
+        self.set_update_data(IMAGE_IN_DATA_ALL_VALUES)
+        self.call_update_expecting_error(image_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class DeleteDSL(ImageRepoDSL):
+    """Base class for `delete` tests."""
+
+    _delete_image_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(self, deleted_count: int) -> None:
+        """
+        Mocks database methods appropriately to test the `delete` repo method.
+
+        :param deleted_count: Number of documents deleted successfully.
+        """
+        RepositoryTestHelpers.mock_delete_one(self.images_collection, deleted_count)
+
+    def call_delete(self, image_id: str) -> None:
+        """
+        Calls the `ImageRepo` `delete` method.
+
+        :param image_id: ID of the image to be deleted.
+        """
+
+        self._delete_image_id = image_id
+        self.image_repository.delete(image_id, session=self.mock_session)
+
+    def call_delete_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ImageRepo` `delete` method while expecting an error to be raised.
+
+        :param image_id: ID of the image to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+
+        self._delete_image_id = image_id
+        with pytest.raises(error_type) as exc:
+            self.image_repository.delete(image_id, session=self.mock_session)
+        self._delete_exception = exc
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+
+        self.images_collection.delete_one.assert_called_once_with(
+            filter={"_id": ObjectId(self._delete_image_id)}, session=self.mock_session
+        )
+
+    def check_delete_failed_with_exception(self, message: str, assert_delete: bool = False) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        :param assert_delete: Whether the `find_one_and_delete` method is expected to be called or not.
+        """
+
+        if not assert_delete:
+            self.images_collection.delete_one.assert_not_called()
+        else:
+            self.images_collection.delete_one.assert_called_once_with(
+                filter={"_id": ObjectId(self._delete_image_id)},
+                session=self.mock_session,
+            )
+
+        assert str(self._delete_exception.value) == message
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an image."""
+
+    def test_delete(self):
+        """Test deleting an image."""
+
+        self.mock_delete(1)
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+    def test_delete_non_existent_id(self):
+        """Test deleting an image with a non-existent ID."""
+
+        image_id = str(ObjectId())
+
+        self.mock_delete(0)
+        self.call_delete_expecting_error(image_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No image found with ID: {image_id}", assert_delete=True)
+
+    def test_delete_invalid_id(self):
+        """Test deleting an image with an invalid ID."""
+
+        image_id = "invalid-id"
+
+        self.call_delete_expecting_error(image_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception(f"Invalid ObjectId value '{image_id}'")

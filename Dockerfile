@@ -1,4 +1,4 @@
-FROM python:3.12.7-alpine3.20@sha256:edd1d8559c585e1e9a9b79de44ac27f8ac32cb0c7323e112ae6870ceeecd8dbf
+FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b
 
 WORKDIR /object-storage-api-run
 

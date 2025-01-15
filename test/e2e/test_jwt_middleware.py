@@ -16,6 +16,15 @@ import pytest
 from fastapi.routing import APIRoute
 
 
+def test_jwt_middleware_allows_authenticated_request(test_client):
+    """
+    Test the `JWTMiddleware` dependency appropriately allows a request with a valid bearer token.
+    """
+
+    response = test_client.request("GET", "/attachments", headers={"Authorization": f"Bearer {VALID_ACCESS_TOKEN}"})
+    assert response.status_code == 200
+
+
 @pytest.mark.parametrize(
     "headers, expected_response_message",
     [
@@ -51,9 +60,9 @@ from fastapi.routing import APIRoute
         ),
     ],
 )
-def test_jwt_bearer_authorization_request(test_client, headers, expected_response_message):
+def test_jwt_middleware_denies_unauthenticated_requests(test_client, headers, expected_response_message):
     """
-    Test the `JWTBearer` routers' dependency on all the API routes.
+    Test the `JWTMiddleware` dependency appropriately denies all requests without proper authentication.
     """
     api_routes = [
         api_route for api_route in test_client.app.routes if isinstance(api_route, APIRoute) and api_route.path != "/"
@@ -65,3 +74,29 @@ def test_jwt_bearer_authorization_request(test_client, headers, expected_respons
                 response = test_client.request(method, api_route.path, headers=headers)
                 assert response.status_code == 403
                 assert response.json()["detail"] == expected_response_message
+
+
+@pytest.mark.parametrize(
+    "route_path",
+    [
+        pytest.param(
+            "/",
+            id="root",
+        ),
+        pytest.param(
+            "/docs",
+            id="docs",
+        ),
+        pytest.param(
+            "/openapi.json",
+            id="openapi.json",
+        ),
+    ],
+)
+def test_jwt_middleware_allows_unauthenticated_get_requests(test_client, route_path):
+    """
+    Test the `JWTMiddleware` dependency appropriately allows GET requests at specific route paths.
+    """
+
+    response = test_client.request("GET", route_path, headers={})
+    assert response.status_code == 200
