@@ -189,7 +189,7 @@ class GetDSL(AttachmentServiceDSL):
         """Checks that a prior call to `call_get` worked as expected."""
         self.mock_attachment_repository.get.assert_called_once_with(attachment_id=self._obtained_attachment_id)
         self.mock_attachment_store.create_presigned_get.assert_called_once_with(self._expected_attachment_out)
-        assert seld._obtained_attachment == self._expected_attachment
+        assert self._obtained_attachment == self._expected_attachment
 
 
 class TestGet(GetDSL):

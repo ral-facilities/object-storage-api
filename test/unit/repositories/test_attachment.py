@@ -109,10 +109,13 @@ class GetDSL(AttachmentRepoDSL):
         """
         if attachment_in_data:
             attachment_in_data["id"] = attachment_id
-        self._expected_attachment_out = AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump()) if attachment_in_data else None
+        self._expected_attachment_out = (
+            AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump()) if attachment_in_data else None
+        )
 
         RepositoryTestHelpers.mock_find_one(
-            self.attachments_collection, self._expected_attachment_out.model_dump() if self._expected_attachment_out else None
+            self.attachments_collection,
+            self._expected_attachment_out.model_dump() if self._expected_attachment_out else None,
         )
 
     def call_get(self, attachment_id: str) -> None:
@@ -122,9 +125,11 @@ class GetDSL(AttachmentRepoDSL):
         :param attachment_id: The ID of the attachment to obtain.
         """
         self._obtained_attachment_id = attachment_id
-        self._obtained_attachment_out = self.attachment_repository.get(attachment_id=attachment_id, session=self.mock_session)
+        self._obtained_attachment_out = self.attachment_repository.get(
+            attachment_id=attachment_id, session=self.mock_session
+        )
 
-    def call_get_expecting_error(self, attachment_id: str, error_type: type[BaseException])-> None:
+    def call_get_expecting_error(self, attachment_id: str, error_type: type[BaseException]) -> None:
         """
         Calls the `AttachmentRepo` `get` method with the appropriate data from a prior call to `mock_get`
         while expecting an error to be raised.

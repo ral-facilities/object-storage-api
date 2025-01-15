@@ -164,7 +164,7 @@ class GetDSL(CreateDSL):
         """Checks that prior call to `get_attachment` gave a failed response."""
 
         assert self._get_response_attachment.status_code == 404
-        assert self._get_response_attachment.json()["detail"] == "Image not found"
+        assert self._get_response_attachment.json()["detail"] == "Attachment not found"
 
 
 class TestGet(GetDSL):
@@ -183,9 +183,10 @@ class TestGet(GetDSL):
 
     def test_get_with_non_existent_attachment_id(self):
         """Test getting an attachment with a non-existent attachment ID."""
-        attachment_id = str(ObjectID())
+        attachment_id = str(ObjectId())
         self.get_attachment(attachment_id)
         self.check_get_attachment_failed()
+
 
 class ListDSL(GetDSL):
     """Base class for list tests."""

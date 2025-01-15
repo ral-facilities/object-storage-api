@@ -38,6 +38,7 @@ class AttachmentPostResponseSchema(CreatedModifiedSchemaMixin, AttachmentMetadat
         description="Information required to upload the attachment file"
     )
 
+
 class AttachmentSchema(AttachmentMetadataSchema):
     """Schema model for an attachment get request response."""
 
