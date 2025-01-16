@@ -24,13 +24,18 @@ class AttachmentStore:
         :param attachment: `AttachmentOut` model of the attachment
         :return: Presigned url to get the attachment.
         """
-        logger.info("Generating presigned url to get attachment from object storage")
+
+        logger.info(
+            "Generating presigned url to get attachment with object key: %s from the object store",
+            attachment.object_key,
+        )
+
         response = s3_client.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": attachment.object_key,
-                "ResponseContentDisposition": f'inline; filename="{attachment.file_name}"',
+                "ResponseContentDisposition": f'attachment; filename="{attachment.file_name}"',
             },
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )

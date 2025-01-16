@@ -75,6 +75,7 @@ class AttachmentService:
         :param attachment_id: ID of the attachment to retrieve.
         :return: An attachment's metadata with a presigned get url.
         """
+
         attachment = self._attachment_repository.get(attachment_id=attachment_id)
         presigned_url = self._attachment_store.create_presigned_get(attachment)
         return AttachmentSchema(**attachment.model_dump(), url=presigned_url)

@@ -131,7 +131,7 @@ class CreatePresignedURLDSL(AttachmentStoreDSL):
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": self._attachment_out.object_key,
-                "ResponseContentDisposition": f'inline; filename="{self._attachment_out.file_name}"',
+                "ResponseContentDisposition": f'attachment; filename="{self._attachment_out.file_name}"',
             },
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
