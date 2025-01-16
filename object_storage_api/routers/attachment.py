@@ -6,10 +6,11 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
+    AttachmentPatchMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
 )
@@ -55,3 +56,20 @@ def get_attachments(
         logger.debug("Entity ID filter: '%s'", entity_id)
 
     return attachment_service.list(entity_id)
+
+
+@router.patch(
+    path="/{attachment_id}",
+    summary="Update an attachment partially by ID",
+    response_description="Attachment updated successfully",
+)
+def partial_update_attachment(
+    attachment: AttachmentPatchMetadataSchema,
+    attachment_id: Annotated[str, Path(description="ID of the attachment to update")],
+    attachment_service: AttachmentServiceDep,
+) -> AttachmentMetadataSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating attachment with ID: %s", attachment_id)
+    logger.debug("Attachment data: %s", attachment)
+
+    return attachment_service.update(attachment_id, attachment)

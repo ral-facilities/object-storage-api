@@ -9,6 +9,14 @@ from pydantic import BaseModel, Field, HttpUrl
 from object_storage_api.schemas.mixins import CreatedModifiedSchemaMixin
 
 
+class AttachmentPatchMetadataSchema(BaseModel):
+    """Schema model for an attachment update request."""
+
+    title: Optional[str] = Field(default=None, description="Title of the attachment")
+    description: Optional[str] = Field(default=None, description="Description of the attachment")
+    file_name: Optional[str] = Field(default=None, description="File name of the attachment")
+
+
 class AttachmentPostSchema(BaseModel):
     """
     Schema model for an attachment creation request.

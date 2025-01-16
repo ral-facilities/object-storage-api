@@ -14,6 +14,7 @@ from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
+    AttachmentPatchMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
 )
@@ -78,3 +79,22 @@ class AttachmentService:
         attachments = self._attachment_repository.list(entity_id)
 
         return [AttachmentMetadataSchema(**attachment.model_dump()) for attachment in attachments]
+
+    def update(self, attachment_id: str, attachment: AttachmentPatchMetadataSchema) -> AttachmentMetadataSchema:
+        """
+        Update an attachment by its ID.
+
+        :param attachment_id: The ID of the attachment to update.
+        :param attachment: The attachment containing the fields to be updated.
+        :return: The updated attachment.
+        """
+
+        stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
+        update_data = attachment.model_dump(exclude_unset=True)
+
+        updated_attachment = self._attachment_repository.update(
+            attachment_id=attachment_id,
+            attachment=AttachmentIn(**{**stored_attachment.model_dump(), **update_data}),
+        )
+
+        return AttachmentMetadataSchema(**updated_attachment.model_dump())
