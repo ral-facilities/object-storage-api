@@ -153,24 +153,26 @@ class CreatePresignedURLDSL(ImageStoreDSL):
     def check_create_presigned_get_success(self) -> None:
         """Checks that a prior call to `call_create_presigned_get` worked as expected."""
 
+        parameters = {
+            "ClientMethod": "get_object",
+            "Params": {
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": self._image_out.object_key,
+                "ResponseContentDisposition": f'inline; filename="{self._image_out.file_name}"',
+            },
+            "ExpiresIn": object_storage_config.presigned_url_expiry_seconds,
+        }
+
         expected_calls = [
+            call.generate_presigned_url(**parameters),
             call.generate_presigned_url(
-                "get_object",
-                Params={
-                    "Bucket": object_storage_config.bucket_name.get_secret_value(),
-                    "Key": self._image_out.object_key,
-                    "ResponseContentDisposition": f'inline; filename="{self._image_out.file_name}"',
-                },
-                ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
-            ),
-            call.generate_presigned_url(
-                "get_object",
-                Params={
-                    "Bucket": object_storage_config.bucket_name.get_secret_value(),
-                    "Key": self._image_out.object_key,
-                    "ResponseContentDisposition": f'attachment; filename="{self._image_out.file_name}"',
-                },
-                ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+                **{
+                    **parameters,
+                    "Params": {
+                        **parameters["Params"],
+                        "ResponseContentDisposition": f'attachment; filename="{self._image_out.file_name}"',
+                    },
+                }
             ),
         ]
         self.mock_s3_client.assert_has_calls(expected_calls)
@@ -180,10 +182,10 @@ class CreatePresignedURLDSL(ImageStoreDSL):
 
 
 class TestCreatePresignedURL(CreatePresignedURLDSL):
-    """Tests for creating a presigned url for an image."""
+    """Tests for creating presigned get urls for an image."""
 
     def test_create_presigned_get(self):
-        """Test creating a presigned url for an image."""
+        """Test creating presigned get urls for an image."""
 
         self.mock_create_presigned_get(IMAGE_IN_DATA_ALL_VALUES)
         self.call_create_presigned_get()
