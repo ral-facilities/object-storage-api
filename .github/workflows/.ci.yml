@@ -144,5 +144,4 @@ jobs:
           push: ${{ fromJSON(env.PUSH_DOCKER_IMAGE_TO_HARBOR) }}
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-          target: prod
 
