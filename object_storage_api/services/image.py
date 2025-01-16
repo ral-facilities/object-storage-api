@@ -82,14 +82,14 @@ class ImageService:
 
     def get(self, image_id: str) -> ImageSchema:
         """
-        Retrieve an image's metadata with its presigned get download and inline urls by its ID.
+        Retrieve an image's metadata with its presigned get download and view urls by its ID.
 
         :param image_id: ID of the image to retrieve.
         :return: An image's metadata with its presigned get urls.
         """
         image = self._image_repository.get(image_id=image_id)
-        (inline_url, download_url) = self._image_store.create_presigned_get(image)
-        return ImageSchema(**image.model_dump(), inline_url=inline_url, download_url=download_url)
+        (view_url, download_url) = self._image_store.create_presigned_get(image)
+        return ImageSchema(**image.model_dump(), view_url=view_url, download_url=download_url)
 
     def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageMetadataSchema]:
         """

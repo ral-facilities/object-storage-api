@@ -58,7 +58,7 @@ class ImageStore:
             "ExpiresIn": object_storage_config.presigned_url_expiry_seconds,
         }
 
-        inline_response = s3_client.generate_presigned_url(**parameters)
+        view_response = s3_client.generate_presigned_url(**parameters)
 
         attachment_response = s3_client.generate_presigned_url(
             **{
@@ -70,7 +70,7 @@ class ImageStore:
             }
         )
 
-        return (inline_response, attachment_response)
+        return (view_response, attachment_response)
 
     def delete(self, object_key: str) -> None:
         """

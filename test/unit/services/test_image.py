@@ -191,7 +191,7 @@ class GetDSL(ImageServiceDSL):
         )
         self._expected_image = ImageSchema(
             **self._expected_image_out.model_dump(),
-            inline_url="https://fakepresignedurl.co.uk/inline",
+            view_url="https://fakepresignedurl.co.uk/inline",
             download_url="https://fakepresignedurl.co.uk/attachment",
         )
 

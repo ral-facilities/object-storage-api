@@ -118,8 +118,8 @@ class CreatePresignedURLDSL(ImageStoreDSL):
     """Base class for `create` tests."""
 
     _image_out: ImageOut
-    _expected_presigned_inline_url: str
-    _obtained_presigned_inline_url: str
+    _expected_presigned_view_url: str
+    _obtained_presigned_view_url: str
     _expected_presigned_download_url: str
     _obtained_presigned_download_url: str
 
@@ -133,10 +133,10 @@ class CreatePresignedURLDSL(ImageStoreDSL):
         self._image_out = ImageOut(**ImageIn(**image_in_data).model_dump())
 
         # Mock presigned url generation
-        self._expected_presigned_inline_url = "example_presigned_inline_url"
+        self._expected_presigned_view_url = "example_presigned_view_url"
         self._expected_presigned_download_url = "example_presigned_downloadurl"
         self.mock_s3_client.generate_presigned_url.side_effect = [
-            self._expected_presigned_inline_url,
+            self._expected_presigned_view_url,
             self._expected_presigned_download_url,
         ]
 
@@ -146,7 +146,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
             `mock_create_presigned_get`.
         """
 
-        (self._obtained_presigned_inline_url, self._obtained_presigned_download_url) = (
+        (self._obtained_presigned_view_url, self._obtained_presigned_download_url) = (
             self.image_store.create_presigned_get(self._image_out)
         )
 
@@ -177,7 +177,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
         ]
         self.mock_s3_client.assert_has_calls(expected_calls)
 
-        assert self._obtained_presigned_inline_url == self._expected_presigned_inline_url
+        assert self._obtained_presigned_view_url == self._expected_presigned_view_url
         assert self._obtained_presigned_download_url == self._expected_presigned_download_url
 
 
