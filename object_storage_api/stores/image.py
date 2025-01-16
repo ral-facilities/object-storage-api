@@ -39,7 +39,7 @@ class ImageStore:
 
         return object_key
 
-    def create_presigned_get(self, image: ImageOut) -> str:
+    def create_presigned_get(self, image: ImageOut) -> tuple[str, str]:
         """
         Generate a presigned URL to share an S3 object.
 
@@ -47,7 +47,8 @@ class ImageStore:
         :return: Presigned url to get the image.
         """
         logger.info("Generating presigned url to get image with object key: %s from the object store", image.object_key)
-        response = s3_client.generate_presigned_url(
+
+        inline_response = s3_client.generate_presigned_url(
             "get_object",
             Params={
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
@@ -57,7 +58,17 @@ class ImageStore:
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
 
-        return response
+        attachment_response = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": image.object_key,
+                "ResponseContentDisposition": f'attachment; filename="{image.file_name}"',
+            },
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+        )
+
+        return (inline_response, attachment_response)
 
     def delete(self, object_key: str) -> None:
         """

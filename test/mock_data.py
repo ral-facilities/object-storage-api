@@ -170,5 +170,6 @@ IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH = {
 
 IMAGE_GET_DATA_ALL_VALUES = {
     **IMAGE_GET_METADATA_DATA_ALL_VALUES,
-    "url": ANY,
+    "inline_url": ANY,
+    "download_url": ANY,
 }

@@ -38,4 +38,5 @@ class ImageMetadataSchema(CreatedModifiedSchemaMixin, ImagePostMetadataSchema):
 class ImageSchema(ImageMetadataSchema):
     """Schema model for an image get request response."""
 
-    url: HttpUrl = Field(description="Presigned get URL to get the image file")
+    inline_url: HttpUrl = Field(description="Presigned get URL to view the image file")
+    download_url: HttpUrl = Field(description="Presigned get URL to download the image file")
