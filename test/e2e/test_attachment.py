@@ -254,3 +254,54 @@ class TestList(ListDSL):
         self.check_get_attachments_failed_with_message(
             422, "Invalid ID given", self._get_response_attachment.json()["detail"]
         )
+
+
+class DeleteDSL(ListDSL):
+    """Base class for delete tests."""
+
+    _delete_response_attachment: Response
+
+    def delete_attachment(self, attachment_id: str) -> None:
+        """
+        Deletes an attachment with the given ID.
+        :param attachment_id: ID of the attachment to be deleted.
+        """
+        self._delete_response_attachment = self.test_client.delete(f"/attachments/{attachment_id}")
+
+    def check_delete_attachment_success(self) -> None:
+        """Checks that a prior call to `delete_attachment` gave a successful response with the expected code."""
+        assert self._delete_response_attachment.status_code == 204
+
+    def check_delete_attachment_failed_with_detail(self) -> None:
+        """
+        Checks that a prior call to `delete_attachment` gave a failed response with the expected code and
+        error message.
+        """
+        assert self._delete_response_attachment.status_code == 404
+        assert self._delete_response_attachment.json()["detail"] == "Attachment not found"
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an attachment."""
+
+    def test_delete(self):
+        """Test deleting an attachment."""
+        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY)
+
+        self.delete_attachment(attachment_id)
+        self.check_delete_attachment_success()
+
+        # pylint:disable=fixme
+        # TODO: Address this whe GET by ID endpoint implemented
+        # self.get_attachment(attachment_id)
+        # self.check_get_attachment_failed()
+
+    def test_delete_with_non_existent_id(self):
+        """Test deleting a non-existent attachment."""
+        self.delete_attachment(str(ObjectId()))
+        self.check_delete_attachment_failed_with_detail()
+
+    def test_delete_with_invalid_id(self):
+        """Test deleting an attachment with an invalid ID."""
+        self.delete_attachment("invalid_id")
+        self.check_delete_attachment_failed_with_detail()
