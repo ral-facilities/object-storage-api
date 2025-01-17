@@ -77,7 +77,7 @@ class CreateDSL(ImageServiceDSL):
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
-        :filename: Filename of the image.
+        :param filename: Filename of the image.
         """
 
         self._image_post_metadata = ImagePostMetadataSchema(**image_post_metadata_data)
@@ -285,7 +285,6 @@ class UpdateDSL(ImageServiceDSL):
         """
         Mocks the repository methods appropriately to test the `update` service method.
 
-        :param image_id: ID of the image to be updated.
         :param image_patch_data: Dictionary containing the patch data as would be required for an
             `ImagePatchMetadataSchema` (i.e. no created and modified times required).
         :param stored_image_post_data: Dictionary containing the image data for the existing stored
@@ -334,6 +333,7 @@ class UpdateDSL(ImageServiceDSL):
         Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`.
         while expecting an error to be raised.
 
+        :param image_id: ID of the image to be updated.
         :param error_type: Expected exception to be raised.
         """
         self._updated_image_id = image_id
@@ -395,7 +395,7 @@ class TestUpdate(UpdateDSL):
         self.check_update_success()
 
     def test_update_with_file_extension_content_type_mismatch(self):
-        """Test updating filename to a mismatched file extension."""
+        """Test updating filename to one with a mismatched file extension."""
         image_id = str(ObjectId())
 
         self.mock_update(
