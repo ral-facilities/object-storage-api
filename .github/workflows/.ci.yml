@@ -112,8 +112,8 @@ jobs:
         if: failure()
         run: docker logs object-storage-api-minio-1
   docker:
-    # This job triggers only if all the other jobs succeed. It builds the Docker image and if successful,
-    # it pushes it to Harbor.
+    # This job triggers only if all the other jobs succeed. It builds the Docker image 
+    # and if run manually from Github Actions, it pushes to Harbor.
     needs: [linting, unit-tests, e2e-tests]
     name: Docker
     runs-on: ubuntu-latest
