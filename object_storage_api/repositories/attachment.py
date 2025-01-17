@@ -10,6 +10,7 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 
 logger = logging.getLogger()
@@ -84,3 +85,23 @@ class AttachmentRepo:
 
         attachments = self._attachments_collection.find(query, session=session)
         return [AttachmentOut(**attachment) for attachment in attachments]
+
+    def delete(self, attachment_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Delete an attachment by its ID from a MongoDB database.
+
+        :param attachment_id: The ID of the attachment to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
+        """
+        logger.info("Deleting attachment with ID: %s from the database", attachment_id)
+        try:
+            attachment_id = CustomObjectId(attachment_id)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Attachment not found"
+            raise exc
+        response = self._attachments_collection.delete_one(filter={"_id": attachment_id}, session=session)
+        if response.deleted_count == 0:
+            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", "attachment")
