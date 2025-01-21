@@ -272,7 +272,6 @@ class UpdateDSL(ImageServiceDSL):
         """
         Mocks the repository methods appropriately to test the `update` service method.
 
-        :param image_id: ID of the image to be updated.
         :param image_patch_data: Dictionary containing the patch data as would be required for an
             `ImagePatchMetadataSchema` (i.e. no created and modified times required).
         :param stored_image_post_data: Dictionary containing the image data for the existing stored
@@ -317,7 +316,7 @@ class UpdateDSL(ImageServiceDSL):
         self._updated_image = self.image_service.update(image_id, self._image_patch)
 
     def check_update_success(self) -> None:
-        """Checks that a prior call to `call_update` worked as updated."""
+        """Checks that a prior call to `call_update` worked as expected."""
         # Ensure obtained old image
         self.mock_image_repository.get.assert_called_once_with(image_id=self._updated_image_id)
 

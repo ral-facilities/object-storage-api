@@ -4,6 +4,7 @@ End-to-End tests for the attachment router.
 
 from test.mock_data import (
     ATTACHMENT_GET_DATA_ALL_VALUES,
+    ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES,
@@ -254,3 +255,68 @@ class TestList(ListDSL):
         self.check_get_attachments_failed_with_message(
             422, "Invalid ID given", self._get_response_attachment.json()["detail"]
         )
+
+
+class UpdateDSL(ListDSL):
+    """Base class for update tests."""
+
+    _patch_response_attachment: Response
+
+    def patch_attachment(self, attachment_id: str, attachment_patch_data: dict) -> None:
+        """
+        Patches an attachment with the given ID.
+
+        :param attachment_id: ID of the attachment to be updated.
+        :param attachment_patch_data: Dictionary containing the attachment patch data as would be required for an
+            `AttachmentPatchSchema`.
+        """
+
+        self._patch_response_attachment = self.test_client.patch(
+            f"/attachments/{attachment_id}",
+            json=attachment_patch_data,
+        )
+
+    def check_patch_attachment_success(self, expected_attachment_get_data: dict) -> None:
+        """
+        Checks that a prior call to `patch_attachment` gave a successful response with the expected data returned.
+
+        :param expected_attachment_get_data: Dictionaries containing the expected attachment data as would be
+            required for an `AttachmentMetadataSchema`.
+        """
+
+        assert self._patch_response_attachment.status_code == 200
+        assert self._patch_response_attachment.json() == expected_attachment_get_data
+
+    def check_patch_attachment_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `patch_attachment` gave a failed response with the expected code and detail.
+
+        :param status_code: Expected status code to be returned.
+        :param detail: Expected detail to be returned.
+        """
+
+        assert self._patch_response_attachment.status_code == status_code
+        assert self._patch_response_attachment.json()["detail"] == detail
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating an attachment."""
+
+    def test_update_all_fields(self):
+        """Test updating every field of an attachment."""
+
+        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES, "attachment.txt")
+        self.patch_attachment(attachment_id, ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES)
+        self.check_patch_attachment_success(ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH)
+
+    def test_update_with_non_existent_id(self):
+        """Test updating a non-existent attachment."""
+
+        self.patch_attachment(str(ObjectId()), {})
+        self.check_patch_attachment_failed_with_detail(404, "Attachment not found")
+
+    def test_update_invalid_id(self):
+        """Test updating an attachment with an invalid ID."""
+
+        self.patch_attachment("invalid-id", {})
+        self.check_patch_attachment_failed_with_detail(404, "Attachment not found")

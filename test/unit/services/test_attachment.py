@@ -2,7 +2,11 @@
 Unit tests for the `AttachmentService` service.
 """
 
-from test.mock_data import ATTACHMENT_IN_DATA_ALL_VALUES, ATTACHMENT_POST_DATA_ALL_VALUES
+from test.mock_data import (
+    ATTACHMENT_IN_DATA_ALL_VALUES,
+    ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
+    ATTACHMENT_POST_DATA_ALL_VALUES,
+)
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
 
@@ -13,6 +17,7 @@ from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
+    AttachmentPatchMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
     AttachmentPostUploadInfoSchema,
@@ -197,3 +202,93 @@ class TestList(ListDSL):
         self.mock_list()
         self.call_list(entity_id=str(ObjectId()))
         self.check_list_success()
+
+
+class UpdateDSL(AttachmentServiceDSL):
+    """Base class for `update` tests."""
+
+    _stored_attachment: Optional[AttachmentOut]
+    _attachment_patch: AttachmentPatchMetadataSchema
+    _expected_attachment_in: AttachmentIn
+    _expected_attachment_out: AttachmentOut
+    _updated_attachment_id: str
+    _updated_attachment: MagicMock
+
+    def mock_update(self, attachment_patch_data: dict, stored_attachment_post_data: Optional[dict]) -> None:
+        """
+        Mocks the repository methods appropriately to test the `update` service method.
+
+        :param attachment_patch_data: Dictionary containing the patch data as would be required for an
+            `AttachmentPatchMetadataSchema` (i.e. no created or modified times required).
+        :param stored_attachment_post_data: Dictionary containing the attachment data for the existing stored
+            attachment as would be required for an `AttachmentPostMetadataSchema` (i.e. no created and modified
+            times required).
+        """
+
+        # Stored attachment
+        self._stored_attachment = (
+            AttachmentOut(
+                **AttachmentIn(
+                    **stored_attachment_post_data,
+                ).model_dump(),
+            )
+            if stored_attachment_post_data
+            else None
+        )
+        self.mock_attachment_repository.get.return_value = self._stored_attachment
+
+        # Patch schema
+        self._attachment_patch = AttachmentPatchMetadataSchema(**attachment_patch_data)
+
+        # Construct the expected input for the repository
+        merged_attachment_data = {**(stored_attachment_post_data or {}), **attachment_patch_data}
+        self._expected_attachment_in = AttachmentIn(**merged_attachment_data)
+
+        # Updated attachment
+        attachment_out = AttachmentOut(
+            **self._expected_attachment_in.model_dump(),
+        )
+
+        self.mock_attachment_repository.update.return_value = attachment_out
+
+        self._expected_attachment_out = AttachmentMetadataSchema(**attachment_out.model_dump())
+
+    def call_update(self, attachment_id: str) -> None:
+        """
+        Class the `AttachmentService` `update` method with the appropriate data from a prior call to `mock_update`.
+
+        :param attachment_id: ID of the attachment to be updated.
+        """
+
+        self._updated_attachment_id = attachment_id
+        self._updated_attachment = self.attachment_service.update(attachment_id, self._attachment_patch)
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
+
+        # Ensure obtained old attachment
+        self.mock_attachment_repository.get.assert_called_once_with(attachment_id=self._updated_attachment_id)
+
+        # Ensure updated with expected data
+        self.mock_attachment_repository.update.assert_called_once_with(
+            attachment_id=self._updated_attachment_id,
+            attachment=self._expected_attachment_in,
+        )
+
+        assert self._updated_attachment == self._expected_attachment_out
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating an attachment."""
+
+    def test_update(self):
+        """Test updating all fields of an attachment."""
+        attachment_id = str(ObjectId())
+
+        self.mock_update(
+            attachment_patch_data=ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
+            stored_attachment_post_data=ATTACHMENT_IN_DATA_ALL_VALUES,
+        )
+
+        self.call_update(attachment_id)
+        self.check_update_success()
