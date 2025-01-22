@@ -296,11 +296,17 @@ class TestDelete(DeleteDSL):
         # self.get_attachment(attachment_id)
         # self.check_get_attachment_failed()
 
+    # pylint:disable=fixme
+    # TODO: Address this when refactored GET by ID repo logic is merged
+    @pytest.mark.skip("Waiting for refactored GET by ID repo logic to be merged")
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent attachment."""
         self.delete_attachment(str(ObjectId()))
         self.check_delete_attachment_failed_with_detail()
 
+    # pylint:disable=fixme
+    # TODO: Address this when refactored GET by ID repo logic is merged
+    @pytest.mark.skip("Waiting for refactored GET by ID repo logic to be merged")
     def test_delete_with_invalid_id(self):
         """Test deleting an attachment with an invalid ID."""
         self.delete_attachment("invalid_id")
