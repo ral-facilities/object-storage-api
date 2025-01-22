@@ -58,11 +58,7 @@ def get_attachments(
     return attachment_service.list(entity_id)
 
 
-@router.get(
-    path="/{attachment_id}",
-    summary="Get an attachment by ID",
-    response_description="Single attachment",
-)
+@router.get(path="/{attachment_id}", summary="Get an attachment by ID", response_description="Single attachment")
 def get_attachment(
     attachment_id: Annotated[str, Path(description="ID of the attachment to get")],
     attachment_service: AttachmentServiceDep,

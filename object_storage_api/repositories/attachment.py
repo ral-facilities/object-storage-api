@@ -49,7 +49,7 @@ class AttachmentRepo:
 
         :param attachment_id: ID of the attachment to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: Retrieved attachment or `None` if not found.
+        :return: Retrieved attachment if found.
         :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
         :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
