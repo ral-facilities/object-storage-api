@@ -160,11 +160,16 @@ class GetDSL(CreateDSL):
         assert self._get_response_attachment.status_code == 200
         assert self._get_response_attachment.json() == expected_attachment_data
 
-    def check_get_attachment_failed(self) -> None:
-        """Checks that prior call to `get_attachment` gave a failed response."""
+    def check_get_attachment_failed(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `get_attachment` gave a failed response with the expected code and error message.
 
-        assert self._get_response_attachment.status_code == 404
-        assert self._get_response_attachment.json()["detail"] == "Attachment not found"
+        :param status_code: Expected status code of the response.
+        :param detail: Expected error message given in the response.
+        """
+
+        assert self._get_response_attachment.status_code == status_code
+        assert self._get_response_attachment.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -179,13 +184,13 @@ class TestGet(GetDSL):
     def test_get_with_invalid_attachment_id(self):
         """Test getting an attachment with an invalid attachment ID."""
         self.get_attachment("ababababab")
-        self.check_get_attachment_failed()
+        self.check_get_attachment_failed(404, "Attachment not found")
 
     def test_get_with_non_existent_attachment_id(self):
         """Test getting an attachment with a non-existent attachment ID."""
         attachment_id = str(ObjectId())
         self.get_attachment(attachment_id)
-        self.check_get_attachment_failed()
+        self.check_get_attachment_failed(404, "Attachment not found")
 
 
 class ListDSL(GetDSL):
