@@ -42,4 +42,4 @@ class AttachmentPostResponseSchema(CreatedModifiedSchemaMixin, AttachmentMetadat
 class AttachmentSchema(AttachmentMetadataSchema):
     """Schema model for an attachment get request response."""
 
-    url: HttpUrl = Field(description="Presigned get URL to get the attachment file")
+    download_url: HttpUrl = Field(description="Presigned get URL to download the attachment file")

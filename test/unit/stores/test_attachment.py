@@ -99,8 +99,8 @@ class CreatePresignedURLDSL(AttachmentStoreDSL):
     """Base class for `create` tests."""
 
     _attachment_out: AttachmentOut
-    _expected_presigned_url: str
-    _obtained_presigned_url: str
+    _expected_presigned_download_url: str
+    _obtained_presigned_download_url: str
 
     def mock_create_presigned_get(self, attachment_in_data: dict) -> None:
         """
@@ -112,8 +112,8 @@ class CreatePresignedURLDSL(AttachmentStoreDSL):
         self._attachment_out = AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump())
 
         # Mock presigned url generation
-        self._expected_presigned_url = "example_presigned_url"
-        self.mock_s3_client.generate_presigned_url.return_value = self._expected_presigned_url
+        self._expected_presigned_download_url = "example_presigned_download_url"
+        self.mock_s3_client.generate_presigned_url.return_value = self._expected_presigned_download_url
 
     def call_create_presigned_get(self) -> None:
         """
@@ -121,7 +121,7 @@ class CreatePresignedURLDSL(AttachmentStoreDSL):
             `mock_create_presigned_get`.
         """
 
-        self._obtained_presigned_url = self.attachment_store.create_presigned_get(self._attachment_out)
+        self._obtained_presigned_download_url = self.attachment_store.create_presigned_get(self._attachment_out)
 
     def check_create_presigned_get_success(self) -> None:
         """Checks that a prior call to `call_create_presigned_get` worked as expected."""
@@ -136,7 +136,7 @@ class CreatePresignedURLDSL(AttachmentStoreDSL):
             ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
         )
 
-        assert self._obtained_presigned_url == self._expected_presigned_url
+        assert self._obtained_presigned_download_url == self._expected_presigned_download_url
 
 
 class TestCreatePresignedURL(CreatePresignedURLDSL):

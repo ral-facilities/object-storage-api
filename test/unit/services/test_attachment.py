@@ -171,9 +171,9 @@ class GetDSL(AttachmentServiceDSL):
 
         self._expected_attachment_out = AttachmentOut(**AttachmentIn(**ATTACHMENT_IN_DATA_ALL_VALUES).model_dump())
         self.mock_attachment_repository.get.return_value = self._expected_attachment_out
-        self.mock_attachment_store.create_presigned_get.return_value = "https://fakepresignedurl.co.uk"
+        self.mock_attachment_store.create_presigned_get.return_value = "https://fakepresignedurl.co.uk/attachment"
         self._expected_attachment = AttachmentSchema(
-            **self._expected_attachment_out.model_dump(), url="https://fakepresignedurl.co.uk"
+            **self._expected_attachment_out.model_dump(), download_url="https://fakepresignedurl.co.uk/attachment"
         )
 
     def call_get(self, attachment_id: str) -> None:
