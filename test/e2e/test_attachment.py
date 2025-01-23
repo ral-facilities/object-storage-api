@@ -160,14 +160,13 @@ class GetDSL(CreateDSL):
         assert self._get_response_attachment.status_code == 200
         assert self._get_response_attachment.json() == expected_attachment_data
 
-    def check_get_attachment_failed(self, status_code: int, detail: str) -> None:
+    def check_get_attachment_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
         Checks that a prior call to `get_attachment` gave a failed response with the expected code and error message.
 
         :param status_code: Expected status code of the response.
         :param detail: Expected error message given in the response.
         """
-
         assert self._get_response_attachment.status_code == status_code
         assert self._get_response_attachment.json()["detail"] == detail
 
@@ -184,13 +183,13 @@ class TestGet(GetDSL):
     def test_get_with_invalid_attachment_id(self):
         """Test getting an attachment with an invalid attachment ID."""
         self.get_attachment("ababababab")
-        self.check_get_attachment_failed(404, "Attachment not found")
+        self.check_get_attachment_failed_with_detail(404, "Attachment not found")
 
     def test_get_with_non_existent_attachment_id(self):
         """Test getting an attachment with a non-existent attachment ID."""
         attachment_id = str(ObjectId())
         self.get_attachment(attachment_id)
-        self.check_get_attachment_failed(404, "Attachment not found")
+        self.check_get_attachment_failed_with_detail(404, "Attachment not found")
 
 
 class ListDSL(GetDSL):
@@ -327,13 +326,16 @@ class DeleteDSL(ListDSL):
         """Checks that a prior call to `delete_attachment` gave a successful response with the expected code."""
         assert self._delete_response_attachment.status_code == 204
 
-    def check_delete_attachment_failed_with_detail(self) -> None:
+    def check_delete_attachment_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
         Checks that a prior call to `delete_attachment` gave a failed response with the expected code and
         error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected error message given in the response.
         """
-        assert self._delete_response_attachment.status_code == 404
-        assert self._delete_response_attachment.json()["detail"] == "Attachment not found"
+        assert self._delete_response_attachment.status_code == status_code
+        assert self._delete_response_attachment.json()["detail"] == detail
 
 
 class TestDelete(DeleteDSL):
@@ -346,23 +348,15 @@ class TestDelete(DeleteDSL):
         self.delete_attachment(attachment_id)
         self.check_delete_attachment_success()
 
-        # pylint:disable=fixme
-        # TODO: Address this whe GET by ID endpoint implemented
-        # self.get_attachment(attachment_id)
-        # self.check_get_attachment_failed()
+        self.get_attachment(attachment_id)
+        self.check_get_attachment_failed_with_detail(404, "Attachment not found")
 
-    # pylint:disable=fixme
-    # TODO: Address this when refactored GET by ID repo logic is merged
-    @pytest.mark.skip("Waiting for refactored GET by ID repo logic to be merged")
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent attachment."""
         self.delete_attachment(str(ObjectId()))
-        self.check_delete_attachment_failed_with_detail()
+        self.check_delete_attachment_failed_with_detail(404, "Attachment not found")
 
-    # pylint:disable=fixme
-    # TODO: Address this when refactored GET by ID repo logic is merged
-    @pytest.mark.skip("Waiting for refactored GET by ID repo logic to be merged")
     def test_delete_with_invalid_id(self):
         """Test deleting an attachment with an invalid ID."""
         self.delete_attachment("invalid_id")
-        self.check_delete_attachment_failed_with_detail()
+        self.check_delete_attachment_failed_with_detail(404, "Attachment not found")

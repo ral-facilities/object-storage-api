@@ -41,7 +41,11 @@ class DeleteDSL(AttachmentStoreDSL):
     _delete_object_key: str
 
     def call_delete(self, object_key: str) -> None:
-        """Calls the `AttachmentStore` `delete` method."""
+        """
+        Calls the `AttachmentStore` `delete` method.
+
+        :param object_key: Key of the attachment to delete.
+        """
         self._delete_object_key = object_key
         self.attachment_store.delete(object_key)
 
