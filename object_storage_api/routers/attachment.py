@@ -57,3 +57,31 @@ def get_attachments(
         logger.debug("Entity ID filter: '%s'", entity_id)
 
     return attachment_service.list(entity_id)
+
+
+@router.get(path="/{attachment_id}", summary="Get an attachment by ID", response_description="Single attachment")
+def get_attachment(
+    attachment_id: Annotated[str, Path(description="ID of the attachment to get")],
+    attachment_service: AttachmentServiceDep,
+) -> AttachmentSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting attachment with ID: %s", attachment_id)
+
+    return attachment_service.get(attachment_id)
+
+
+@router.patch(
+    path="/{attachment_id}",
+    summary="Update an attachment partially by ID",
+    response_description="Attachment updated successfully",
+)
+def partial_update_attachment(
+    attachment: AttachmentPatchMetadataSchema,
+    attachment_id: Annotated[str, Path(description="ID of the attachment to update")],
+    attachment_service: AttachmentServiceDep,
+) -> AttachmentMetadataSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating attachment with ID: %s", attachment_id)
+    logger.debug("Attachment data: %s", attachment)
+
+    return attachment_service.update(attachment_id, attachment)
