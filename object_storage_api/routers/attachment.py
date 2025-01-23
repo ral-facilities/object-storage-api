@@ -6,12 +6,13 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
+    AttachmentSchema,
 )
 from object_storage_api.services.attachment import AttachmentService
 
@@ -55,3 +56,14 @@ def get_attachments(
         logger.debug("Entity ID filter: '%s'", entity_id)
 
     return attachment_service.list(entity_id)
+
+
+@router.get(path="/{attachment_id}", summary="Get an attachment by ID", response_description="Single attachment")
+def get_attachment(
+    attachment_id: Annotated[str, Path(description="ID of the attachment to get")],
+    attachment_service: AttachmentServiceDep,
+) -> AttachmentSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting attachment with ID: %s", attachment_id)
+
+    return attachment_service.get(attachment_id)
