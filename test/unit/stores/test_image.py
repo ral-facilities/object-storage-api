@@ -134,7 +134,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
 
         # Mock presigned url generation
         self._expected_presigned_view_url = "example_presigned_view_url"
-        self._expected_presigned_download_url = "example_presigned_downloadurl"
+        self._expected_presigned_download_url = "example_presigned_download_url"
         self.mock_s3_client.generate_presigned_url.side_effect = [
             self._expected_presigned_view_url,
             self._expected_presigned_download_url,
