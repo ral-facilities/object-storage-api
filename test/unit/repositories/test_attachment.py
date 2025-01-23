@@ -10,7 +10,7 @@ from unittest.mock import MagicMock, Mock
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.repositories.attachment import AttachmentRepo
 
@@ -89,6 +89,114 @@ class TestCreate(CreateDSL):
         self.mock_create(ATTACHMENT_IN_DATA_ALL_VALUES)
         self.call_create()
         self.check_create_success()
+
+
+class GetDSL(AttachmentRepoDSL):
+    """Base class for `get` tests."""
+
+    _obtained_attachment_id: str
+    _expected_attachment_out: AttachmentOut
+    _obtained_attachment_out: AttachmentOut
+    _get_exception: pytest.ExceptionInfo
+
+    def mock_get(self, attachment_id: str, attachment_in_data: dict) -> None:
+        """
+        Mocks database methods appropriately to test the `get` repo method.
+
+        :param attachment_id: ID of the attachment to obtain.
+        :param attachment_in_data: Dictionary containing the attachment data as would be required for an
+            `AttachmentIn` database model (i.e. no created and modified times required).
+        """
+        if attachment_in_data:
+            attachment_in_data["id"] = attachment_id
+        self._expected_attachment_out = (
+            AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump()) if attachment_in_data else None
+        )
+
+        RepositoryTestHelpers.mock_find_one(
+            self.attachments_collection,
+            self._expected_attachment_out.model_dump() if self._expected_attachment_out else None,
+        )
+
+    def call_get(self, attachment_id: str) -> None:
+        """
+        Calls the `AttachmentRepo` `get` method.
+
+        :param attachment_id: The ID of the attachment to obtain.
+        """
+        self._obtained_attachment_id = attachment_id
+        self._obtained_attachment_out = self.attachment_repository.get(
+            attachment_id=attachment_id, session=self.mock_session
+        )
+
+    def call_get_expecting_error(self, attachment_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `AttachmentRepo` `get` method with the appropriate data from a prior call to `mock_get`
+        while expecting an error to be raised.
+
+        :param attachment_id: ID of the attachment to be obtained.
+        :param error_type: Expected exception to be raised.
+        """
+        self._obtained_attachment_id = attachment_id
+        with pytest.raises(error_type) as exc:
+            self.attachment_repository.get(attachment_id, session=self.mock_session)
+        self._get_exception = exc
+
+    def check_get_success(self) -> None:
+        """Checks that a prior call to `call_get` worked as expected."""
+
+        self.attachments_collection.find_one.assert_called_once_with(
+            {"_id": ObjectId(self._obtained_attachment_id)}, session=self.mock_session
+        )
+        assert self._obtained_attachment_out == self._expected_attachment_out
+
+    def check_get_failed_with_exception(self, message: str, assert_find: bool = False) -> None:
+        """
+        Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param attachment_id: ID of the expected attachment to appear in the exception detail.
+        :param assert_find: If `True` it asserts whether a `find_one` call was made,
+            else it asserts that no call was made.
+        """
+        if assert_find:
+            self.attachments_collection.find_one.assert_called_once_with(
+                {"_id": ObjectId(self._obtained_attachment_id)}, session=self.mock_session
+            )
+        else:
+            self.attachments_collection.find_one.assert_not_called()
+
+        assert str(self._get_exception.value) == message
+
+
+class TestGet(GetDSL):
+    """Tests for getting attachments."""
+
+    def test_get(self):
+        """Test getting an attachment."""
+
+        attachment_id = str(ObjectId())
+
+        self.mock_get(attachment_id, ATTACHMENT_IN_DATA_ALL_VALUES)
+        self.call_get(attachment_id)
+        self.check_get_success()
+
+    def test_get_with_non_existent_id(self):
+        """Test getting an attachment with a non-existent attachment ID."""
+
+        attachment_id = str(ObjectId())
+
+        self.mock_get(attachment_id, None)
+        self.call_get_expecting_error(attachment_id, MissingRecordError)
+        self.check_get_failed_with_exception(f"No attachment found with ID: {attachment_id}", True)
+
+    def test_get_with_invalid_id(self):
+        """Test getting an attachment with an invalid attachment ID."""
+        attachment_id = "invalid-id"
+
+        self.mock_get(attachment_id, None)
+        self.call_get_expecting_error(attachment_id, InvalidObjectIdError)
+        self.check_get_failed_with_exception(f"Invalid ObjectId value '{attachment_id}'")
 
 
 class ListDSL(AttachmentRepoDSL):
