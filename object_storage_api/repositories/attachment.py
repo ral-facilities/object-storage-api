@@ -49,14 +49,24 @@ class AttachmentRepo:
 
         :param attachment_id: ID of the attachment to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: Retrieved attachment or `None` if not found.
+        :return: Retrieved attachment if found.
+        :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
-        attachment_id = CustomObjectId(attachment_id)
+
         logger.info("Retrieving attachment with ID: %s from the database", attachment_id)
-        attachment = self._attachments_collection.find_one({"_id": attachment_id}, session=session)
+
+        try:
+            attachment_id = CustomObjectId(attachment_id)
+            attachment = self._attachments_collection.find_one({"_id": attachment_id}, session=session)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Attachment not found"
+            raise exc
+
         if attachment:
             return AttachmentOut(**attachment)
-        return None
+        raise MissingRecordError(detail=f"No attachment found with ID: {attachment_id}", entity_name="attachment")
 
     def list(self, entity_id: Optional[str], session: Optional[ClientSession] = None) -> list[AttachmentOut]:
         """

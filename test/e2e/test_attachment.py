@@ -4,6 +4,7 @@ End-to-End tests for the attachment router.
 
 from test.mock_data import (
     ATTACHMENT_GET_DATA_ALL_VALUES,
+    ATTACHMENT_GET_METADATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES,
@@ -136,10 +137,64 @@ class TestCreate(CreateDSL):
         self.check_post_attachment_failed_with_detail(422, "Invalid `entity_id` given")
 
 
-class ListDSL(CreateDSL):
-    """Base class for list tests."""
+class GetDSL(CreateDSL):
+    """Base class for get tests."""
 
     _get_response_attachment: Response
+
+    def get_attachment(self, attachment_id: str) -> None:
+        """
+        Gets an attachment with the given ID.
+
+        :param attachment_id: The ID of the attachment to be obtained.
+        """
+        self._get_response_attachment = self.test_client.get(f"/attachments/{attachment_id}")
+
+    def check_get_attachment_success(self, expected_attachment_data: dict) -> None:
+        """
+        Checks that a prior call to `get_attachment` gave a successful response with the expected data returned.
+
+        :param expected_attachment_data: Dictionary containing the expected attachment data as would be required
+            for an `AttachmentMetadataSchema`.
+        """
+        assert self._get_response_attachment.status_code == 200
+        assert self._get_response_attachment.json() == expected_attachment_data
+
+    def check_get_attachment_failed(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `get_attachment` gave a failed response with the expected code and error message.
+
+        :param status_code: Expected status code of the response.
+        :param detail: Expected error message given in the response.
+        """
+
+        assert self._get_response_attachment.status_code == status_code
+        assert self._get_response_attachment.json()["detail"] == detail
+
+
+class TestGet(GetDSL):
+    """Tests for getting an attachment."""
+
+    def test_get_with_valid_attachment_id(self):
+        """Test getting an attachment with a valid attachment ID."""
+        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
+        self.get_attachment(attachment_id)
+        self.check_get_attachment_success(ATTACHMENT_GET_DATA_ALL_VALUES)
+
+    def test_get_with_invalid_attachment_id(self):
+        """Test getting an attachment with an invalid attachment ID."""
+        self.get_attachment("ababababab")
+        self.check_get_attachment_failed(404, "Attachment not found")
+
+    def test_get_with_non_existent_attachment_id(self):
+        """Test getting an attachment with a non-existent attachment ID."""
+        attachment_id = str(ObjectId())
+        self.get_attachment(attachment_id)
+        self.check_get_attachment_failed(404, "Attachment not found")
+
+
+class ListDSL(GetDSL):
+    """Base class for list tests."""
 
     def get_attachments(self, filters: Optional[dict] = None) -> None:
         """
@@ -184,9 +239,9 @@ class ListDSL(CreateDSL):
         )
 
         return [
-            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
-            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
-            {**ATTACHMENT_GET_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
+            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
+            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
+            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
         ]
 
     def check_get_attachments_success(self, expected_attachments_get_data: list[dict]) -> None:
