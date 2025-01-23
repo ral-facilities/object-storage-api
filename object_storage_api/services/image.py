@@ -55,6 +55,12 @@ class ImageService:
         :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
 
+        expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
+        if expected_file_type != upload_file.content_type:
+            raise InvalidFilenameExtension(
+                f"File extension `{upload_file.filename}` does not match content type `{upload_file.content_type}`"
+            )
+
         # Generate a unique ID for the image - this needs to be known now to avoid inserting into the database
         # before generating the presigned URL which would then require transactions
         image_id = str(ObjectId())
@@ -64,12 +70,6 @@ class ImageService:
 
         # Upload the full size image to object storage
         object_key = self._image_store.upload(image_id, image_metadata, upload_file)
-
-        expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
-        if expected_file_type != upload_file.content_type:
-            raise InvalidFilenameExtension(
-                f"File extension `{upload_file.filename}` does not match content type `{upload_file.content_type}`"
-            )
 
         try:
             image_in = ImageIn(
@@ -120,7 +120,6 @@ class ImageService:
         :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
         stored_image = self._image_repository.get(image_id=image_id)
-        update_data = image.model_dump(exclude_unset=True)
 
         stored_type = mimetypes.guess_type(stored_image.file_name)
         if image.file_name is not None:
@@ -134,7 +133,7 @@ class ImageService:
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
         updated_image = self._image_repository.update(
             image_id=image_id,
-            image=ImageIn(**{**stored_image.model_dump(), **update_data}),
+            image=ImageIn(**{**stored_image.model_dump(), **image.model_dump(exclude_unset=True)}),
             update_primary=update_primary,
         )
 

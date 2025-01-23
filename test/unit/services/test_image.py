@@ -139,18 +139,18 @@ class CreateDSL(ImageServiceDSL):
 
         assert self._created_image == self._expected_image
 
-    def check_create_failed_with_exception(self, message: str) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_checks: bool = True) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Message of the raised exception.
         """
-
-        self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
-        self.mock_image_store.upload.assert_called_once_with(
-            str(self._expected_image_id), self._image_post_metadata, self._upload_file
-        )
+        if assert_checks:
+            self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
+            self.mock_image_store.upload.assert_called_once_with(
+                str(self._expected_image_id), self._image_post_metadata, self._upload_file
+            )
         self.mock_image_repository.create.assert_not_called()
 
         assert str(self._create_exception.value) == message
@@ -173,7 +173,8 @@ class TestCreate(CreateDSL):
         self.call_create_expecting_error(InvalidFilenameExtension)
         self.check_create_failed_with_exception(
             f"File extension `{self._upload_file.filename}` does not match "
-            f"content type `{self._upload_file.content_type}`"
+            f"content type `{self._upload_file.content_type}`",
+            assert_checks=False,
         )
 
     def test_create_with_invalid_entity_id(self):
