@@ -10,6 +10,7 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
+from object_storage_api.core.exceptions import InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 
 logger = logging.getLogger()

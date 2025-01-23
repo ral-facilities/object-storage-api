@@ -4,6 +4,7 @@ End-to-End tests for the attachment router.
 
 from test.mock_data import (
     ATTACHMENT_GET_DATA_ALL_VALUES,
+    ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH,
     ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
@@ -305,7 +306,7 @@ class TestUpdate(UpdateDSL):
     def test_update_all_fields(self):
         """Test updating every field of an attachment."""
 
-        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES, "attachment.txt")
+        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.patch_attachment(attachment_id, ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES)
         self.check_patch_attachment_success(ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH)
 
