@@ -88,7 +88,7 @@ class ImageService:
         :return: An image's metadata with its presigned get urls.
         """
         image = self._image_repository.get(image_id=image_id)
-        (view_url, download_url) = self._image_store.create_presigned_get(image)
+        view_url, download_url = self._image_store.create_presigned_get(image)
         return ImageSchema(**image.model_dump(), view_url=view_url, download_url=download_url)
 
     def list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> list[ImageMetadataSchema]:
