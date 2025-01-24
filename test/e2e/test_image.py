@@ -151,14 +151,13 @@ class GetDSL(CreateDSL):
         assert self._get_response_image.status_code == 200
         assert self._get_response_image.json() == expected_image_data
 
-    def check_get_image_failed(self, status_code: int, detail: str) -> None:
+    def check_get_image_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
         Checks that a prior call to `get_image` gave a failed response with the expected code and error message.
 
         :param status_code: Expected status code of the response.
         :param detail: Expected error message given in the response.
         """
-
         assert self._get_response_image.status_code == status_code
         assert self._get_response_image.json()["detail"] == detail
 
@@ -175,13 +174,13 @@ class TestGet(GetDSL):
     def test_get_with_invalid_image_id(self):
         """Test getting an image with an invalid image ID."""
         self.get_image("sdfgfsdg")
-        self.check_get_image_failed(404, "Image not found")
+        self.check_get_image_failed_with_detail(404, "Image not found")
 
     def test_get_with_non_existent_image_id(self):
         """Test getting an image with a non-existent image ID."""
         image_id = str(ObjectId())
         self.get_image(image_id)
-        self.check_get_image_failed(404, "Image not found")
+        self.check_get_image_failed_with_detail(404, "Image not found")
 
 
 class ListDSL(GetDSL):
@@ -464,7 +463,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_image_success()
 
         self.get_image(image_id)
-        self.check_get_image_failed(404, "Image not found")
+        self.check_get_image_failed_with_detail(404, "Image not found")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent image."""

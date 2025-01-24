@@ -47,7 +47,7 @@ class AttachmentService:
         Create a new attachment.
 
         :param attachment: Attachment to be created.
-        :return: Created attachment with an pre-signed upload URL.
+        :return: Created attachment with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         """
 
@@ -91,3 +91,13 @@ class AttachmentService:
         attachments = self._attachment_repository.list(entity_id)
 
         return [AttachmentMetadataSchema(**attachment.model_dump()) for attachment in attachments]
+
+    def delete(self, attachment_id: str) -> None:
+        """
+        Delete an attachment by its ID.
+        :param attachment_id: The ID of the attachment to delete.
+        """
+        stored_attachment = self._attachment_repository.get(attachment_id)
+        # Deletes attachment from object store first to prevent unreferenced objects in storage
+        self._attachment_store.delete(stored_attachment.object_key)
+        self._attachment_repository.delete(attachment_id)
