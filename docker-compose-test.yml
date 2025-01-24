@@ -1,0 +1,64 @@
+services:
+  object-storage-api:
+    container_name: object_storage_api_container
+    build: 
+      context: .
+      target: test
+    volumes:
+      - ./object_storage_api:/object-storage-api-run/object_storage_api
+      - ./keys:/object-storage-api-run/keys
+    restart: on-failure
+    ports:
+      - 8002:8000
+    depends_on:
+      - mongo-db
+      - minio
+    environment:
+      DATABASE__HOST_AND_OPTIONS: object_storage_api_mongodb_container:27017/?authMechanism=SCRAM-SHA-256&authSource=admin
+    extra_hosts:
+      # Want to use localhost for MinIO connection so the presigned URLs are correct but also want to avoid using host
+      # networking
+      - "localhost:host-gateway"
+
+  mongo-db:
+    image: mongo:7.0-jammy
+    container_name: object_storage_api_mongodb_container
+    volumes:
+      - ./mongodb/data:/data/db
+    restart: always
+    ports:
+      - 27018:27017
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+
+  minio:
+    image: minio/minio:RELEASE.2024-09-13T20-26-02Z
+    container_name: object_storage_minio_container
+    command: minio server /data
+    volumes:
+      - ./minio/data:/data
+    ports:
+      - 9000:9000
+      - 9001:9001
+    environment:
+      MINIO_ROOT_USER: root
+      MINIO_ROOT_PASSWORD: example_password
+      MINIO_ADDRESS: ":9000"
+      MINIO_CONSOLE_ADDRESS: ":9001"
+    network_mode: "host"
+
+  # From https://stackoverflow.com/questions/66412289/minio-add-a-public-bucket-with-docker-compose
+  minio_create_buckets:
+    image: minio/mc
+    container_name: object_storage_minio_mc_container
+    depends_on:
+      - minio
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set object-storage http://localhost:9000 root example_password;
+      /usr/bin/mc mb object-storage/object-storage;
+      /usr/bin/mc mb object-storage/test-object-storage;
+      exit 0;
+      "
+    network_mode: "host"
