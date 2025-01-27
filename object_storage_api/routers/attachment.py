@@ -85,3 +85,18 @@ def partial_update_attachment(
     logger.debug("Attachment data: %s", attachment)
 
     return attachment_service.update(attachment_id, attachment)
+
+
+@router.delete(
+    path="/{attachment_id}",
+    summary="Delete an attachment by ID",
+    response_description="Attachment deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_attachment(
+    attachment_id: Annotated[str, Path(description="The ID of the attachment to delete")],
+    attachment_service: AttachmentServiceDep,
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting attachment with ID: %s", attachment_id)
+    attachment_service.delete(attachment_id)

@@ -337,3 +337,41 @@ class TestUpdate(UpdateDSL):
 
         self.call_update(attachment_id)
         self.check_update_success()
+
+
+class DeleteDSL(AttachmentServiceDSL):
+    """Base class for `delete` tests."""
+
+    _expected_attachment_out: AttachmentOut
+    _delete_attachment_id: str
+    _delete_attachment_object_key: str
+
+    def mock_delete(self, attachment_in_data: dict) -> None:
+        """
+        Mocks repo methods appropriately to test the `delete` service method.
+        :param attachment_in_data: Dictionary containing the attachment data as would be required for an `AttachmentIn`
+            database model (i.e. no created and modified times required).
+        """
+        self._expected_attachment_out = AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump())
+        self.mock_attachment_repository.get.return_value = self._expected_attachment_out
+        self._delete_attachment_id = self._expected_attachment_out.id
+        self._delete_attachment_object_key = self._expected_attachment_out.object_key
+
+    def call_delete(self) -> None:
+        """Calls the `AttachmentService` `delete` method."""
+        self.attachment_service.delete(self._delete_attachment_id)
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+        self.mock_attachment_store.delete.assert_called_once_with(self._delete_attachment_object_key)
+        self.mock_attachment_repository.delete.assert_called_once_with(self._delete_attachment_id)
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an attachment."""
+
+    def test_delete(self):
+        """Test for deleting an attachment."""
+        self.mock_delete(ATTACHMENT_IN_DATA_ALL_VALUES)
+        self.call_delete()
+        self.check_delete_success()

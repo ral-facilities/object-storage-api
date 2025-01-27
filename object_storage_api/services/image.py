@@ -4,12 +4,13 @@ store.
 """
 
 import logging
+import mimetypes
 from typing import Annotated, Optional
 
 from bson import ObjectId
 from fastapi import Depends, UploadFile
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
@@ -51,7 +52,14 @@ class ImageService:
         :param upload_file: Upload file of the image to be created.
         :return: Created image with an pre-signed upload URL.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
+        :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
+
+        expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
+        if expected_file_type != upload_file.content_type:
+            raise InvalidFilenameExtension(
+                f"File extension `{upload_file.filename}` does not match content type `{upload_file.content_type}`"
+            )
 
         # Generate a unique ID for the image - this needs to be known now to avoid inserting into the database
         # before generating the presigned URL which would then require transactions
@@ -109,14 +117,23 @@ class ImageService:
         :param image_id: The ID of the image to update.
         :param image: The image containing the fields to be updated.
         :return: The updated image.
+        :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
         stored_image = self._image_repository.get(image_id=image_id)
-        update_data = image.model_dump(exclude_unset=True)
+
+        stored_type = mimetypes.guess_type(stored_image.file_name)
+        if image.file_name is not None:
+            update_type = mimetypes.guess_type(image.file_name)
+            if update_type != stored_type:
+                raise InvalidFilenameExtension(
+                    f"Patch filename extension `{image.file_name}` does not match "
+                    f"stored image `{stored_image.file_name}`"
+                )
 
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
         updated_image = self._image_repository.update(
             image_id=image_id,
-            image=ImageIn(**{**stored_image.model_dump(), **update_data}),
+            image=ImageIn(**{**stored_image.model_dump(), **image.model_dump(exclude_unset=True)}),
             update_primary=update_primary,
         )
 

@@ -54,6 +54,13 @@ class InvalidImageFileError(BaseAPIException):
     response_detail = "File given is not a valid image"
 
 
+class InvalidFilenameExtension(BaseAPIException):
+    """The provided filename's extension does not match expected file type."""
+
+    status_code = 422
+    response_detail = "Filename does not contain the correct extension"
+
+
 class MissingRecordError(DatabaseError):
     """A specific database record was requested but could not be found."""
 

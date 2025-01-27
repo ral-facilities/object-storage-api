@@ -412,6 +412,10 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
 class DeleteDSL(ImageRepoDSL):
     """Base class for `delete` tests."""
 
@@ -502,3 +506,6 @@ class TestDelete(DeleteDSL):
 
         self.call_delete_expecting_error(image_id, InvalidObjectIdError)
         self.check_delete_failed_with_exception(f"Invalid ObjectId value '{image_id}'")
+
+
+# pylint: enable=duplicate-code

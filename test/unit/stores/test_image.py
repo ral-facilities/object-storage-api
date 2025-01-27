@@ -85,6 +85,10 @@ class TestUpload(UploadDSL):
         self.check_upload_success()
 
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
 class DeleteDSL(ImageStoreDSL):
     """Base class for `delete` tests."""
 

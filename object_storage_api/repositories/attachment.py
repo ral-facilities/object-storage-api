@@ -120,3 +120,23 @@ class AttachmentRepo:
             raise exc
 
         return self.get(attachment_id=str(attachment_id), session=session)
+
+    def delete(self, attachment_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Delete an attachment by its ID from a MongoDB database.
+
+        :param attachment_id: The ID of the attachment to delete.
+        :param session: PyMongo ClientSession to use for database operations
+        :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
+        """
+        logger.info("Deleting attachment with ID: %s from the database", attachment_id)
+        try:
+            attachment_id = CustomObjectId(attachment_id)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Attachment not found"
+            raise exc
+        response = self._attachments_collection.delete_one(filter={"_id": attachment_id}, session=session)
+        if response.deleted_count == 0:
+            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", "attachment")

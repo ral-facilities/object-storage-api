@@ -76,3 +76,15 @@ class AttachmentStore:
         )
 
         return object_key, AttachmentPostUploadInfoSchema(**presigned_post_response)
+
+    def delete(self, object_key: str) -> None:
+        """
+        Deletes a given attachment from object storage.
+
+        :param object_key: Key of the attachment to delete.
+        """
+        logger.info("Deleting attachment file with object key: %s from the object store", object_key)
+        s3_client.delete_object(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=object_key,
+        )

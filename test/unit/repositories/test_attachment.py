@@ -268,6 +268,87 @@ class TestList(ListDSL):
         self.check_list_success()
 
 
+class DeleteDSL(AttachmentRepoDSL):
+    """Base class for `delete` tests."""
+
+    _delete_attachment_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(self, deleted_count: int) -> None:
+        """
+        Mocks database methods appropriately to test the `delete` repo method.
+        :param deleted_count: Number of documents deleted successfully.
+        """
+        RepositoryTestHelpers.mock_delete_one(self.attachments_collection, deleted_count)
+
+    def call_delete(self, attachment_id: str) -> None:
+        """
+        Calls the `AttachmentRepo` `delete` method.
+        :param attachment_id: ID of the attachment to be deleted.
+        """
+        self._delete_attachment_id = attachment_id
+        self.attachment_repository.delete(attachment_id, session=self.mock_session)
+
+    def call_delete_expecting_error(self, attachment_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `AttachmentRepo` `delete` method while expecting an error to be raised.
+        :param attachment_id: ID of the attachment to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+        self._delete_attachment_id = attachment_id
+        with pytest.raises(error_type) as exc:
+            self.attachment_repository.delete(attachment_id, session=self.mock_session)
+        self._delete_exception = exc
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+        self.attachments_collection.delete_one.assert_called_once_with(
+            filter={"_id": ObjectId(self._delete_attachment_id)}, session=self.mock_session
+        )
+
+    def check_delete_failed_with_exception(self, message: str, assert_delete: bool = False) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+        :param message: Expected message of the raised exception.
+        :param assert_delete: Whether the `find_one_and_delete` method is expected to be called or not.
+        """
+        if not assert_delete:
+            self.attachments_collection.delete_one.assert_not_called()
+        else:
+            self.attachments_collection.delete_one.assert_called_once_with(
+                filter={"_id": ObjectId(self._delete_attachment_id)},
+                session=self.mock_session,
+            )
+
+        assert str(self._delete_exception.value) == message
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an attachment."""
+
+    def test_delete(self):
+        """Test deleting an attachment."""
+        self.mock_delete(1)
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+    def test_delete_non_existent_id(self):
+        """Test deleting an attachment with a non-existent ID."""
+        attachment_id = str(ObjectId())
+
+        self.mock_delete(0)
+        self.call_delete_expecting_error(attachment_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No attachment found with ID: {attachment_id}", assert_delete=True)
+
+    def test_delete_invalid_id(self):
+        """Test deleting an attachment with an invalid ID."""
+        attachment_id = "invalid-id"
+
+        self.call_delete_expecting_error(attachment_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception(f"Invalid ObjectId value '{attachment_id}'")
+
+
 # pylint: enable=duplicate-code
 
 

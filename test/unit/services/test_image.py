@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
     ImageMetadataSchema,
@@ -71,16 +71,18 @@ class CreateDSL(ImageServiceDSL):
     _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_post_metadata_data: dict) -> None:
+    def mock_create(self, image_post_metadata_data: dict, filename: str) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
+        :param filename: Filename of the image.
         """
 
         self._image_post_metadata = ImagePostMetadataSchema(**image_post_metadata_data)
-        self._upload_file = UploadFile(MagicMock(), size=100, filename="test.png", headers=MagicMock())
+        header = {"content-type": "image/png"}
+        self._upload_file = UploadFile(MagicMock(), size=100, filename=filename, headers=header)
 
         self._expected_image_id = ObjectId()
         self.mock_object_id.return_value = self._expected_image_id
@@ -137,18 +139,18 @@ class CreateDSL(ImageServiceDSL):
 
         assert self._created_image == self._expected_image
 
-    def check_create_failed_with_exception(self, message: str) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_checks: bool = True) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Message of the raised exception.
         """
-
-        self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
-        self.mock_image_store.upload.assert_called_once_with(
-            str(self._expected_image_id), self._image_post_metadata, self._upload_file
-        )
+        if assert_checks:
+            self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
+            self.mock_image_store.upload.assert_called_once_with(
+                str(self._expected_image_id), self._image_post_metadata, self._upload_file
+            )
         self.mock_image_repository.create.assert_not_called()
 
         assert str(self._create_exception.value) == message
@@ -160,14 +162,25 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an image."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png")
         self.call_create()
         self.check_create_success()
+
+    def test_create_with_file_extension_content_type_mismatch(self):
+        """Test creating an image with an inconsistent file extension and content type."""
+
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
+        self.call_create_expecting_error(InvalidFilenameExtension)
+        self.check_create_failed_with_exception(
+            f"File extension `{self._upload_file.filename}` does not match "
+            f"content type `{self._upload_file.content_type}`",
+            assert_checks=False,
+        )
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
 
-        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"})
+        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png")
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -267,6 +280,7 @@ class UpdateDSL(ImageServiceDSL):
     _expected_image_out: ImageOut
     _updated_image_id: str
     _updated_image: MagicMock
+    _update_exception: pytest.ExceptionInfo
 
     def mock_update(self, image_patch_data: dict, stored_image_post_data: Optional[dict]) -> None:
         """
@@ -315,6 +329,19 @@ class UpdateDSL(ImageServiceDSL):
         self._updated_image_id = image_id
         self._updated_image = self.image_service.update(image_id, self._image_patch)
 
+    def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
+        """
+        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`.
+        while expecting an error to be raised.
+
+        :param image_id: ID of the image to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+        self._updated_image_id = image_id
+        with pytest.raises(error_type) as exc:
+            self.image_service.update(image_id, self._image_patch)
+        self._update_exception = exc
+
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
         # Ensure obtained old image
@@ -328,6 +355,19 @@ class UpdateDSL(ImageServiceDSL):
         )
 
         assert self._updated_image == self._expected_image_out
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Message of the raised exception.
+        """
+
+        self.mock_image_repository.get.assert_called_once_with(image_id=self._updated_image_id)
+        self.mock_image_repository.update.assert_not_called()
+
+        assert str(self._update_exception.value) == message
 
 
 class TestUpdate(UpdateDSL):
@@ -354,6 +394,20 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update(image_id)
         self.check_update_success()
+
+    def test_update_with_file_extension_content_type_mismatch(self):
+        """Test updating filename to one with a mismatched file extension."""
+        image_id = str(ObjectId())
+
+        self.mock_update(
+            image_patch_data={**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"},
+            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
+        )
+        self.call_update_expecting_error(image_id, InvalidFilenameExtension)
+        self.check_update_failed_with_exception(
+            f"Patch filename extension `{self._image_patch.file_name}` "
+            f"does not match stored image `{self._stored_image.file_name}`"
+        )
 
 
 class DeleteDSL(ImageServiceDSL):
