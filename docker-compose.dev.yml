@@ -3,7 +3,7 @@ services:
     container_name: object_storage_api_container
     build: 
       context: .
-      target: dev
+      target: ${TARGET_STAGE:-dev}
     volumes:
       - ./object_storage_api:/object-storage-api-run/object_storage_api
       - ./keys:/object-storage-api-run/keys

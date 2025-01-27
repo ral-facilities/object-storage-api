@@ -95,11 +95,11 @@ jobs:
       # Sleep 10 seconds to give time for containers to start
       - name: Start MongoDB and MinIO
         run: |
-          docker compose -f docker-compose.test.yml up -d mongo-db minio minio_create_buckets
+          TARGET_STAGE=test docker compose -f docker-compose.dev.yml up -d mongo-db minio minio_create_buckets
           sleep 10
       - name: Create MinIO buckets
         run: |
-          docker compose -f docker-compose.test.yml up minio_create_buckets
+          TARGET_STAGE=test docker compose -f docker-compose.dev.yml up minio_create_buckets
 
       - name: Run e2e tests
         run: pytest -c test/pytest.ini test/e2e/ --cov
