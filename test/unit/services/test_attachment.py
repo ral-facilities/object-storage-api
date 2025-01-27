@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
@@ -71,7 +71,7 @@ class CreateDSL(AttachmentServiceDSL):
         Mocks repo & store methods appropriately to test the `create` service method.
 
         :param attachment_post_data: Dictionary containing the basic attachment data as would be required for a
-                                     `AttachmentPostSchema` (i.e. no created and modified times required).
+            `AttachmentPostSchema` (i.e. no created and modified times required).
         """
 
         self._attachment_post = AttachmentPostSchema(**attachment_post_data)
@@ -258,6 +258,7 @@ class UpdateDSL(AttachmentServiceDSL):
     _expected_attachment_out: AttachmentOut
     _updated_attachment_id: str
     _updated_attachment: MagicMock
+    _update_exception: pytest.ExceptionInfo
 
     def mock_update(self, attachment_patch_data: dict, stored_attachment_post_data: Optional[dict]) -> None:
         """
@@ -308,6 +309,20 @@ class UpdateDSL(AttachmentServiceDSL):
         self._updated_attachment_id = attachment_id
         self._updated_attachment = self.attachment_service.update(attachment_id, self._attachment_patch)
 
+    def call_update_expecting_error(self, attachment_id: str, error_type: type[BaseException]) -> None:
+        """
+        Class the `AttachmentService` `update` method with the appropriate data from a prior call to `mock_update`,
+        while expecting an error to be raised.
+
+        :param attachment_id: ID of the attachment to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+
+        self._updated_attachment_id = attachment_id
+        with pytest.raises(error_type) as exc:
+            self.attachment_service.update(attachment_id, self._attachment_patch)
+        self._update_exception = exc
+
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
 
@@ -321,6 +336,19 @@ class UpdateDSL(AttachmentServiceDSL):
         )
 
         assert self._updated_attachment == self._expected_attachment_out
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Message of the raised exception.
+        """
+
+        self.mock_attachment_repository.get.assert_called_once_with(attachment_id=self._updated_attachment_id)
+        self.mock_attachment_repository.update.assert_not_called()
+
+        assert str(self._update_exception.value) == message
 
 
 class TestUpdate(UpdateDSL):
@@ -337,6 +365,21 @@ class TestUpdate(UpdateDSL):
 
         self.call_update(attachment_id)
         self.check_update_success()
+
+    def test_update_with_file_extension_content_type_mismatch(self):
+        """Test updating filename to one with a mismatched file extension."""
+        attachment_id = str(ObjectId())
+
+        self.mock_update(
+            attachment_patch_data={**ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "report.mp3"},
+            stored_attachment_post_data=ATTACHMENT_IN_DATA_ALL_VALUES,
+        )
+
+        self.call_update_expecting_error(attachment_id, InvalidFilenameExtension)
+        self.check_update_failed_with_exception(
+            f"Patch filename extension `{self._attachment_patch.file_name}` "
+            f"does not match stored attachment `{self._stored_attachment.file_name}`"
+        )
 
 
 class DeleteDSL(AttachmentServiceDSL):

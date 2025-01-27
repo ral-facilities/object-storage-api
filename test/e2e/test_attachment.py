@@ -40,8 +40,8 @@ class CreateDSL:
         Posts an attachment with the given data and returns the id of the created attachment if successful.
 
         :param attachment_post_data: Dictionary containing the attachment data as would be required for an
-                                     `AttachmentPostSchema`.
-        :return: ID of the created attachment (or `None` if not successful).
+            `AttachmentPostSchema`.
+        :return: ID of the created attachment (or `None` if unsuccessful).
         """
 
         self._post_response_attachment = self.test_client.post("/attachments", json=attachment_post_data)
@@ -375,6 +375,12 @@ class TestUpdate(UpdateDSL):
 
         self.patch_attachment("invalid-id", {})
         self.check_patch_attachment_failed_with_detail(404, "Attachment not found")
+
+    def test_partial_update_with_file_extension_content_type_mismatch(self):
+        """Test updating an attachment with a different extension."""
+        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
+        self.patch_attachment(attachment_id, {**ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "report.mp3"})
+        self.check_patch_attachment_failed_with_detail(422, "Filename does not contain the correct extension")
 
 
 class DeleteDSL(ListDSL):
