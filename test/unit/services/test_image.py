@@ -198,14 +198,9 @@ class GetDSL(ImageServiceDSL):
 
         self._expected_image_out = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
         self.mock_image_repository.get.return_value = self._expected_image_out
-        self.mock_image_store.create_presigned_get.return_value = (
-            "https://fakepresignedurl.co.uk/inline",
-            "https://fakepresignedurl.co.uk/attachment",
-        )
+        self.mock_image_store.create_presigned_get.return_value = "https://fakepresignedurl.co.uk"
         self._expected_image = ImageSchema(
-            **self._expected_image_out.model_dump(),
-            view_url="https://fakepresignedurl.co.uk/inline",
-            download_url="https://fakepresignedurl.co.uk/attachment",
+            **self._expected_image_out.model_dump(), url="https://fakepresignedurl.co.uk"
         )
 
     def call_get(self, image_id: str) -> None:
