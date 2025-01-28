@@ -299,7 +299,10 @@ class UpdateDSL(ImageRepoDSL):
         """
         self._image_in = ImageIn(**new_image_in_data)
 
-    def mock_update(self, new_image_in_data: dict) -> None:
+    def mock_update(
+        self,
+        new_image_in_data: dict,
+    ) -> None:
         """
         Mocks database methods appropriately to test the `update` repo method.
 
