@@ -149,7 +149,7 @@ class GetDSL(ImageRepoDSL):
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
 
-        :param image_id: ID of the expected image to appear in the exception detail.
+        :param message: Expected message of the raised exception.
         :param assert_find: If `True` it asserts whether a `find_one` call was made,
             else it asserts that no call was made.
         """
@@ -200,6 +200,7 @@ class ListDSL(ImageRepoDSL):
     _entity_id_filter: Optional[str]
     _primary_filter: Optional[bool]
     _obtained_image_out: list[ImageOut]
+    _list_exception: pytest.ExceptionInfo
 
     def mock_list(self, image_in_data: list[dict]) -> None:
         """
@@ -217,7 +218,7 @@ class ListDSL(ImageRepoDSL):
         )
 
     def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
-        """Calls the `ImageRepo` `list method` method.
+        """Calls the `ImageRepo` `list` method.
 
         :param entity_id: The ID of the entity to filter images by.
         :param primary: The primary value to filter images by.
@@ -227,6 +228,20 @@ class ListDSL(ImageRepoDSL):
         self._obtained_image_out = self.image_repository.list(
             session=self.mock_session, entity_id=entity_id, primary=primary
         )
+
+    def call_list_expecting_error(self, entity_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `ImageRepo` `list` method with the appropriate data from a prior call to `mock_list`
+        while expecting an error to be raised.
+
+        :param entity_id: ID of the entity to filter images by.
+        :param error_type: Expected exception to be raised.
+        """
+
+        self._entity_id_filter = entity_id
+        with pytest.raises(error_type) as exc:
+            self.image_repository.list(session=self.mock_session, entity_id=entity_id, primary=False)
+        self._list_exception = exc
 
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
@@ -239,6 +254,18 @@ class ListDSL(ImageRepoDSL):
         self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
 
+    def check_list_failed_with_exception(self, message:str) -> None:
+        """
+        Checks that a prior call to `call_list_expecting_error` worked as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.images_collection.find.assert_not_called()
+
+        assert str(self._list_exception.value) == message
+
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
@@ -249,33 +276,47 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test listing all images."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list()
         self.check_list_success()
 
     def test_list_with_no_results(self):
         """Test listing all images returning no results."""
+
         self.mock_list([])
         self.call_list()
         self.check_list_success()
 
     def test_list_with_entity_id(self):
         """Test listing all images with an `entity_id` argument."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
 
     def test_list_with_primary(self):
         """Test listing all images with a `primary` argument."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=False)
         self.check_list_success()
 
     def test_list_with_primary_and_entity_id(self):
         """Test listing all images with an `entity_id` and `primary` argument."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=True, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
+
+    def test_list_with_invalid_id(self):
+        """Test listing all images with an invalid `entity_id` argument."""
+
+        entity_id = "invalid-id"
+
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list_expecting_error(entity_id, InvalidObjectIdError)
+        self.check_list_failed_with_exception(f"Invalid ObjectId value '{entity_id}'")
 
 
 # pylint: enable=duplicate-code
