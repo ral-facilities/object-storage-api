@@ -253,12 +253,6 @@ class ListDSL(GetDSL):
         assert self._get_response_attachment.status_code == 200
         assert self._get_response_attachment.json() == expected_attachments_get_data
 
-    def check_get_attachments_failed_with_message(self, status_code, expected_detail, obtained_detail):
-        """Checks the response of listing attachments failed with the expected message."""
-
-        assert self._get_response_attachment.status_code == status_code
-        assert obtained_detail == expected_detail
-
 
 class TestList(ListDSL):
     """Tests for getting a list of attachments."""
@@ -300,14 +294,12 @@ class TestList(ListDSL):
         """
         Test getting a list of all attachments with an invalid `entity_id` filter provided.
 
-        Posts three attachments and expects a 422 status code.
+        Posts three attachments and expects no results.
         """
 
         self.post_test_attachments()
         self.get_attachments(filters={"entity_id": False})
-        self.check_get_attachments_failed_with_message(
-            422, "Attachment not found", self._get_response_attachment.json()["detail"]
-        )
+        self.check_get_attachments_success([])
 
 
 class DeleteDSL(ListDSL):

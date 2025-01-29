@@ -205,7 +205,6 @@ class ListDSL(AttachmentRepoDSL):
     _expected_attachment_out: list[AttachmentOut]
     _entity_id_filter: Optional[str]
     _obtained_attachment_out: list[AttachmentOut]
-    _list_exception: pytest.ExceptionInfo
 
     def mock_list(self, attachment_in_data: list[dict]) -> None:
         """
@@ -233,20 +232,6 @@ class ListDSL(AttachmentRepoDSL):
         self._entity_id_filter = entity_id
         self._obtained_attachment_out = self.attachment_repository.list(session=self.mock_session, entity_id=entity_id)
 
-    def call_list_expecting_error(self, entity_id: str, error_type: type[BaseException]) -> None:
-        """
-        Calls the `AttachmentRepo` `list` method with the appropriate data from a prior call to `mock_list`
-        while expecting an error to be raised.
-
-        :param entity_id: ID of the entity to filter attachments by.
-        :param error_type: Expected exception to be raised.
-        """
-
-        self._entity_id_filter = entity_id
-        with pytest.raises(error_type) as exc:
-            self.attachment_repository.list(session=self.mock_session, entity_id=entity_id)
-        self._list_exception = exc
-
     def check_list_success(self) -> None:
         """Checks that a prior call to `call_list` worked as expected."""
         expected_query = {}
@@ -256,17 +241,12 @@ class ListDSL(AttachmentRepoDSL):
         self.attachments_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_attachment_out == self._expected_attachment_out
 
-    def check_list_failed_with_exception(self, message: str) -> None:
-        """
-        Checks that a prior call to `call_list_expecting_error` worked as expected, raising an exception
-        with the correct message.
-
-        :param message: Expected message of the raised exception.
-        """
+    def check_list_returned_an_empty_list(self) -> None:
+        """Checks that a prior call to `call_list` with an invalid entity_id returned an empty list as expected."""
 
         self.attachments_collection.find.assert_not_called()
 
-        assert str(self._list_exception.value) == message
+        assert self._obtained_attachment_out == []
 
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
@@ -297,14 +277,23 @@ class TestList(ListDSL):
         self.call_list(entity_id=ATTACHMENT_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
 
-    def test_list_with_invalid_id(self):
-        """Test listing all attachments with an invalid `entity_id` argument."""
+    def test_list_with_entity_id_with_no_results(self):
+        """Test listing all attachments with an `entity_id` argument returning no results."""
+
+        entity_id = str(ObjectId())
+
+        self.mock_list([])
+        self.call_list(entity_id)
+        self.check_list_success()
+
+    def test_list_with_invalid_id_returns_empty_list(self):
+        """Test listing all attachments with an invalid `entity_id` argument returns an empty list."""
 
         entity_id = "invalid-id"
 
         self.mock_list([ATTACHMENT_IN_DATA_ALL_VALUES])
-        self.call_list_expecting_error(entity_id, InvalidObjectIdError)
-        self.check_list_failed_with_exception(f"Invalid ObjectId value '{entity_id}'")
+        self.call_list(entity_id)
+        self.check_list_returned_an_empty_list()
 
 
 class DeleteDSL(AttachmentRepoDSL):
