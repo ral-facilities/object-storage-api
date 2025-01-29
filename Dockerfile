@@ -8,7 +8,7 @@ COPY object_storage_api/ object_storage_api/
 RUN --mount=type=cache,target=/root/.cache \
     set -eux; \
     \
-    python3 -m pip install -r .;
+    python3 -m pip install -r pyproject.toml;
 
 CMD ["fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000
