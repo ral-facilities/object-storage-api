@@ -150,4 +150,4 @@ class ImageRepo:
             raise exc
         response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No image found with ID: {image_id}", "image")
+            raise MissingRecordError(f"No image found with ID: {image_id}", entity_name="image")

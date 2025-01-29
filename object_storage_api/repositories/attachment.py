@@ -72,8 +72,8 @@ class AttachmentRepo:
         """
         Retrieve attachments from a MongoDB database.
 
-        :param session: PyMongo ClientSession to use for database operations.
         :param entity_id: The ID of the entity to filter attachments by.
+        :param session: PyMongo ClientSession to use for database operations.
         :return: List of attachments or an empty list if no attachments are retrieved.
         """
 
@@ -101,7 +101,7 @@ class AttachmentRepo:
         Delete an attachment by its ID from a MongoDB database.
 
         :param attachment_id: The ID of the attachment to delete.
-        :param session: PyMongo ClientSession to use for database operations
+        :param session: PyMongo ClientSession to use for database operations.
         :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
         :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
@@ -114,4 +114,17 @@ class AttachmentRepo:
             raise exc
         response = self._attachments_collection.delete_one(filter={"_id": attachment_id}, session=session)
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", "attachment")
+            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", entity_name="attachment")
+
+    def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Delete attachments by entity ID.
+
+        :param entity_id: The entity ID of the attachments to delete.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return:
+        """
+        logger.info("Deleting attachments with entity ID: %s from the database", entity_id)
+        entity_id = CustomObjectId(entity_id)
+        # Given it is deleting multiple, we are not raising an exception if no attachments were found to be deleted
+        self._attachments_collection.delete_many(filter={"entity_id": entity_id}, session=session)
