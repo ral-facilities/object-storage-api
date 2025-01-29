@@ -101,3 +101,17 @@ class AttachmentService:
         # Deletes attachment from object store first to prevent unreferenced objects in storage
         self._attachment_store.delete(stored_attachment.object_key)
         self._attachment_repository.delete(attachment_id)
+
+    def delete_by_entity_id(self, entity_id: str) -> None:
+        """
+        Delete attachments by entity ID.
+
+        :param entity_id: The entity ID of the attachments to delete.
+        """
+        stored_attachments = self._attachment_repository.list(entity_id)
+        if stored_attachments:
+            # Deletes attachments from object store first to prevent unreferenced objects in storage
+            self._attachment_store.delete_many(
+                [stored_attachment.object_key for stored_attachment in stored_attachments]
+            )
+            self._attachment_repository.delete_by_entity_id(entity_id)
