@@ -360,3 +360,48 @@ class TestDelete(DeleteDSL):
         """Test deleting an attachment with an invalid ID."""
         self.delete_attachment("invalid_id")
         self.check_delete_attachment_failed_with_detail(404, "Attachment not found")
+
+
+class DeleteByEntityIdDSL(ListDSL):
+    """Base class for delete tests."""
+
+    _delete_response_attachments: Response
+
+    def delete_attachments_by_entity_id(self, entity_id: str) -> None:
+        """
+        Deletes attachments with the given entity ID.
+
+        :param entity_id: Entity ID of the attachments to be deleted.
+        """
+        self._delete_response_attachments = self.test_client.delete("/attachments", params={"entity_id": entity_id})
+
+    def check_delete_attachments_by_entity_id_success(self) -> None:
+        """
+        Checks that a prior call to `delete_attachments_by_entity_id` gave a successful response with the expected code.
+        """
+        assert self._delete_response_attachments.status_code == 204
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting attachments by entity ID."""
+
+    def test_delete_attachments_by_entity_id(self):
+        """Test deleting attachments."""
+        attachments = self.post_test_attachments()
+        entity_id = attachments[0]["entity_id"]
+
+        self.delete_attachments_by_entity_id(entity_id)
+        self.check_delete_attachments_by_entity_id_success()
+
+        self.get_attachments(filters={"entity_id": entity_id})
+        self.check_get_attachments_success([])
+
+    def test_delete_attachments_by_entity_id_with_non_existent_id(self):
+        """Test deleting attachments with a non-existent entity ID."""
+        self.delete_attachments_by_entity_id(str(ObjectId()))
+        self.check_delete_attachments_by_entity_id_success()
+
+    def test_delete_attachments_by_entity_id_with_invalid_id(self):
+        """Test deleting attachments with an invalid entity ID."""
+        self.delete_attachments_by_entity_id("invalid_id")
+        self.check_delete_attachments_by_entity_id_success()
