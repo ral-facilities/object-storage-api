@@ -280,3 +280,64 @@ class TestDelete(DeleteDSL):
         self.mock_delete(ATTACHMENT_IN_DATA_ALL_VALUES)
         self.call_delete()
         self.check_delete_success()
+
+
+class DeleteByEntityIdDSL(AttachmentServiceDSL):
+    """Base class for `delete_by_entity_id` tests."""
+
+    _expected_attachments_out: list[AttachmentOut]
+    _delete_entity_id: str
+    _delete_attachment_object_keys: list[str]
+
+    def mock_delete_by_entity_id(self, attachments_in_data: list[dict]) -> None:
+        """
+        Mocks repo methods appropriately to test the `delete_by_entity_id` service method.
+
+        :param attachments_in_data: List of dictionaries containing the attachment data as would be required for an
+            `AttachmentIn` database model (i.e. no created and modified times required).
+        """
+        self._expected_attachments_out = [
+            AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump())
+            for attachment_in_data in attachments_in_data
+        ]
+        self.mock_attachment_repository.list.return_value = self._expected_attachments_out
+        self._delete_entity_id = (
+            self._expected_attachments_out[0].id if self._expected_attachments_out else str(ObjectId())
+        )
+        self._delete_attachment_object_keys = [
+            expected_attachment_out.object_key for expected_attachment_out in self._expected_attachments_out
+        ]
+
+    def call_delete_by_entity_id(self) -> None:
+        """Calls the `AttachmentService` `delete_by_entity_id` method."""
+        self.attachment_service.delete_by_entity_id(self._delete_entity_id)
+
+    def check_delete_by_entity_id_success(self, assert_delete: bool = True) -> None:
+        """
+        Checks that a prior call to `call_delete_by_entity_id` worked as expected.
+
+        :param assert_delete: Whether the `delete_many` store method and `delete_by_entity_id` repo method are expected
+            to be called or not.
+        """
+        if assert_delete:
+            self.mock_attachment_store.delete_many.assert_called_once_with(self._delete_attachment_object_keys)
+            self.mock_attachment_repository.delete_by_entity_id.assert_called_once_with(self._delete_entity_id)
+        else:
+            self.mock_attachment_store.delete_many.assert_not_called()
+            self.mock_attachment_repository.delete_by_entity_id.assert_not_called()
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting attachments by entity ID."""
+
+    def test_delete_by_entity_id(self):
+        """Test deleting attachments."""
+        self.mock_delete_by_entity_id([ATTACHMENT_IN_DATA_ALL_VALUES])
+        self.call_delete_by_entity_id()
+        self.check_delete_by_entity_id_success()
+
+    def test_delete_by_entity_id_non_existent_id(self):
+        """Test deleting attachments with a non-existent entity ID."""
+        self.mock_delete_by_entity_id([])
+        self.call_delete_by_entity_id()
+        self.check_delete_by_entity_id_success(False)
