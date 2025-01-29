@@ -86,7 +86,7 @@ class AttachmentRepo:
         if entity_id is not None:
             try:
                 query["entity_id"] = CustomObjectId(entity_id)
-            except InvalidObjectIdError as exc:
+            except InvalidObjectIdError:
                 # As this endpoint filters, and to hide the database behaviour, we treat any invalid id
                 # the same as a valid one that doesn't exist i.e. return an empty list
                 return []
