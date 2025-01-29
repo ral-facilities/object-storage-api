@@ -1,6 +1,6 @@
 services:
-  object-storage-api:
-    container_name: object_storage_api_container
+  object-storage-api-test:
+    container_name: object_storage_api_container_test
     build: 
       context: .
       target: test

@@ -1,22 +1,14 @@
-FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as base
+FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as dev
 
 WORKDIR /object-storage-api-run
 
-COPY requirements.txt ./
+COPY pyproject.toml ./
 COPY object_storage_api/ object_storage_api/
 
 RUN --mount=type=cache,target=/root/.cache \
     set -eux; \
     \
-    python3 -m pip install -r requirements.txt;
-
-FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as dev
-
-WORKDIR /object-storage-api-run
-
-COPY --from=base /usr/local/lib/python3.12/site-packages /usr/local/lib/python3.12/site-packages
-COPY --from=base /usr/local/bin /usr/local/bin
-COPY object_storage_api/ object_storage_api/
+    python3 -m pip install -r .;
 
 CMD ["fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000
