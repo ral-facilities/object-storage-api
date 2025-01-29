@@ -254,7 +254,7 @@ class ListDSL(ImageRepoDSL):
         self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
 
-    def check_list_failed_with_exception(self, message:str) -> None:
+    def check_list_failed_with_exception(self, message: str) -> None:
         """
         Checks that a prior call to `call_list_expecting_error` worked as expected, raising an exception
         with the correct message.
