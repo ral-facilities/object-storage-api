@@ -61,7 +61,9 @@ jobs:
         run: cp object_storage_api/logging.example.ini object_storage_api/logging.ini
 
       - name: Run unit tests
-        run: pytest -c test/pytest.ini test/unit/ --cov
+        run: |
+          docker build --target unit-test -t object-storage-api:unit-test .
+          docker run object-storage-api:unit-test
 
       - name: Upload coverage reports to Codecov
         if: success()
@@ -102,7 +104,9 @@ jobs:
           docker compose -f docker-compose.test.yml up minio_create_buckets
 
       - name: Run e2e tests
-        run: pytest -c test/pytest.ini test/e2e/ --cov
+        run: |
+          docker build --target e2e-test -t object-storage-api:e2e-test .
+          docker run object-storage-api:e2e-test
 
       - name: Output docker logs (mongodb)
         if: failure()

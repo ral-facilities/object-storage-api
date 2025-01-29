@@ -13,11 +13,23 @@ RUN --mount=type=cache,target=/root/.cache \
 CMD ["fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
 EXPOSE 8000
 
-FROM dev as test
+FROM dev as unit-test
 
 WORKDIR /object-storage-api-run
 
 COPY test/ test/
+
+CMD ["pytest", "--config-file", "test/pytest.ini", "test/unit", "--cov"]
+
+FROM unit-test as e2e-test
+
+WORKDIR /object-storage-api-run
+
+CMD ["pytest", "--config-file", "test/pytest.ini", "test/e2e", "--cov"]
+
+FROM unit-test as test
+
+WORKDIR /object-storage-api-run
 
 CMD ["pytest", "--config-file", "test/pytest.ini", "test/", "--cov"]
 
