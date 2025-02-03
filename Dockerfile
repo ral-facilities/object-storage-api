@@ -1,14 +1,18 @@
-FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b
+FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as dev
 
-WORKDIR /object-storage-api-run
+WORKDIR /app
 
-COPY requirements.txt ./
+COPY pyproject.toml requirements.txt ./
 COPY object_storage_api/ object_storage_api/
 
 RUN --mount=type=cache,target=/root/.cache \
     set -eux; \
     \
-    python3 -m pip install -r requirements.txt;
+    pip install --no-cache-dir .[dev]; \
+    # Ensure the pinned versions of the production dependencies and subdependencies are installed \
+    pip install --no-cache-dir --requirement requirements.txt;
+
 
 CMD ["fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
+
 EXPOSE 8000
