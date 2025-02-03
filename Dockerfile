@@ -1,4 +1,4 @@
-FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as dev
+FROM python:3.12.8-alpine3.20@sha256:3b1df87fc50e7d47762aeb48673736079aa22e7c98c8851f5453dd49fc03ad1b as dev
 
 WORKDIR /app
 
@@ -18,7 +18,7 @@ CMD ["fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--por
 EXPOSE 8000
 
 
-FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as prod
+FROM python:3.12.8-alpine3.20@sha256:3b1df87fc50e7d47762aeb48673736079aa22e7c98c8851f5453dd49fc03ad1b as prod
 
 WORKDIR /app
 
