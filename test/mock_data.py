@@ -85,6 +85,12 @@ ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
 
 # All values
 
+ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES = {
+    "title": "Shattered Laser",
+    "description": "A text attachment describing damage to a laser.",
+    "file_name": "laserDamage.txt",
+}
+
 ATTACHMENT_POST_DATA_ALL_VALUES = {
     "entity_id": str(ObjectId()),
     "file_name": "report.txt",
@@ -116,6 +122,11 @@ ATTACHMENT_GET_METADATA_ALL_VALUES = {
 ATTACHMENT_GET_DATA_ALL_VALUES = {
     **ATTACHMENT_GET_METADATA_ALL_VALUES,
     "download_url": ANY,
+}
+
+ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH = {
+    **ATTACHMENT_GET_METADATA_ALL_VALUES,
+    **ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
 }
 
 ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {

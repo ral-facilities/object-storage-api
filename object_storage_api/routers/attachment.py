@@ -10,6 +10,7 @@ from fastapi import APIRouter, Depends, Path, Query, status
 
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
+    AttachmentPatchMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
     AttachmentSchema,
@@ -67,6 +68,23 @@ def get_attachment(
     logger.info("Getting attachment with ID: %s", attachment_id)
 
     return attachment_service.get(attachment_id)
+
+
+@router.patch(
+    path="/{attachment_id}",
+    summary="Update an attachment partially by ID",
+    response_description="Attachment updated successfully",
+)
+def partial_update_attachment(
+    attachment: AttachmentPatchMetadataSchema,
+    attachment_id: Annotated[str, Path(description="ID of the attachment to update")],
+    attachment_service: AttachmentServiceDep,
+) -> AttachmentMetadataSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating attachment with ID: %s", attachment_id)
+    logger.debug("Attachment data: %s", attachment)
+
+    return attachment_service.update(attachment_id, attachment)
 
 
 @router.delete(

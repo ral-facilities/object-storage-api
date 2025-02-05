@@ -4,16 +4,18 @@ store.
 """
 
 import logging
+import mimetypes
 from typing import Annotated, Optional
 
 from bson import ObjectId
 from fastapi import Depends
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
+    AttachmentPatchMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
     AttachmentSchema,
@@ -91,6 +93,34 @@ class AttachmentService:
         attachments = self._attachment_repository.list(entity_id)
 
         return [AttachmentMetadataSchema(**attachment.model_dump()) for attachment in attachments]
+
+    def update(self, attachment_id: str, attachment: AttachmentPatchMetadataSchema) -> AttachmentMetadataSchema:
+        """
+        Update an attachment by its ID.
+
+        :param attachment_id: The ID of the attachment to update.
+        :param attachment: The attachment containing the fields to be updated.
+        :return: The updated attachment.
+        :raises InvalidFilenameExtension: If the attachment has a mismatched file extension.
+        """
+
+        stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
+
+        stored_type = mimetypes.guess_type(stored_attachment.file_name)
+        if attachment.file_name is not None:
+            update_type = mimetypes.guess_type(attachment.file_name)
+            if update_type != stored_type:
+                raise InvalidFilenameExtension(
+                    f"Patch filename extension `{attachment.file_name}` does not match "
+                    f"stored attachment `{stored_attachment.file_name}`"
+                )
+
+        updated_attachment = self._attachment_repository.update(
+            attachment_id=attachment_id,
+            attachment=AttachmentIn(**{**stored_attachment.model_dump(), **attachment.model_dump(exclude_unset=True)}),
+        )
+
+        return AttachmentMetadataSchema(**updated_attachment.model_dump())
 
     def delete(self, attachment_id: str) -> None:
         """

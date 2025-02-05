@@ -336,19 +336,20 @@ class UpdateDSL(ImageServiceDSL):
 
     def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
         """
-        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`.
+        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`,
         while expecting an error to be raised.
 
         :param image_id: ID of the image to be updated.
         :param error_type: Expected exception to be raised.
         """
+
         self._updated_image_id = image_id
         with pytest.raises(error_type) as exc:
             self.image_service.update(image_id, self._image_patch)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
-        """Checks that a prior call to `call_update` worked as updated."""
+        """Checks that a prior call to `call_update` worked as expected."""
         # Ensure obtained old image
         self.mock_image_repository.get.assert_called_once_with(image_id=self._updated_image_id)
 

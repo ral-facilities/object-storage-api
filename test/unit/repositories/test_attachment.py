@@ -350,3 +350,115 @@ class TestDelete(DeleteDSL):
 
 
 # pylint: enable=duplicate-code
+
+
+class UpdateDSL(AttachmentRepoDSL):
+    """Base class for `update` tests."""
+
+    _attachment_in: AttachmentIn
+    _expected_attachment_out: AttachmentOut
+    _updated_attachment_id: str
+    _updated_attachment: AttachmentOut
+    _update_exception: pytest.ExceptionInfo
+
+    def set_update_data(self, new_attachment_in_data: dict):
+        """
+        Assigns the update data to use during a call to `call_update`.
+
+        :param new_attachment_in_data: New attachment data as would be required for an `AttachmentIn` database model
+            to supply to the `AttachmentRepo` `update` method.
+        """
+
+        self._attachment_in = AttachmentIn(**new_attachment_in_data)
+
+    def mock_update(self, new_attachment_in_data: dict) -> None:
+        """Mocks database methods appropriately to test the `update` repo method.
+
+        :param new_attachment_in_data: Dictionary containing the new attachment data as would be required for an
+            `Attachment_In` database model (i.e. no created and modified times required).
+        """
+
+        self.set_update_data(new_attachment_in_data)
+
+        self._expected_attachment_out = AttachmentOut(**self._attachment_in.model_dump())
+        RepositoryTestHelpers.mock_find_one(
+            self.attachments_collection,
+            self._expected_attachment_out.model_dump(by_alias=True),
+        )
+
+    def call_update(self, attachment_id: str) -> None:
+        """
+        Calls the `AttachmentRepo` `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`).
+
+        :param attachment_id: ID of the attachment to be updated.
+        """
+
+        self._updated_attachment_id = attachment_id
+        self._updated_attachment = self.attachment_repository.update(
+            attachment_id,
+            self._attachment_in,
+            session=self.mock_session,
+        )
+
+    def call_update_expecting_error(self, attachment_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `AttachmentRepo `update` method with the appropriate data from a prior call to `mock_update`
+        (or `set_update_data`) while expecting an error to be raised.
+
+        :param attachment_id: ID of the attachment to be updated.
+        :param error_type: Expected exception to be raised.
+        """
+
+        with pytest.raises(error_type) as exc:
+            self.attachment_repository.update(attachment_id, self._attachment_in)
+        self._update_exception = exc
+
+    def check_update_success(self) -> None:
+        """Checks that a prior call to `call_update` worked as expected."""
+
+        self.attachments_collection.update_one.assert_called_once_with(
+            {
+                "_id": ObjectId(self._updated_attachment_id),
+            },
+            {
+                "$set": self._attachment_in.model_dump(by_alias=True),
+            },
+            session=self.mock_session,
+        )
+
+        assert self._updated_attachment == self._expected_attachment_out
+
+    def check_update_failed_with_exception(self, message: str) -> None:
+        """
+        Checks that a prior call to `call_update_expecting_error` failed as expected, raising an exception
+        with the correct message.
+
+        :param message: Expected message of the raised exception.
+        """
+
+        self.attachments_collection.update_one.assert_not_called()
+
+        assert str(self._update_exception.value) == message
+
+
+class TestUpdate(UpdateDSL):
+    """Tests for updating an attachment."""
+
+    def test_update(self):
+        """Test updating an attachment."""
+
+        attachment_id = str(ObjectId())
+
+        self.mock_update(ATTACHMENT_IN_DATA_ALL_VALUES)
+        self.call_update(attachment_id)
+        self.check_update_success()
+
+    def test_update_with_invalid_id(self):
+        """Test updating an attachment with an invalid ID."""
+
+        attachment_id = "invalid-id"
+
+        self.set_update_data(ATTACHMENT_IN_DATA_ALL_VALUES)
+        self.call_update_expecting_error(attachment_id, InvalidObjectIdError)
+        self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
