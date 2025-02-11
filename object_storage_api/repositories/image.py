@@ -82,8 +82,15 @@ class ImageRepo:
         # pylint: disable=duplicate-code
 
         query = {}
+
         if entity_id is not None:
-            query["entity_id"] = CustomObjectId(entity_id)
+            try:
+                query["entity_id"] = CustomObjectId(entity_id)
+            except InvalidObjectIdError:
+                # As this method filters, and to hide the database behaviour, we treat any invalid id
+                # the same as a valid one that doesn't exist i.e. return an empty list
+                return []
+
         if primary is not None:
             query["primary"] = primary
 
