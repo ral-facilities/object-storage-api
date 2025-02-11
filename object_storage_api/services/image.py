@@ -149,3 +149,15 @@ class ImageService:
         # Deletes image from object store first to prevent unreferenced objects in storage
         self._image_store.delete(stored_image.object_key)
         self._image_repository.delete(image_id)
+
+    def delete_by_entity_id(self, entity_id: str) -> None:
+        """
+        Delete images by entity ID.
+
+        :param entity_id: The entity ID of the images to delete.
+        """
+        stored_images = self._image_repository.list(entity_id, None)
+        if stored_images:
+            # Deletes images from object store first to prevent unreferenced objects in storage
+            self._image_store.delete_many([stored_image.object_key for stored_image in stored_images])
+            self._image_repository.delete_by_entity_id(entity_id)
