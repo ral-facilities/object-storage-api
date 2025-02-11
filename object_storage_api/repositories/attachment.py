@@ -96,6 +96,31 @@ class AttachmentRepo:
         attachments = self._attachments_collection.find(query, session=session)
         return [AttachmentOut(**attachment) for attachment in attachments]
 
+    def update(self, attachment_id: str, attachment: AttachmentIn, session: ClientSession = None) -> AttachmentOut:
+        """
+        Updates an attachment by its ID in a MongoDB database.
+
+        :param attachment_id: The ID of the attachment to update.
+        :param attachment: The attachment containing the update data.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: The updated attachment.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
+        """
+
+        logger.info("Updating attachment metadata with ID: %s", attachment_id)
+
+        try:
+            attachment_id = CustomObjectId(attachment_id)
+            self._attachments_collection.update_one(
+                {"_id": attachment_id}, {"$set": attachment.model_dump(by_alias=True)}, session=session
+            )
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Attachment not found"
+            raise exc
+
+        return self.get(attachment_id=str(attachment_id), session=session)
+
     def delete(self, attachment_id: str, session: Optional[ClientSession] = None) -> None:
         """
         Delete an attachment by its ID from a MongoDB database.

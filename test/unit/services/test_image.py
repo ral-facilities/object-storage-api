@@ -198,9 +198,14 @@ class GetDSL(ImageServiceDSL):
 
         self._expected_image_out = ImageOut(**ImageIn(**IMAGE_IN_DATA_ALL_VALUES).model_dump())
         self.mock_image_repository.get.return_value = self._expected_image_out
-        self.mock_image_store.create_presigned_get.return_value = "https://fakepresignedurl.co.uk"
+        self.mock_image_store.create_presigned_get.return_value = (
+            "https://fakepresignedurl.co.uk/inline",
+            "https://fakepresignedurl.co.uk/attachment",
+        )
         self._expected_image = ImageSchema(
-            **self._expected_image_out.model_dump(), url="https://fakepresignedurl.co.uk"
+            **self._expected_image_out.model_dump(),
+            view_url="https://fakepresignedurl.co.uk/inline",
+            download_url="https://fakepresignedurl.co.uk/attachment",
         )
 
     def call_get(self, image_id: str) -> None:
@@ -331,19 +336,20 @@ class UpdateDSL(ImageServiceDSL):
 
     def call_update_expecting_error(self, image_id: str, error_type: type[BaseException]) -> None:
         """
-        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`.
+        Class the `ImageService` `update` method with the appropriate data from a prior call to `mock_update`,
         while expecting an error to be raised.
 
         :param image_id: ID of the image to be updated.
         :param error_type: Expected exception to be raised.
         """
+
         self._updated_image_id = image_id
         with pytest.raises(error_type) as exc:
             self.image_service.update(image_id, self._image_patch)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
-        """Checks that a prior call to `call_update` worked as updated."""
+        """Checks that a prior call to `call_update` worked as expected."""
         # Ensure obtained old image
         self.mock_image_repository.get.assert_called_once_with(image_id=self._updated_image_id)
 
