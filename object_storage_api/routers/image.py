@@ -115,3 +115,18 @@ def delete_image(
     # pylint: disable=missing-function-docstring
     logger.info("Deleting image with ID: %s", image_id)
     image_service.delete(image_id)
+
+
+@router.delete(
+    path="",
+    summary="Delete images by entity ID",
+    response_description="Images deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_images_by_entity_id(
+    entity_id: Annotated[str, Query(description="The entity ID of the images to delete")],
+    image_service: ImageServiceDep,
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting images with entity ID: %s", entity_id)
+    image_service.delete_by_entity_id(entity_id)
