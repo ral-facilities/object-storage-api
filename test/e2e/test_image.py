@@ -298,11 +298,11 @@ class TestList(ListDSL):
         """
         Test getting a list of all images with an invalid `entity_id` filter provided.
 
-        Posts 3 images and expects a 422 status code.
+        Posts 3 images and expects no results.
         """
         self.post_test_images()
         self.get_images(filters={"entity_id": False})
-        self.check_get_images_failed_with_message(422, "Invalid ID given", self._get_response_image.json()["detail"])
+        self.check_get_images_success([])
 
     def test_list_with_primary_filter(self):
         """
