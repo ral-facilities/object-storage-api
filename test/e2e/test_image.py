@@ -225,21 +225,9 @@ class ListDSL(GetDSL):
         )
 
         return [
-            {
-                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": image_a_id,
-            },
-            {
-                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": image_b_id,
-            },
-            {
-                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-                "id": image_c_id,
-            },
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_a_id},
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_b_id},
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": image_c_id},
         ]
 
     def check_get_images_success(self, expected_images_get_data: list[dict]) -> None:
@@ -476,3 +464,48 @@ class TestDelete(DeleteDSL):
 
         self.delete_image("invalid_id")
         self.check_delete_image_failed_with_detail()
+
+
+class DeleteByEntityIdDSL(ListDSL):
+    """Base class for delete by `entity_id` tests."""
+
+    _delete_response_images: Response
+
+    def delete_images_by_entity_id(self, entity_id: str) -> None:
+        """
+        Deletes images with the given `entity_id`.
+
+        :param entity_id: Entity ID of the images to be deleted.
+        """
+        self._delete_response_images = self.test_client.delete("/images", params={"entity_id": entity_id})
+
+    def check_delete_images_by_entity_id_success(self) -> None:
+        """
+        Checks that a prior call to `delete_images_by_entity_id` gave a successful response with the expected code.
+        """
+        assert self._delete_response_images.status_code == 204
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting images by `entity_id`."""
+
+    def test_delete_by_entity_id(self):
+        """Test deleting images."""
+        images = self.post_test_images()
+        entity_id = images[0]["entity_id"]
+
+        self.delete_images_by_entity_id(entity_id)
+        self.check_delete_images_by_entity_id_success()
+
+        self.get_images(filters={"entity_id": entity_id})
+        self.check_get_images_success([])
+
+    def test_delete_by_entity_id_with_non_existent_id(self):
+        """Test deleting images with a non-existent `entity_id`."""
+        self.delete_images_by_entity_id(str(ObjectId()))
+        self.check_delete_images_by_entity_id_success()
+
+    def test_delete_by_entity_id_with_invalid_id(self):
+        """Test deleting images with an invalid `entity_id`."""
+        self.delete_images_by_entity_id("invalid_id")
+        self.check_delete_images_by_entity_id_success()
