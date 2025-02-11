@@ -363,7 +363,7 @@ class TestDelete(DeleteDSL):
 
 
 class DeleteByEntityIdDSL(ListDSL):
-    """Base class for delete tests."""
+    """Base class for delete by entity_id tests."""
 
     _delete_response_attachments: Response
 
@@ -385,7 +385,7 @@ class DeleteByEntityIdDSL(ListDSL):
 class TestDeleteByEntityId(DeleteByEntityIdDSL):
     """Tests for deleting attachments by entity ID."""
 
-    def test_delete_attachments_by_entity_id(self):
+    def test_delete_by_entity_id(self):
         """Test deleting attachments."""
         attachments = self.post_test_attachments()
         entity_id = attachments[0]["entity_id"]
@@ -396,12 +396,12 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
         self.get_attachments(filters={"entity_id": entity_id})
         self.check_get_attachments_success([])
 
-    def test_delete_attachments_by_entity_id_with_non_existent_id(self):
+    def test_delete_by_entity_id_with_non_existent_id(self):
         """Test deleting attachments with a non-existent entity ID."""
         self.delete_attachments_by_entity_id(str(ObjectId()))
         self.check_delete_attachments_by_entity_id_success()
 
-    def test_delete_attachments_by_entity_id_with_invalid_id(self):
+    def test_delete_by_entity_id_with_invalid_id(self):
         """Test deleting attachments with an invalid entity ID."""
         self.delete_attachments_by_entity_id("invalid_id")
         self.check_delete_attachments_by_entity_id_success()

@@ -105,5 +105,5 @@ class AttachmentStore:
             batch = object_keys[i : i + batch_size]
             s3_client.delete_objects(
                 Bucket=object_storage_config.bucket_name.get_secret_value(),
-                Delete={"Objects": [{"Key": key for key in batch}]},
+                Delete={"Objects": [{"Key": key} for key in batch]},
             )

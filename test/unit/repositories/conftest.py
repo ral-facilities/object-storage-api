@@ -100,7 +100,7 @@ class RepositoryTestHelpers:
         for the code that relies on the `deleted_count` value to work.
 
         :param collection_mock: Mocked MongoDB database collection instance.
-        :param deleted_count: The value to be assigned to the `deleted_count` attribute of the `DeleteResult` object
+        :param deleted_count: The value to be assigned to the `deleted_count` attribute of the `DeleteResult` object.
         """
         delete_result_mock = Mock(DeleteResult)
         delete_result_mock.deleted_count = deleted_count

@@ -87,7 +87,7 @@ class DeleteManyDSL(AttachmentStoreDSL):
         """Checks that a prior call to `call_delete_many` worked as expected."""
         self.mock_s3_client.delete_objects.assert_called_once_with(
             Bucket=object_storage_config.bucket_name.get_secret_value(),
-            Delete={"Objects": [{"Key": key for key in self._delete_many_object_keys}]},
+            Delete={"Objects": [{"Key": key} for key in self._delete_many_object_keys]},
         )
 
 

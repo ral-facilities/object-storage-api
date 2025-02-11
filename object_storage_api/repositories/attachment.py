@@ -122,9 +122,13 @@ class AttachmentRepo:
 
         :param entity_id: The entity ID of the attachments to delete.
         :param session: PyMongo ClientSession to use for database operations.
-        :return:
         """
         logger.info("Deleting attachments with entity ID: %s from the database", entity_id)
-        entity_id = CustomObjectId(entity_id)
-        # Given it is deleting multiple, we are not raising an exception if no attachments were found to be deleted
-        self._attachments_collection.delete_many(filter={"entity_id": entity_id}, session=session)
+        try:
+            entity_id = CustomObjectId(entity_id)
+            # Given it is deleting multiple, we are not raising an exception if no attachments were found to be deleted
+            self._attachments_collection.delete_many(filter={"entity_id": entity_id}, session=session)
+        except InvalidObjectIdError:
+            # As this method takes in an entity_id to delete multiple attachments, and to hide the database behaviour,
+            # we treat any invalid entity_id the same as a valid one that has no attachments associated to it.
+            pass
