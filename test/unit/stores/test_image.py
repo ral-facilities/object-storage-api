@@ -118,6 +118,40 @@ class TestDelete(DeleteDSL):
         self.check_delete_success()
 
 
+class DeleteManyDSL(ImageStoreDSL):
+    """Base class for `delete_many` tests."""
+
+    _delete_many_object_keys: list[str]
+
+    def call_delete_many(self, object_keys: list[str]) -> None:
+        """
+        Calls the `ImageStore` `delete_many` method.
+
+        :param object_keys: Keys of the images to delete.
+        """
+        self._delete_many_object_keys = object_keys
+        self.image_store.delete_many(object_keys)
+
+    def check_delete_many_success(self) -> None:
+        """Checks that a prior call to `call_delete_many` worked as expected."""
+        self.mock_s3_client.delete_objects.assert_called_once_with(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Delete={"Objects": [{"Key": key} for key in self._delete_many_object_keys]},
+        )
+
+
+class TestDeleteMany(DeleteManyDSL):
+    """Tests for deleting images from object storage by object keys."""
+
+    def test_delete_many(self):
+        """Test deleting images from object storage."""
+        self.call_delete_many(["object-key"])
+        self.check_delete_many_success()
+
+
+# pylint: enable=duplicate-code
+
+
 class CreatePresignedURLDSL(ImageStoreDSL):
     """Base class for `create` tests."""
 

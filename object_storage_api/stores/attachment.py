@@ -99,6 +99,9 @@ class AttachmentStore:
         """
         logger.info("Deleting attachment files with object keys: %s from the object store", object_keys)
 
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
+
         batch_size = 1000
         # Loop through the list of object keys in steps of `batch_size`
         for i in range(0, len(object_keys), batch_size):
@@ -107,3 +110,5 @@ class AttachmentStore:
                 Bucket=object_storage_config.bucket_name.get_secret_value(),
                 Delete={"Objects": [{"Key": key} for key in batch]},
             )
+
+        # pylint: enable=duplicate-code
