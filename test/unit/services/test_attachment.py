@@ -465,8 +465,12 @@ class DeleteByEntityIdDSL(AttachmentServiceDSL):
             self.mock_attachment_repository.delete_by_entity_id.assert_not_called()
 
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
 class TestDeleteByEntityId(DeleteByEntityIdDSL):
-    """Tests for deleting attachments by entity ID."""
+    """Tests for deleting attachments by `entity_id`."""
 
     def test_delete_by_entity_id(self):
         """Test deleting attachments."""
@@ -475,7 +479,10 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
         self.check_delete_by_entity_id_success()
 
     def test_delete_by_entity_id_non_existent_id(self):
-        """Test deleting attachments with a non-existent entity ID."""
+        """Test deleting attachments with a non-existent `entity_id`."""
         self.mock_delete_by_entity_id([])
         self.call_delete_by_entity_id()
         self.check_delete_by_entity_id_success(False)
+
+
+# pylint: enable=duplicate-code
