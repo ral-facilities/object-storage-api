@@ -100,3 +100,18 @@ def delete_attachment(
     # pylint: disable=missing-function-docstring
     logger.info("Deleting attachment with ID: %s", attachment_id)
     attachment_service.delete(attachment_id)
+
+
+@router.delete(
+    path="",
+    summary="Delete attachments by entity ID",
+    response_description="Attachments deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_attachments_by_entity_id(
+    entity_id: Annotated[str, Query(description="The entity ID of the attachments to delete")],
+    attachment_service: AttachmentServiceDep,
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting attachments with entity ID: %s", entity_id)
+    attachment_service.delete_by_entity_id(entity_id)

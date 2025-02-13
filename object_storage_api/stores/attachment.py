@@ -88,3 +88,22 @@ class AttachmentStore:
             Bucket=object_storage_config.bucket_name.get_secret_value(),
             Key=object_key,
         )
+
+    def delete_many(self, object_keys: list[str]) -> None:
+        """
+        Deletes given attachments from object storage by object keys.
+
+        It does this in batches due to the `delete_objects` request only allowing a list of up to 1000 keys.
+
+        :param object_keys: Keys of the attachments to delete.
+        """
+        logger.info("Deleting attachment files with object keys: %s from the object store", object_keys)
+
+        batch_size = 1000
+        # Loop through the list of object keys in steps of `batch_size`
+        for i in range(0, len(object_keys), batch_size):
+            batch = object_keys[i : i + batch_size]
+            s3_client.delete_objects(
+                Bucket=object_storage_config.bucket_name.get_secret_value(),
+                Delete={"Objects": [{"Key": key} for key in batch]},
+            )
