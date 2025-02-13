@@ -99,7 +99,7 @@ class GetDSL(AttachmentRepoDSL):
     _obtained_attachment_out: AttachmentOut
     _get_exception: pytest.ExceptionInfo
 
-    def mock_get(self, attachment_id: str, attachment_in_data: Optional[dict] = None) -> None:
+    def mock_get(self, attachment_id: str, attachment_in_data: Optional[dict]) -> None:
         """
         Mocks database methods appropriately to test the `get` repo method.
 
@@ -186,7 +186,7 @@ class TestGet(GetDSL):
 
         attachment_id = str(ObjectId())
 
-        self.mock_get(attachment_id)
+        self.mock_get(attachment_id, None)
         self.call_get_expecting_error(attachment_id, MissingRecordError)
         self.check_get_failed_with_exception(f"No attachment found with ID: {attachment_id}", True)
 
@@ -194,7 +194,7 @@ class TestGet(GetDSL):
         """Test getting an attachment with an invalid attachment ID."""
         attachment_id = "invalid-id"
 
-        self.mock_get(attachment_id)
+        self.mock_get(attachment_id, None)
         self.call_get_expecting_error(attachment_id, InvalidObjectIdError)
         self.check_get_failed_with_exception(f"Invalid ObjectId value '{attachment_id}'")
 
