@@ -98,7 +98,7 @@ class GetDSL(ImageRepoDSL):
     _obtained_image_out: ImageOut
     _get_exception: pytest.ExceptionInfo
 
-    def mock_get(self, image_id: str, image_in_data: Optional[dict] = None) -> None:
+    def mock_get(self, image_id: str, image_in_data: Optional[dict]) -> None:
         """
         Mocks database methods appropriately to test the `get` repo method.
 
@@ -180,7 +180,7 @@ class TestGet(GetDSL):
 
         image_id = str(ObjectId())
 
-        self.mock_get(image_id)
+        self.mock_get(image_id, None)
         self.call_get_expecting_error(image_id, MissingRecordError)
         self.check_get_failed_with_exception(f"No image found with ID: {image_id}", True)
 
@@ -188,7 +188,7 @@ class TestGet(GetDSL):
         """Test getting an image with an invalid image ID."""
         image_id = "invalid-id"
 
-        self.mock_get(image_id)
+        self.mock_get(image_id, None)
         self.call_get_expecting_error(image_id, InvalidObjectIdError)
         self.check_get_failed_with_exception(f"Invalid ObjectId value '{image_id}'")
 
