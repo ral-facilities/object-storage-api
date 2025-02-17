@@ -71,17 +71,18 @@ class CreateDSL(ImageServiceDSL):
     _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_post_metadata_data: dict, filename: str) -> None:
+    def mock_create(self, image_post_metadata_data: dict, filename: str, file_content_type: str) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
         :param filename: Filename of the image.
+        :param file_content_type: File content-type of the image.
         """
 
         self._image_post_metadata = ImagePostMetadataSchema(**image_post_metadata_data)
-        header = {"content-type": "image/png"}
+        header = {"content-type": file_content_type}
         self._upload_file = UploadFile(MagicMock(), size=100, filename=filename, headers=header)
 
         self._expected_image_id = ObjectId()
@@ -162,14 +163,14 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an image."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", "image/png")
         self.call_create()
         self.check_create_success()
 
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg", "image/png")
         self.call_create_expecting_error(InvalidFilenameExtension)
         self.check_create_failed_with_exception(
             f"File extension `{self._upload_file.filename}` does not match "
@@ -177,10 +178,18 @@ class TestCreate(CreateDSL):
             assert_checks=False,
         )
 
+    def test_create_with_file_extension_not_allowed(self):
+        """Test creating an image with"with a file extension that is not allowed."""
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif", "image/gif")
+        self.call_create_expecting_error(InvalidFilenameExtension)
+        self.check_create_failed_with_exception(
+            f"File extension `{self._upload_file.filename}` is not supported", assert_checks=False
+        )
+
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
 
-        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png")
+        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png", "image/png")
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
