@@ -84,3 +84,27 @@ class ImageStore:
             Bucket=object_storage_config.bucket_name.get_secret_value(),
             Key=object_key,
         )
+
+    def delete_many(self, object_keys: list[str]) -> None:
+        """
+        Deletes given images from object storage by object keys.
+
+        It does this in batches due to the `delete_objects` request only allowing a list of up to 1000 keys.
+
+        :param object_keys: Keys of the images to delete.
+        """
+        logger.info("Deleting image files with object keys: %s from the object store", object_keys)
+
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
+
+        batch_size = 1000
+        # Loop through the list of object keys in steps of `batch_size`
+        for i in range(0, len(object_keys), batch_size):
+            batch = object_keys[i : i + batch_size]
+            s3_client.delete_objects(
+                Bucket=object_storage_config.bucket_name.get_secret_value(),
+                Delete={"Objects": [{"Key": key} for key in batch]},
+            )
+
+        # pylint: enable=duplicate-code

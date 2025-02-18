@@ -377,9 +377,6 @@ class TestDelete(DeleteDSL):
         self.check_delete_failed_with_exception(f"Invalid ObjectId value '{attachment_id}'")
 
 
-# pylint: enable=duplicate-code
-
-
 class DeleteByEntityIdDSL(AttachmentRepoDSL):
     """Base class for `delete_by_entity_id` tests."""
 
@@ -418,7 +415,7 @@ class DeleteByEntityIdDSL(AttachmentRepoDSL):
 
 
 class TestDeleteByEntityId(DeleteByEntityIdDSL):
-    """Tests for deleting attachments by entity ID."""
+    """Tests for deleting attachments by `entity_id`."""
 
     def test_delete_by_entity_id(self):
         """Test deleting attachments."""
@@ -427,11 +424,14 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
         self.check_delete_by_entity_id_success()
 
     def test_delete_by_entity_id_invalid_id(self):
-        """Test deleting attachments with an invalid entity ID."""
+        """Test deleting attachments with an invalid `entity_id`."""
         entity_id = "invalid-id"
 
         self.call_delete_by_entity_id(entity_id)
         self.check_delete_by_entity_id_success(False)
+
+
+# pylint: enable=duplicate-code
 
 
 class UpdateDSL(AttachmentRepoDSL):

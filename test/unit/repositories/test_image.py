@@ -98,7 +98,7 @@ class GetDSL(ImageRepoDSL):
     _obtained_image_out: ImageOut
     _get_exception: pytest.ExceptionInfo
 
-    def mock_get(self, image_id: str, image_in_data: dict) -> None:
+    def mock_get(self, image_id: str, image_in_data: Optional[dict]) -> None:
         """
         Mocks database methods appropriately to test the `get` repo method.
 
@@ -299,7 +299,7 @@ class TestList(ListDSL):
         self.check_list_success()
 
     def test_list_with_invalid_id_returns_empty_list(self):
-        """Test listing all attachments with an invalid `entity_id` argument returns an empty list."""
+        """Test listing all images with an invalid `entity_id` argument returns an empty list."""
 
         entity_id = "invalid-id"
 
@@ -533,6 +533,60 @@ class TestDelete(DeleteDSL):
 
         self.call_delete_expecting_error(image_id, InvalidObjectIdError)
         self.check_delete_failed_with_exception(f"Invalid ObjectId value '{image_id}'")
+
+
+class DeleteByEntityIdDSL(ImageRepoDSL):
+    """Base class for `delete_by_entity_id` tests."""
+
+    _delete_entity_id: str
+    _delete_by_entity_id_exception: pytest.ExceptionInfo
+
+    def mock_delete_by_entity_id(self, deleted_count: int) -> None:
+        """
+        Mocks database methods appropriately to test the `delete_by_entity_id` repo method.
+
+        :param deleted_count: Number of documents deleted successfully.
+        """
+        RepositoryTestHelpers.mock_delete_many(self.images_collection, deleted_count)
+
+    def call_delete_by_entity_id(self, entity_id: str) -> None:
+        """
+        Calls the `ImageRepo` `delete_by_entity_id` method.
+
+        :param entity_id: The entity ID of the images to be deleted.
+        """
+        self._delete_entity_id = entity_id
+        self.image_repository.delete_by_entity_id(entity_id, session=self.mock_session)
+
+    def check_delete_by_entity_id_success(self, assert_delete: bool = True) -> None:
+        """
+        Checks that a prior call to `call_delete_by_entity_id` worked as expected.
+
+        :param assert_delete: Whether the `delete_many` method is expected to be called or not.
+        """
+        if assert_delete:
+            self.images_collection.delete_many.assert_called_once_with(
+                filter={"entity_id": ObjectId(self._delete_entity_id)}, session=self.mock_session
+            )
+        else:
+            self.images_collection.delete_many.assert_not_called()
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting images by `entity_id`."""
+
+    def test_delete_by_entity_id(self):
+        """Test deleting images."""
+        self.mock_delete_by_entity_id(3)
+        self.call_delete_by_entity_id(str(ObjectId()))
+        self.check_delete_by_entity_id_success()
+
+    def test_delete_by_entity_id_invalid_id(self):
+        """Test deleting images with an invalid `entity_id`."""
+        entity_id = "invalid-id"
+
+        self.call_delete_by_entity_id(entity_id)
+        self.check_delete_by_entity_id_success(False)
 
 
 # pylint: enable=duplicate-code

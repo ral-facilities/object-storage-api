@@ -456,3 +456,68 @@ class TestDelete(DeleteDSL):
         self.mock_delete(IMAGE_IN_DATA_ALL_VALUES)
         self.call_delete()
         self.check_delete_success()
+
+
+class DeleteByEntityIdDSL(ImageServiceDSL):
+    """Base class for `delete_by_entity_id` tests."""
+
+    _expected_images_out: list[ImageOut]
+    _delete_entity_id: str
+    _delete_image_object_keys: list[str]
+
+    def mock_delete_by_entity_id(self, images_in_data: list[dict]) -> None:
+        """
+        Mocks repo methods appropriately to test the `delete_by_entity_id` service method.
+
+        :param images_in_data: List of dictionaries containing the image data as would be required for an `ImageIn`
+            database model (i.e. no created and modified times required).
+        """
+        self._expected_images_out = [
+            ImageOut(**ImageIn(**image_in_data).model_dump()) for image_in_data in images_in_data
+        ]
+        self.mock_image_repository.list.return_value = self._expected_images_out
+        self._delete_entity_id = self._expected_images_out[0].id if self._expected_images_out else str(ObjectId())
+        self._delete_image_object_keys = [
+            expected_image_out.object_key for expected_image_out in self._expected_images_out
+        ]
+
+    def call_delete_by_entity_id(self) -> None:
+        """Calls the `ImageService` `delete_by_entity_id` method."""
+        self.image_service.delete_by_entity_id(self._delete_entity_id)
+
+    def check_delete_by_entity_id_success(self, assert_delete: bool = True) -> None:
+        """
+        Checks that a prior call to `call_delete_by_entity_id` worked as expected.
+
+        :param assert_delete: Whether the `delete_many` store method and `delete_by_entity_id` repo method are expected
+            to be called or not.
+        """
+        if assert_delete:
+            self.mock_image_store.delete_many.assert_called_once_with(self._delete_image_object_keys)
+            self.mock_image_repository.delete_by_entity_id.assert_called_once_with(self._delete_entity_id)
+        else:
+            self.mock_image_store.delete_many.assert_not_called()
+            self.mock_image_repository.delete_by_entity_id.assert_not_called()
+
+
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting images by `entity_id`."""
+
+    def test_delete_by_entity_id(self):
+        """Test deleting images."""
+        self.mock_delete_by_entity_id([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_delete_by_entity_id()
+        self.check_delete_by_entity_id_success()
+
+    def test_delete_by_entity_id_non_existent_id(self):
+        """Test deleting images with a non-existent `entity_id`."""
+        self.mock_delete_by_entity_id([])
+        self.call_delete_by_entity_id()
+        self.check_delete_by_entity_id_success(False)
+
+
+# pylint: enable=duplicate-code

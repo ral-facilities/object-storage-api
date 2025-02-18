@@ -66,9 +66,6 @@ class TestDelete(DeleteDSL):
         self.check_delete_success()
 
 
-# pylint: enable=duplicate-code
-
-
 class DeleteManyDSL(AttachmentStoreDSL):
     """Base class for `delete_many` tests."""
 
@@ -78,7 +75,7 @@ class DeleteManyDSL(AttachmentStoreDSL):
         """
         Calls the `AttachmentStore` `delete_many` method.
 
-        :param object_keys: Keys of the attachment to delete.
+        :param object_keys: Keys of the attachments to delete.
         """
         self._delete_many_object_keys = object_keys
         self.attachment_store.delete_many(object_keys)
@@ -98,6 +95,9 @@ class TestDeleteMany(DeleteManyDSL):
         """Test deleting attachments from object storage."""
         self.call_delete_many(["object-key"])
         self.check_delete_many_success()
+
+
+# pylint: enable=duplicate-code
 
 
 class CreatePresignedPostDSL(AttachmentStoreDSL):
