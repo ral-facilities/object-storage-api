@@ -6,6 +6,7 @@ import logging
 
 from object_storage_api.core.config import config
 from object_storage_api.core.object_store import object_storage_config, s3_client
+from object_storage_api.models.attachment import AttachmentOut
 from object_storage_api.schemas.attachment import AttachmentPostSchema, AttachmentPostUploadInfoSchema
 
 logger = logging.getLogger()
@@ -15,6 +16,31 @@ class AttachmentStore:
     """
     Store for managing attachments in an S3 object store.
     """
+
+    def create_presigned_get(self, attachment: AttachmentOut) -> str:
+        """
+        Generate a presigned url to share an S3 object.
+
+        :param attachment: `AttachmentOut` model of the attachment
+        :return: Presigned url to get the attachment.
+        """
+
+        logger.info(
+            "Generating presigned url to get attachment with object key: %s from the object store",
+            attachment.object_key,
+        )
+
+        response = s3_client.generate_presigned_url(
+            "get_object",
+            Params={
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": attachment.object_key,
+                "ResponseContentDisposition": f'attachment; filename="{attachment.file_name}"',
+            },
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+        )
+
+        return response
 
     def create_presigned_post(
         self, attachment_id: str, attachment: AttachmentPostSchema
@@ -50,3 +76,39 @@ class AttachmentStore:
         )
 
         return object_key, AttachmentPostUploadInfoSchema(**presigned_post_response)
+
+    def delete(self, object_key: str) -> None:
+        """
+        Deletes a given attachment from object storage.
+
+        :param object_key: Key of the attachment to delete.
+        """
+        logger.info("Deleting attachment file with object key: %s from the object store", object_key)
+        s3_client.delete_object(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=object_key,
+        )
+
+    def delete_many(self, object_keys: list[str]) -> None:
+        """
+        Deletes given attachments from object storage by object keys.
+
+        It does this in batches due to the `delete_objects` request only allowing a list of up to 1000 keys.
+
+        :param object_keys: Keys of the attachments to delete.
+        """
+        logger.info("Deleting attachment files with object keys: %s from the object store", object_keys)
+
+        # There is some duplicate code here, due to the attachments and images methods being very similar
+        # pylint: disable=duplicate-code
+
+        batch_size = 1000
+        # Loop through the list of object keys in steps of `batch_size`
+        for i in range(0, len(object_keys), batch_size):
+            batch = object_keys[i : i + batch_size]
+            s3_client.delete_objects(
+                Bucket=object_storage_config.bucket_name.get_secret_value(),
+                Delete={"Objects": [{"Key": key} for key in batch]},
+            )
+
+        # pylint: enable=duplicate-code

@@ -10,6 +10,7 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
+from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 
 logger = logging.getLogger()
@@ -48,21 +49,31 @@ class AttachmentRepo:
 
         :param attachment_id: ID of the attachment to retrieve.
         :param session: PyMongo ClientSession to use for database operations.
-        :return: Retrieved attachment or `None` if not found.
+        :return: Retrieved attachment if found.
+        :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
-        attachment_id = CustomObjectId(attachment_id)
+
         logger.info("Retrieving attachment with ID: %s from the database", attachment_id)
-        attachment = self._attachments_collection.find_one({"_id": attachment_id}, session=session)
+
+        try:
+            attachment_id = CustomObjectId(attachment_id)
+            attachment = self._attachments_collection.find_one({"_id": attachment_id}, session=session)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Attachment not found"
+            raise exc
+
         if attachment:
             return AttachmentOut(**attachment)
-        return None
+        raise MissingRecordError(detail=f"No attachment found with ID: {attachment_id}", entity_name="attachment")
 
     def list(self, entity_id: Optional[str], session: Optional[ClientSession] = None) -> list[AttachmentOut]:
         """
         Retrieve attachments from a MongoDB database.
 
-        :param session: PyMongo ClientSession to use for database operations.
         :param entity_id: The ID of the entity to filter attachments by.
+        :param session: PyMongo ClientSession to use for database operations.
         :return: List of attachments or an empty list if no attachments are retrieved.
         """
 
@@ -70,8 +81,14 @@ class AttachmentRepo:
         # pylint: disable=duplicate-code
 
         query = {}
+
         if entity_id is not None:
-            query["entity_id"] = CustomObjectId(entity_id)
+            try:
+                query["entity_id"] = CustomObjectId(entity_id)
+            except InvalidObjectIdError:
+                # As this method filters, and to hide the database behaviour, we treat any invalid id
+                # the same as a valid one that doesn't exist i.e. return an empty list
+                return []
 
         message = "Retrieving all attachments from the database"
         if not query:
@@ -84,3 +101,65 @@ class AttachmentRepo:
 
         attachments = self._attachments_collection.find(query, session=session)
         return [AttachmentOut(**attachment) for attachment in attachments]
+
+    def update(self, attachment_id: str, attachment: AttachmentIn, session: ClientSession = None) -> AttachmentOut:
+        """
+        Updates an attachment by its ID in a MongoDB database.
+
+        :param attachment_id: The ID of the attachment to update.
+        :param attachment: The attachment containing the update data.
+        :param session: PyMongo ClientSession to use for database operations.
+        :return: The updated attachment.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
+        """
+
+        logger.info("Updating attachment metadata with ID: %s", attachment_id)
+
+        try:
+            attachment_id = CustomObjectId(attachment_id)
+            self._attachments_collection.update_one(
+                {"_id": attachment_id}, {"$set": attachment.model_dump(by_alias=True)}, session=session
+            )
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Attachment not found"
+            raise exc
+
+        return self.get(attachment_id=str(attachment_id), session=session)
+
+    def delete(self, attachment_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Delete an attachment by its ID from a MongoDB database.
+
+        :param attachment_id: The ID of the attachment to delete.
+        :param session: PyMongo ClientSession to use for database operations.
+        :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
+        :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
+        """
+        logger.info("Deleting attachment with ID: %s from the database", attachment_id)
+        try:
+            attachment_id = CustomObjectId(attachment_id)
+        except InvalidObjectIdError as exc:
+            exc.status_code = 404
+            exc.response_detail = "Attachment not found"
+            raise exc
+        response = self._attachments_collection.delete_one(filter={"_id": attachment_id}, session=session)
+        if response.deleted_count == 0:
+            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", entity_name="attachment")
+
+    def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Delete attachments by entity ID.
+
+        :param entity_id: The entity ID of the attachments to delete.
+        :param session: PyMongo ClientSession to use for database operations.
+        """
+        logger.info("Deleting attachments with entity ID: %s from the database", entity_id)
+        try:
+            entity_id = CustomObjectId(entity_id)
+            # Given it is deleting multiple, we are not raising an exception if no attachments were found to be deleted
+            self._attachments_collection.delete_many(filter={"entity_id": entity_id}, session=session)
+        except InvalidObjectIdError:
+            # As this method takes in an entity_id to delete multiple attachments, and to hide the database behaviour,
+            # we treat any invalid entity_id the same as a valid one that has no attachments associated to it.
+            pass

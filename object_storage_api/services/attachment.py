@@ -4,18 +4,21 @@ store.
 """
 
 import logging
+import mimetypes
 from typing import Annotated, Optional
 
 from bson import ObjectId
 from fastapi import Depends
 
-from object_storage_api.core.exceptions import InvalidObjectIdError
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
+    AttachmentPatchMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
+    AttachmentSchema,
 )
 from object_storage_api.stores.attachment import AttachmentStore
 
@@ -46,7 +49,7 @@ class AttachmentService:
         Create a new attachment.
 
         :param attachment: Attachment to be created.
-        :return: Created attachment with an pre-signed upload URL.
+        :return: Created attachment with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         """
 
@@ -67,6 +70,18 @@ class AttachmentService:
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)
 
+    def get(self, attachment_id: str) -> AttachmentSchema:
+        """
+        Retrieve an attachment's metadata with its presigned get download url by its ID.
+
+        :param attachment_id: ID of the attachment to retrieve.
+        :return: An attachment's metadata with a presigned get download url.
+        """
+
+        attachment = self._attachment_repository.get(attachment_id=attachment_id)
+        download_url = self._attachment_store.create_presigned_get(attachment)
+        return AttachmentSchema(**attachment.model_dump(), download_url=download_url)
+
     def list(self, entity_id: Optional[str] = None) -> list[AttachmentMetadataSchema]:
         """
         Retrieve a list of attachments based on the provided filters.
@@ -78,3 +93,55 @@ class AttachmentService:
         attachments = self._attachment_repository.list(entity_id)
 
         return [AttachmentMetadataSchema(**attachment.model_dump()) for attachment in attachments]
+
+    def update(self, attachment_id: str, attachment: AttachmentPatchMetadataSchema) -> AttachmentMetadataSchema:
+        """
+        Update an attachment by its ID.
+
+        :param attachment_id: The ID of the attachment to update.
+        :param attachment: The attachment containing the fields to be updated.
+        :return: The updated attachment.
+        :raises InvalidFilenameExtension: If the attachment has a mismatched file extension.
+        """
+
+        stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
+
+        stored_type = mimetypes.guess_type(stored_attachment.file_name)
+        if attachment.file_name is not None:
+            update_type = mimetypes.guess_type(attachment.file_name)
+            if update_type != stored_type:
+                raise InvalidFilenameExtension(
+                    f"Patch filename extension `{attachment.file_name}` does not match "
+                    f"stored attachment `{stored_attachment.file_name}`"
+                )
+
+        updated_attachment = self._attachment_repository.update(
+            attachment_id=attachment_id,
+            attachment=AttachmentIn(**{**stored_attachment.model_dump(), **attachment.model_dump(exclude_unset=True)}),
+        )
+
+        return AttachmentMetadataSchema(**updated_attachment.model_dump())
+
+    def delete(self, attachment_id: str) -> None:
+        """
+        Delete an attachment by its ID.
+        :param attachment_id: The ID of the attachment to delete.
+        """
+        stored_attachment = self._attachment_repository.get(attachment_id)
+        # Deletes attachment from object store first to prevent unreferenced objects in storage
+        self._attachment_store.delete(stored_attachment.object_key)
+        self._attachment_repository.delete(attachment_id)
+
+    def delete_by_entity_id(self, entity_id: str) -> None:
+        """
+        Delete attachments by entity ID.
+
+        :param entity_id: The entity ID of the attachments to delete.
+        """
+        stored_attachments = self._attachment_repository.list(entity_id)
+        if stored_attachments:
+            # Deletes attachments from object store first to prevent unreferenced objects in storage
+            self._attachment_store.delete_many(
+                [stored_attachment.object_key for stored_attachment in stored_attachments]
+            )
+            self._attachment_repository.delete_by_entity_id(entity_id)

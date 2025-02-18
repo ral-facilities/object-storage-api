@@ -98,7 +98,7 @@ class GetDSL(ImageRepoDSL):
     _obtained_image_out: ImageOut
     _get_exception: pytest.ExceptionInfo
 
-    def mock_get(self, image_id: str, image_in_data: dict) -> None:
+    def mock_get(self, image_id: str, image_in_data: Optional[dict]) -> None:
         """
         Mocks database methods appropriately to test the `get` repo method.
 
@@ -149,7 +149,7 @@ class GetDSL(ImageRepoDSL):
         Checks that a prior call to `call_get_expecting_error` worked as expected, raising an exception
         with the correct message.
 
-        :param image_id: ID of the expected image to appear in the exception detail.
+        :param message: Expected message of the raised exception.
         :param assert_find: If `True` it asserts whether a `find_one` call was made,
             else it asserts that no call was made.
         """
@@ -217,7 +217,7 @@ class ListDSL(ImageRepoDSL):
         )
 
     def call_list(self, entity_id: Optional[str] = None, primary: Optional[bool] = None) -> None:
-        """Calls the `ImageRepo` `list method` method.
+        """Calls the `ImageRepo` `list` method.
 
         :param entity_id: The ID of the entity to filter images by.
         :param primary: The primary value to filter images by.
@@ -239,6 +239,13 @@ class ListDSL(ImageRepoDSL):
         self.images_collection.find.assert_called_once_with(expected_query, session=self.mock_session)
         assert self._obtained_image_out == self._expected_image_out
 
+    def check_list_returned_an_empty_list(self) -> None:
+        """Checks that a prior call to `call_list` with an invalid entity_id returned an empty list as expected."""
+
+        self.images_collection.find.assert_not_called()
+
+        assert self._obtained_image_out == []
+
 
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
@@ -249,33 +256,56 @@ class TestList(ListDSL):
 
     def test_list(self):
         """Test listing all images."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list()
         self.check_list_success()
 
     def test_list_with_no_results(self):
         """Test listing all images returning no results."""
+
         self.mock_list([])
         self.call_list()
         self.check_list_success()
 
     def test_list_with_entity_id(self):
         """Test listing all images with an `entity_id` argument."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
 
     def test_list_with_primary(self):
         """Test listing all images with a `primary` argument."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=False)
         self.check_list_success()
 
     def test_list_with_primary_and_entity_id(self):
         """Test listing all images with an `entity_id` and `primary` argument."""
+
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(primary=True, entity_id=IMAGE_IN_DATA_ALL_VALUES["entity_id"])
         self.check_list_success()
+
+    def test_list_with_entity_id_with_no_results(self):
+        """Test listing all images with an `entity_id` argument returning no results."""
+
+        entity_id = str(ObjectId())
+
+        self.mock_list([])
+        self.call_list(entity_id)
+        self.check_list_success()
+
+    def test_list_with_invalid_id_returns_empty_list(self):
+        """Test listing all images with an invalid `entity_id` argument returns an empty list."""
+
+        entity_id = "invalid-id"
+
+        self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
+        self.call_list(entity_id)
+        self.check_list_returned_an_empty_list()
 
 
 # pylint: enable=duplicate-code
@@ -299,10 +329,7 @@ class UpdateDSL(ImageRepoDSL):
         """
         self._image_in = ImageIn(**new_image_in_data)
 
-    def mock_update(
-        self,
-        new_image_in_data: dict,
-    ) -> None:
+    def mock_update(self, new_image_in_data: dict) -> None:
         """
         Mocks database methods appropriately to test the `update` repo method.
 
@@ -412,6 +439,10 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
 class DeleteDSL(ImageRepoDSL):
     """Base class for `delete` tests."""
 
@@ -502,3 +533,60 @@ class TestDelete(DeleteDSL):
 
         self.call_delete_expecting_error(image_id, InvalidObjectIdError)
         self.check_delete_failed_with_exception(f"Invalid ObjectId value '{image_id}'")
+
+
+class DeleteByEntityIdDSL(ImageRepoDSL):
+    """Base class for `delete_by_entity_id` tests."""
+
+    _delete_entity_id: str
+    _delete_by_entity_id_exception: pytest.ExceptionInfo
+
+    def mock_delete_by_entity_id(self, deleted_count: int) -> None:
+        """
+        Mocks database methods appropriately to test the `delete_by_entity_id` repo method.
+
+        :param deleted_count: Number of documents deleted successfully.
+        """
+        RepositoryTestHelpers.mock_delete_many(self.images_collection, deleted_count)
+
+    def call_delete_by_entity_id(self, entity_id: str) -> None:
+        """
+        Calls the `ImageRepo` `delete_by_entity_id` method.
+
+        :param entity_id: The entity ID of the images to be deleted.
+        """
+        self._delete_entity_id = entity_id
+        self.image_repository.delete_by_entity_id(entity_id, session=self.mock_session)
+
+    def check_delete_by_entity_id_success(self, assert_delete: bool = True) -> None:
+        """
+        Checks that a prior call to `call_delete_by_entity_id` worked as expected.
+
+        :param assert_delete: Whether the `delete_many` method is expected to be called or not.
+        """
+        if assert_delete:
+            self.images_collection.delete_many.assert_called_once_with(
+                filter={"entity_id": ObjectId(self._delete_entity_id)}, session=self.mock_session
+            )
+        else:
+            self.images_collection.delete_many.assert_not_called()
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting images by `entity_id`."""
+
+    def test_delete_by_entity_id(self):
+        """Test deleting images."""
+        self.mock_delete_by_entity_id(3)
+        self.call_delete_by_entity_id(str(ObjectId()))
+        self.check_delete_by_entity_id_success()
+
+    def test_delete_by_entity_id_invalid_id(self):
+        """Test deleting images with an invalid `entity_id`."""
+        entity_id = "invalid-id"
+
+        self.call_delete_by_entity_id(entity_id)
+        self.check_delete_by_entity_id_success(False)
+
+
+# pylint: enable=duplicate-code

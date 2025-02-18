@@ -3,7 +3,7 @@ Unit tests for the `ImageStore` store.
 """
 
 from test.mock_data import IMAGE_IN_DATA_ALL_VALUES, IMAGE_POST_METADATA_DATA_ALL_VALUES
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 from bson import ObjectId
@@ -85,6 +85,10 @@ class TestUpload(UploadDSL):
         self.check_upload_success()
 
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
 class DeleteDSL(ImageStoreDSL):
     """Base class for `delete` tests."""
 
@@ -114,12 +118,48 @@ class TestDelete(DeleteDSL):
         self.check_delete_success()
 
 
+class DeleteManyDSL(ImageStoreDSL):
+    """Base class for `delete_many` tests."""
+
+    _delete_many_object_keys: list[str]
+
+    def call_delete_many(self, object_keys: list[str]) -> None:
+        """
+        Calls the `ImageStore` `delete_many` method.
+
+        :param object_keys: Keys of the images to delete.
+        """
+        self._delete_many_object_keys = object_keys
+        self.image_store.delete_many(object_keys)
+
+    def check_delete_many_success(self) -> None:
+        """Checks that a prior call to `call_delete_many` worked as expected."""
+        self.mock_s3_client.delete_objects.assert_called_once_with(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Delete={"Objects": [{"Key": key} for key in self._delete_many_object_keys]},
+        )
+
+
+class TestDeleteMany(DeleteManyDSL):
+    """Tests for deleting images from object storage by object keys."""
+
+    def test_delete_many(self):
+        """Test deleting images from object storage."""
+        self.call_delete_many(["object-key"])
+        self.check_delete_many_success()
+
+
+# pylint: enable=duplicate-code
+
+
 class CreatePresignedURLDSL(ImageStoreDSL):
     """Base class for `create` tests."""
 
     _image_out: ImageOut
-    _expected_presigned_url: str
-    _obtained_presigned_url: str
+    _expected_presigned_view_url: str
+    _obtained_presigned_view_url: str
+    _expected_presigned_download_url: str
+    _obtained_presigned_download_url: str
 
     def mock_create_presigned_get(self, image_in_data: dict) -> None:
         """
@@ -131,8 +171,12 @@ class CreatePresignedURLDSL(ImageStoreDSL):
         self._image_out = ImageOut(**ImageIn(**image_in_data).model_dump())
 
         # Mock presigned url generation
-        self._expected_presigned_url = "example_presigned_url"
-        self.mock_s3_client.generate_presigned_url.return_value = self._expected_presigned_url
+        self._expected_presigned_view_url = "example_presigned_view_url"
+        self._expected_presigned_download_url = "example_presigned_download_url"
+        self.mock_s3_client.generate_presigned_url.side_effect = [
+            self._expected_presigned_view_url,
+            self._expected_presigned_download_url,
+        ]
 
     def call_create_presigned_get(self) -> None:
         """
@@ -140,29 +184,46 @@ class CreatePresignedURLDSL(ImageStoreDSL):
             `mock_create_presigned_get`.
         """
 
-        self._obtained_presigned_url = self.image_store.create_presigned_get(self._image_out)
+        (self._obtained_presigned_view_url, self._obtained_presigned_download_url) = (
+            self.image_store.create_presigned_get(self._image_out)
+        )
 
     def check_create_presigned_get_success(self) -> None:
         """Checks that a prior call to `call_create_presigned_get` worked as expected."""
 
-        self.mock_s3_client.generate_presigned_url.assert_called_once_with(
-            "get_object",
-            Params={
+        parameters = {
+            "ClientMethod": "get_object",
+            "Params": {
                 "Bucket": object_storage_config.bucket_name.get_secret_value(),
                 "Key": self._image_out.object_key,
                 "ResponseContentDisposition": f'inline; filename="{self._image_out.file_name}"',
             },
-            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
-        )
+            "ExpiresIn": object_storage_config.presigned_url_expiry_seconds,
+        }
 
-        assert self._obtained_presigned_url == self._expected_presigned_url
+        expected_calls = [
+            call.generate_presigned_url(**parameters),
+            call.generate_presigned_url(
+                **{
+                    **parameters,
+                    "Params": {
+                        **parameters["Params"],
+                        "ResponseContentDisposition": f'attachment; filename="{self._image_out.file_name}"',
+                    },
+                }
+            ),
+        ]
+        self.mock_s3_client.assert_has_calls(expected_calls)
+
+        assert self._obtained_presigned_view_url == self._expected_presigned_view_url
+        assert self._obtained_presigned_download_url == self._expected_presigned_download_url
 
 
 class TestCreatePresignedURL(CreatePresignedURLDSL):
-    """Tests for creating a presigned url for an image."""
+    """Tests for creating presigned get urls for an image."""
 
     def test_create_presigned_get(self):
-        """Test creating a presigned url for an image."""
+        """Test creating presigned get urls for an image."""
 
         self.mock_create_presigned_get(IMAGE_IN_DATA_ALL_VALUES)
         self.call_create_presigned_get()

@@ -2,7 +2,7 @@
 Unit tests for the `AttachmentStore` store.
 """
 
-from test.mock_data import ATTACHMENT_POST_DATA_ALL_VALUES
+from test.mock_data import ATTACHMENT_IN_DATA_ALL_VALUES, ATTACHMENT_POST_DATA_ALL_VALUES
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -10,6 +10,7 @@ from bson import ObjectId
 
 from object_storage_api.core.config import config
 from object_storage_api.core.object_store import object_storage_config
+from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import AttachmentPostSchema, AttachmentPostUploadInfoSchema
 from object_storage_api.stores.attachment import AttachmentStore
 
@@ -28,6 +29,75 @@ class AttachmentStoreDSL:
             self.mock_s3_client = s3_client_mock
             self.attachment_store = AttachmentStore()
             yield
+
+
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
+
+class DeleteDSL(AttachmentStoreDSL):
+    """Base class for `delete` tests."""
+
+    _delete_object_key: str
+
+    def call_delete(self, object_key: str) -> None:
+        """
+        Calls the `AttachmentStore` `delete` method.
+
+        :param object_key: Key of the attachment to delete.
+        """
+        self._delete_object_key = object_key
+        self.attachment_store.delete(object_key)
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+        self.mock_s3_client.delete_object.assert_called_once_with(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Key=self._delete_object_key,
+        )
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an attachment from object storage."""
+
+    def test_delete(self):
+        """Test for deleting an attachment from object storage."""
+        self.call_delete("object-key")
+        self.check_delete_success()
+
+
+class DeleteManyDSL(AttachmentStoreDSL):
+    """Base class for `delete_many` tests."""
+
+    _delete_many_object_keys: list[str]
+
+    def call_delete_many(self, object_keys: list[str]) -> None:
+        """
+        Calls the `AttachmentStore` `delete_many` method.
+
+        :param object_keys: Keys of the attachments to delete.
+        """
+        self._delete_many_object_keys = object_keys
+        self.attachment_store.delete_many(object_keys)
+
+    def check_delete_many_success(self) -> None:
+        """Checks that a prior call to `call_delete_many` worked as expected."""
+        self.mock_s3_client.delete_objects.assert_called_once_with(
+            Bucket=object_storage_config.bucket_name.get_secret_value(),
+            Delete={"Objects": [{"Key": key} for key in self._delete_many_object_keys]},
+        )
+
+
+class TestDeleteMany(DeleteManyDSL):
+    """Tests for deleting attachments from object storage by object keys."""
+
+    def test_delete_many(self):
+        """Test deleting attachments from object storage."""
+        self.call_delete_many(["object-key"])
+        self.check_delete_many_success()
+
+
+# pylint: enable=duplicate-code
 
 
 class CreatePresignedPostDSL(AttachmentStoreDSL):
@@ -92,3 +162,58 @@ class TestCreatePresignedPost(CreatePresignedPostDSL):
         self.mock_create_presigned_post(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.call_create_presigned_post()
         self.check_create_presigned_post_success()
+
+
+class CreatePresignedURLDSL(AttachmentStoreDSL):
+    """Base class for `create` tests."""
+
+    _attachment_out: AttachmentOut
+    _expected_presigned_download_url: str
+    _obtained_presigned_download_url: str
+
+    def mock_create_presigned_get(self, attachment_in_data: dict) -> None:
+        """
+        Mocks object store methods appropriately to test the `create_presigned_get` store method.
+
+        :param attachment_in_data: Dictionary containing the attachment data as would be required for an
+            `AttachmentIn`.
+        """
+        self._attachment_out = AttachmentOut(**AttachmentIn(**attachment_in_data).model_dump())
+
+        # Mock presigned url generation
+        self._expected_presigned_download_url = "example_presigned_download_url"
+        self.mock_s3_client.generate_presigned_url.return_value = self._expected_presigned_download_url
+
+    def call_create_presigned_get(self) -> None:
+        """
+        Calls the `AttachmentStore` `create_presigned_get` method with the appropriate data from a prior call to
+            `mock_create_presigned_get`.
+        """
+
+        self._obtained_presigned_download_url = self.attachment_store.create_presigned_get(self._attachment_out)
+
+    def check_create_presigned_get_success(self) -> None:
+        """Checks that a prior call to `call_create_presigned_get` worked as expected."""
+
+        self.mock_s3_client.generate_presigned_url.assert_called_once_with(
+            "get_object",
+            Params={
+                "Bucket": object_storage_config.bucket_name.get_secret_value(),
+                "Key": self._attachment_out.object_key,
+                "ResponseContentDisposition": f'attachment; filename="{self._attachment_out.file_name}"',
+            },
+            ExpiresIn=object_storage_config.presigned_url_expiry_seconds,
+        )
+
+        assert self._obtained_presigned_download_url == self._expected_presigned_download_url
+
+
+class TestCreatePresignedURL(CreatePresignedURLDSL):
+    """Tests for creating a presigned url for an attachment."""
+
+    def test_create_presigned_get(self):
+        """Test creating a presigned url for an attachment."""
+
+        self.mock_create_presigned_get(ATTACHMENT_IN_DATA_ALL_VALUES)
+        self.call_create_presigned_get()
+        self.check_create_presigned_get_success()

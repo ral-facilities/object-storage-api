@@ -6,12 +6,14 @@ service.
 import logging
 from typing import Annotated, Optional
 
-from fastapi import APIRouter, Depends, Query, status
+from fastapi import APIRouter, Depends, Path, Query, status
 
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
+    AttachmentPatchMetadataSchema,
     AttachmentPostResponseSchema,
     AttachmentPostSchema,
+    AttachmentSchema,
 )
 from object_storage_api.services.attachment import AttachmentService
 
@@ -55,3 +57,61 @@ def get_attachments(
         logger.debug("Entity ID filter: '%s'", entity_id)
 
     return attachment_service.list(entity_id)
+
+
+@router.get(path="/{attachment_id}", summary="Get an attachment by ID", response_description="Single attachment")
+def get_attachment(
+    attachment_id: Annotated[str, Path(description="ID of the attachment to get")],
+    attachment_service: AttachmentServiceDep,
+) -> AttachmentSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Getting attachment with ID: %s", attachment_id)
+
+    return attachment_service.get(attachment_id)
+
+
+@router.patch(
+    path="/{attachment_id}",
+    summary="Update an attachment partially by ID",
+    response_description="Attachment updated successfully",
+)
+def partial_update_attachment(
+    attachment: AttachmentPatchMetadataSchema,
+    attachment_id: Annotated[str, Path(description="ID of the attachment to update")],
+    attachment_service: AttachmentServiceDep,
+) -> AttachmentMetadataSchema:
+    # pylint: disable=missing-function-docstring
+    logger.info("Partially updating attachment with ID: %s", attachment_id)
+    logger.debug("Attachment data: %s", attachment)
+
+    return attachment_service.update(attachment_id, attachment)
+
+
+@router.delete(
+    path="/{attachment_id}",
+    summary="Delete an attachment by ID",
+    response_description="Attachment deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_attachment(
+    attachment_id: Annotated[str, Path(description="The ID of the attachment to delete")],
+    attachment_service: AttachmentServiceDep,
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting attachment with ID: %s", attachment_id)
+    attachment_service.delete(attachment_id)
+
+
+@router.delete(
+    path="",
+    summary="Delete attachments by entity ID",
+    response_description="Attachments deleted successfully",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_attachments_by_entity_id(
+    entity_id: Annotated[str, Query(description="The entity ID of the attachments to delete")],
+    attachment_service: AttachmentServiceDep,
+) -> None:
+    # pylint: disable=missing-function-docstring
+    logger.info("Deleting attachments with entity ID: %s", entity_id)
+    attachment_service.delete_by_entity_id(entity_id)

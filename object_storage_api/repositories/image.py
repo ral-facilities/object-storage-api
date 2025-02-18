@@ -82,8 +82,15 @@ class ImageRepo:
         # pylint: disable=duplicate-code
 
         query = {}
+
         if entity_id is not None:
-            query["entity_id"] = CustomObjectId(entity_id)
+            try:
+                query["entity_id"] = CustomObjectId(entity_id)
+            except InvalidObjectIdError:
+                # As this method filters, and to hide the database behaviour, we treat any invalid id
+                # the same as a valid one that doesn't exist i.e. return an empty list
+                return []
+
         if primary is not None:
             query["primary"] = primary
 
@@ -150,4 +157,21 @@ class ImageRepo:
             raise exc
         response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No image found with ID: {image_id}", "image")
+            raise MissingRecordError(f"No image found with ID: {image_id}", entity_name="image")
+
+    def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
+        """
+        Delete images by entity ID.
+
+        :param entity_id: The entity ID of the images to delete.
+        :param session: PyMongo ClientSession to use for database operations.
+        """
+        logger.info("Deleting images with entity ID: %s from the database", entity_id)
+        try:
+            entity_id = CustomObjectId(entity_id)
+            # Given it is deleting multiple, we are not raising an exception if no images were found to be deleted
+            self._images_collection.delete_many(filter={"entity_id": entity_id}, session=session)
+        except InvalidObjectIdError:
+            # As this method takes in an entity_id to delete multiple images, and to hide the database behaviour, we
+            # treat any invalid entity_id the same as a valid one that has no images associated to it.
+            pass

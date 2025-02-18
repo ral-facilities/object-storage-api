@@ -50,6 +50,25 @@ class CreateDSL:
             )
         return self._post_response_image.json()["id"] if self._post_response_image.status_code == 201 else None
 
+    def post_image_with_file_extension_content_type_mismatch(
+        self, image_post_metadata_data: dict, file_name: str
+    ) -> Optional[str]:
+        """
+        Posts an image with the given metadata and a test image file, changing the filename to a mismatched extension
+        and throwing an error.
+
+        :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
+                                         `ImagePostMetadataSchema`.
+        :param file_name: File name of the image to upload (relative to the 'test/files' directory).
+        :return: ID of the created image (or `None` if not successful).
+        """
+
+        with open(f"test/files/{file_name}", mode="rb") as file:
+            self._post_response_image = self.test_client.post(
+                "/images", data={**image_post_metadata_data}, files={"upload_file": ("image.png", file, "image/jpeg")}
+            )
+        return self._post_response_image.json()["id"] if self._post_response_image.status_code == 201 else None
+
     def check_post_image_success(self, expected_image_get_data: dict) -> None:
         """
         Checks that a prior call to `post_image` gave a successful response with the expected data returned.
@@ -100,6 +119,14 @@ class TestCreate(CreateDSL):
         self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "invalid_image.jpg")
         self.check_post_image_failed_with_detail(422, "File given is not a valid image")
 
+    def test_create_with_file_extension_content_type_mismatch(self):
+        """Test creating an image with a mismatched file extension."""
+
+        self.post_image_with_file_extension_content_type_mismatch(
+            IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg"
+        )
+        self.check_post_image_failed_with_detail(422, "Filename does not contain the correct extension")
+
 
 class GetDSL(CreateDSL):
     """Base class for get tests."""
@@ -124,11 +151,15 @@ class GetDSL(CreateDSL):
         assert self._get_response_image.status_code == 200
         assert self._get_response_image.json() == expected_image_data
 
-    def check_get_image_failed(self) -> None:
-        """Checks that prior call to `get_image` gave a failed response."""
+    def check_get_image_failed_with_detail(self, status_code: int, detail: str) -> None:
+        """
+        Checks that a prior call to `get_image` gave a failed response with the expected code and error message.
 
-        assert self._get_response_image.status_code == 404
-        assert self._get_response_image.json()["detail"] == "Image not found"
+        :param status_code: Expected status code of the response.
+        :param detail: Expected error message given in the response.
+        """
+        assert self._get_response_image.status_code == status_code
+        assert self._get_response_image.json()["detail"] == detail
 
 
 class TestGet(GetDSL):
@@ -143,13 +174,13 @@ class TestGet(GetDSL):
     def test_get_with_invalid_image_id(self):
         """Test getting an image with an invalid image ID."""
         self.get_image("sdfgfsdg")
-        self.check_get_image_failed()
+        self.check_get_image_failed_with_detail(404, "Image not found")
 
     def test_get_with_non_existent_image_id(self):
         """Test getting an image with a non-existent image ID."""
         image_id = str(ObjectId())
         self.get_image(image_id)
-        self.check_get_image_failed()
+        self.check_get_image_failed_with_detail(404, "Image not found")
 
 
 class ListDSL(GetDSL):
@@ -194,21 +225,9 @@ class ListDSL(GetDSL):
         )
 
         return [
-            {
-                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": image_a_id,
-            },
-            {
-                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-                "id": image_b_id,
-            },
-            {
-                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-                "id": image_c_id,
-            },
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_a_id},
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_b_id},
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": image_c_id},
         ]
 
     def check_get_images_success(self, expected_images_get_data: list[dict]) -> None:
@@ -267,11 +286,11 @@ class TestList(ListDSL):
         """
         Test getting a list of all images with an invalid `entity_id` filter provided.
 
-        Posts 3 images and expects a 422 status code.
+        Posts 3 images and expects no results.
         """
         self.post_test_images()
         self.get_images(filters={"entity_id": False})
-        self.check_get_images_failed_with_message(422, "Invalid ID given", self._get_response_image.json()["detail"])
+        self.check_get_images_success([])
 
     def test_list_with_primary_filter(self):
         """
@@ -364,6 +383,12 @@ class TestUpdate(UpdateDSL):
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
 
+    def test_partial_update_with_file_extension_content_type_mismatch(self):
+        """Test updating an image with a different extension."""
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"})
+        self.check_patch_image_failed_with_detail(422, "Filename does not contain the correct extension")
+
     def test_update_primary(self):
         """Test updating primary to True, triggering other database updates."""
         image_id_a = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES}, "image.jpg")
@@ -426,7 +451,7 @@ class TestDelete(DeleteDSL):
         self.check_delete_image_success()
 
         self.get_image(image_id)
-        self.check_get_image_failed()
+        self.check_get_image_failed_with_detail(404, "Image not found")
 
     def test_delete_with_non_existent_id(self):
         """Test deleting a non-existent image."""
@@ -439,3 +464,48 @@ class TestDelete(DeleteDSL):
 
         self.delete_image("invalid_id")
         self.check_delete_image_failed_with_detail()
+
+
+class DeleteByEntityIdDSL(ListDSL):
+    """Base class for delete by `entity_id` tests."""
+
+    _delete_response_images: Response
+
+    def delete_images_by_entity_id(self, entity_id: str) -> None:
+        """
+        Deletes images with the given `entity_id`.
+
+        :param entity_id: Entity ID of the images to be deleted.
+        """
+        self._delete_response_images = self.test_client.delete("/images", params={"entity_id": entity_id})
+
+    def check_delete_images_by_entity_id_success(self) -> None:
+        """
+        Checks that a prior call to `delete_images_by_entity_id` gave a successful response with the expected code.
+        """
+        assert self._delete_response_images.status_code == 204
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting images by `entity_id`."""
+
+    def test_delete_by_entity_id(self):
+        """Test deleting images."""
+        images = self.post_test_images()
+        entity_id = images[0]["entity_id"]
+
+        self.delete_images_by_entity_id(entity_id)
+        self.check_delete_images_by_entity_id_success()
+
+        self.get_images(filters={"entity_id": entity_id})
+        self.check_get_images_success([])
+
+    def test_delete_by_entity_id_with_non_existent_id(self):
+        """Test deleting images with a non-existent `entity_id`."""
+        self.delete_images_by_entity_id(str(ObjectId()))
+        self.check_delete_images_by_entity_id_success()
+
+    def test_delete_by_entity_id_with_invalid_id(self):
+        """Test deleting images with an invalid `entity_id`."""
+        self.delete_images_by_entity_id("invalid_id")
+        self.check_delete_images_by_entity_id_success()
