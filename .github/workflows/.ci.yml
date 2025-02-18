@@ -55,6 +55,7 @@ jobs:
           docker build -f Dockerfile -t object-storage-api:test --target test .
           docker run \
            --name object-storage-api \
+           object-storage-api:test \
            pytest --config-file test/pytest.ini --cov object_storage_api --cov-report xml test/unit
           docker cp object-storage-api:/app/coverage.xml coverage.xml
 
@@ -90,7 +91,8 @@ jobs:
           docker run \
            --name object-storage-api \
            --add-host localhost:host-gateway \
-           pytest --config-file test/pytest.ini --cov object_storage_api --cov-report xml test/e2e
+           object-storage-api:test \
+           pytest --config-file test/pytest.ini test/e2e
 
       - name: Output docker logs (mongodb)
         if: failure()
