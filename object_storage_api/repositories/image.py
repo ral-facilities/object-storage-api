@@ -172,6 +172,6 @@ class ImageRepo:
             # Given it is deleting multiple, we are not raising an exception if no images were found to be deleted
             self._images_collection.delete_many(filter={"entity_id": entity_id}, session=session)
         except InvalidObjectIdError:
-            # As this method takes in an entity_id to delete multiple attachments, and to hide the database behaviour,
-            # we treat any invalid entity_id the same as a valid one that has no images associated to it.
+            # As this method takes in an entity_id to delete multiple images, and to hide the database behaviour, we
+            # treat any invalid entity_id the same as a valid one that has no images associated to it.
             pass
