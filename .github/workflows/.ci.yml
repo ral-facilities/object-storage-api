@@ -24,7 +24,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Set up Python
-        uses: actions/setup-python@0b93645e9fea7318ecaed2b359559ac225c90a2b # v5.3.0
+        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
         with:
           python-version: "3.12"
           cache: "pip"
@@ -112,7 +112,7 @@ jobs:
       PUSH_DOCKER_IMAGE_TO_HARBOR: ${{ inputs.push-docker-image-to-harbor != null && inputs.push-docker-image-to-harbor || 'false' }}
     steps:
       - name: Check out repo
-        uses: actions/checkout@eef61447b9ff4aafe5dcd4e0bbf5d482be7e7871 # v4.2.1
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
       - name: Login to Harbor
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
@@ -123,12 +123,12 @@ jobs:
 
       - name: Extract metadata (tags, labels) for Docker
         id: meta
-        uses: docker/metadata-action@8e5442c4ef9f78752691e2d8f8d19755c6f78e81 # v5.5.1
+        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
         with:
           images: ${{ secrets.HARBOR_URL }}/object-storage-api
 
       - name: ${{ fromJSON(env.PUSH_DOCKER_IMAGE_TO_HARBOR) && 'Build and push Docker image to Harbor' || 'Build Docker image' }}
-        uses: docker/build-push-action@4f58ea79222b3b9dc2c8bbdd6debcef730109a75 # v6.9.0
+        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 # v6.13.0
         with:
           context: .
           push: ${{ fromJSON(env.PUSH_DOCKER_IMAGE_TO_HARBOR) }}
