@@ -6,7 +6,7 @@ services:
       target: dev
     volumes:
       - ./object_storage_api:/app/object_storage_api
-      - ./keys:/app/keys
+      - ./keys/jwt-key.pub:/app/keys/jwt-key.pub
     restart: on-failure
     ports:
       - 8002:8000
