@@ -52,11 +52,11 @@ jobs:
 
       - name: Run unit tests
         run: |
-          docker build -f Dockerfile -t object-storage-api:test --target test .
+          docker build --file Dockerfile --target test --tag object-storage-api:test .
           docker run \
            --name object-storage-api \
            object-storage-api:test \
-           pytest --config-file test/pytest.ini --cov object_storage_api --cov-report xml test/unit
+           pytest --config-file test/pytest.ini --cov object_storage_api --cov-report xml test/unit -v
           docker cp object-storage-api:/app/coverage.xml coverage.xml
 
       - name: Upload coverage reports to Codecov
@@ -79,7 +79,7 @@ jobs:
       # Sleep 10 seconds to give time for containers to start
       - name: Start MongoDB and MinIO
         run: |
-          docker compose up -d mongo-db minio
+          docker compose up --detach mongo-db minio
           sleep 10
       - name: Create MinIO buckets
         run: |
@@ -87,12 +87,12 @@ jobs:
 
       - name: Run e2e tests
         run: |
-          docker build -f Dockerfile -t object-storage-api:test --target test .
+          docker build --file Dockerfile --target test --tag object-storage-api:test .
           docker run \
            --name object-storage-api \
            --add-host localhost:host-gateway \
            object-storage-api:test \
-           pytest --config-file test/pytest.ini test/e2e
+           pytest --config-file test/pytest.ini test/e2e -v
 
       - name: Output docker logs (mongodb)
         if: failure()
