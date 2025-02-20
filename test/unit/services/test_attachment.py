@@ -79,6 +79,8 @@ class CreateDSL(AttachmentServiceDSL):
         self._expected_attachment_id = ObjectId()
         self.mock_object_id.return_value = self._expected_attachment_id
 
+        self.mock_attachment_repository.count_by_entity_id.return_value = 0
+
         # Store
         expected_object_key = "some/object/key"
         expected_upload_info = AttachmentPostUploadInfoSchema(
@@ -110,7 +112,7 @@ class CreateDSL(AttachmentServiceDSL):
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """Calls the `AttachmentService` `create` method with the appropriate data from a prior call to
-        `mock_create` while expecting an error to be raised..
+        `mock_create` while expecting an error to be raised.
 
         :param error_type: Expected exception to be raised.
         """
@@ -121,6 +123,10 @@ class CreateDSL(AttachmentServiceDSL):
 
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
+
+        self.mock_attachment_repository.count_by_entity_id.assert_called_once_with(
+            str(self._expected_attachment_in.entity_id)
+        )
 
         self.mock_attachment_store.create_presigned_post.assert_called_once_with(
             str(self._expected_attachment_id), self._attachment_post
