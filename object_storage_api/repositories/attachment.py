@@ -163,3 +163,20 @@ class AttachmentRepo:
             # As this method takes in an entity_id to delete multiple attachments, and to hide the database behaviour,
             # we treat any invalid entity_id the same as a valid one that has no attachments associated to it.
             pass
+
+    def count_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> int:
+        """
+        Count the number of attachments matching the provided entity ID in a MongoDB database.
+
+        :param entity_id: The entity ID to use to select which documents to count.
+        :param session: PyMongo ClientSession to use for database operations.
+        """
+        logger.info("Counting number of attachments with entity ID: %s in the database", entity_id)
+        try:
+            entity_id = CustomObjectId(entity_id)
+        except InvalidObjectIdError:
+            # As this method counts using a filter, and to hide the database behaviour, we treat any invalid id
+            # the same as a valid one that doesn't exist i.e. return an empty list
+            return 0
+
+        return self._attachments_collection.count_documents(filter={"entity_id": entity_id}, session=session)
