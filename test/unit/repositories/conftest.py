@@ -105,3 +105,13 @@ class RepositoryTestHelpers:
         delete_result_mock = Mock(DeleteResult)
         delete_result_mock.deleted_count = deleted_count
         collection_mock.delete_many.return_value = delete_result_mock
+
+    @staticmethod
+    def mock_count_documents(collection_mock: Mock, count: int) -> None:
+        """
+        Mocks the `count_documents` method of the MongoDB database collection mock to return a specific count value.
+
+        :param collection_mock: Mocked MongoDB database collection instance.
+        :param count: The count value to be returned by the `count_documents` method.
+        """
+        collection_mock.count_documents.return_value = count
