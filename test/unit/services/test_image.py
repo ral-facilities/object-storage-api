@@ -87,6 +87,8 @@ class CreateDSL(ImageServiceDSL):
         self._expected_image_id = ObjectId()
         self.mock_object_id.return_value = self._expected_image_id
 
+        self.mock_image_repository.count_by_entity_id.return_value = 0
+
         # Thumbnail
         expected_thumbnail_base64 = "some_thumbnail"
         self.mock_generate_thumbnail_base64_str.return_value = expected_thumbnail_base64
@@ -119,7 +121,7 @@ class CreateDSL(ImageServiceDSL):
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """Calls the `ImageService` `create` method with the appropriate data from a prior call to
-        `mock_create` while expecting an error to be raised..
+        `mock_create` while expecting an error to be raised.
 
         :param error_type: Expected exception to be raised.
         """
@@ -131,6 +133,9 @@ class CreateDSL(ImageServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
+        self.mock_image_repository.count_by_entity_id.assert_called_once_with(
+            str(self._expected_image_in.entity_id)
+        )
         self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
         self.mock_image_store.upload.assert_called_once_with(
             str(self._expected_image_id), self._image_post_metadata, self._upload_file
