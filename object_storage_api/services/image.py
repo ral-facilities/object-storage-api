@@ -10,7 +10,8 @@ from typing import Annotated, Optional
 from bson import ObjectId
 from fastapi import Depends, UploadFile
 
-from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
+from object_storage_api.core.config import config
+from object_storage_api.core.exceptions import ImageUploadLimitReached, InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
@@ -54,6 +55,8 @@ class ImageService:
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
+        if self._image_repository.count_by_entity_id(image_metadata.entity_id) == config.image.max_upload_limit:
+            raise ImageUploadLimitReached("Unable to create an image as the upload limit has been reached")
 
         expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
         if expected_file_type != upload_file.content_type:
