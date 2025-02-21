@@ -68,6 +68,13 @@ class AttachmentUploadLimitReached(BaseAPIException):
     response_detail = "Limit for the maximum number of attachments has been reached"
 
 
+class ImageUploadLimitReached(BaseAPIException):
+    """The limit for the maximum number of images has been reached."""
+
+    status_code = 422
+    response_detail = "Limit for the maximum number of images has been reached"
+
+
 class MissingRecordError(DatabaseError):
     """A specific database record was requested but could not be found."""
 
