@@ -633,11 +633,14 @@ class CountByEntityIdDSL(ImageRepoDSL):
             assert self._obtained_count == 0
 
 
+# pylint: disable=duplicate-code
+
+
 class TestCountByEntityIdDSL(CountByEntityIdDSL):
     """Tests for counting images by `entity_id`."""
 
     def test_count_by_entity_id(self):
-        """Test counting attachments."""
+        """Test counting images."""
         self.mock_count_by_entity_id(3)
         self.call_count_by_entity_id(str(ObjectId()))
         self.check_count_by_entity_id_success()
@@ -654,3 +657,6 @@ class TestCountByEntityIdDSL(CountByEntityIdDSL):
 
         self.call_count_by_entity_id(entity_id)
         self.check_count_by_entity_id_success(False)
+
+
+# pylint: enable=duplicate-code

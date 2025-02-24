@@ -133,9 +133,7 @@ class CreateDSL(ImageServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        self.mock_image_repository.count_by_entity_id.assert_called_once_with(
-            str(self._expected_image_in.entity_id)
-        )
+        self.mock_image_repository.count_by_entity_id.assert_called_once_with(str(self._expected_image_in.entity_id))
         self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
         self.mock_image_store.upload.assert_called_once_with(
             str(self._expected_image_id), self._image_post_metadata, self._upload_file

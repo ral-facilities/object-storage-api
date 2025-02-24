@@ -586,6 +586,9 @@ class CountByEntityIdDSL(AttachmentRepoDSL):
             assert self._obtained_count == 0
 
 
+# pylint: disable=duplicate-code
+
+
 class TestCountByEntityIdDSL(CountByEntityIdDSL):
     """Tests for counting attachments by `entity_id`."""
 
@@ -607,3 +610,6 @@ class TestCountByEntityIdDSL(CountByEntityIdDSL):
 
         self.call_count_by_entity_id(entity_id)
         self.check_count_by_entity_id_success(False)
+
+
+# pylint: enable=duplicate-code
