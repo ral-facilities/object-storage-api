@@ -10,7 +10,7 @@ from typing import Annotated, Optional
 from bson import ObjectId
 from fastapi import Depends
 
-from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
+from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import (
@@ -110,7 +110,7 @@ class AttachmentService:
         if attachment.file_name is not None:
             update_type = mimetypes.guess_type(attachment.file_name)
             if update_type != stored_type:
-                raise InvalidFilenameExtension(
+                raise FileTypeMismatchException(
                     f"Patch filename extension `{attachment.file_name}` does not match "
                     f"stored attachment `{stored_attachment.file_name}`"
                 )
