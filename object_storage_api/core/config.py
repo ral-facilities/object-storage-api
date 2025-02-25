@@ -95,7 +95,7 @@ class ImageConfig(BaseModel):
     Configuration model for images.
     """
 
-    allowed_mime_types: list[str]
+    allowed_file_extensions: list[str]
     thumbnail_max_size_pixels: int
 
 
