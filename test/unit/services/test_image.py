@@ -14,7 +14,7 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
-from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
+from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
     ImageMetadataSchema,
@@ -71,18 +71,17 @@ class CreateDSL(ImageServiceDSL):
     _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_post_metadata_data: dict, filename: str, file_content_type: str) -> None:
+    def mock_create(self, image_post_metadata_data: dict, filename: str) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
         :param filename: Filename of the image.
-        :param file_content_type: File content-type of the image.
         """
 
         self._image_post_metadata = ImagePostMetadataSchema(**image_post_metadata_data)
-        header = {"content-type": file_content_type}
+        header = {"content-type": "image/png"}
         self._upload_file = UploadFile(MagicMock(), size=100, filename=filename, headers=header)
 
         self._expected_image_id = ObjectId()
@@ -163,25 +162,25 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an image."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", "image/png")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png")
         self.call_create()
         self.check_create_success()
 
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg", "image/png")
-        self.call_create_expecting_error(InvalidFilenameExtension)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
+        self.call_create_expecting_error(FileTypeMismatchException)
         self.check_create_failed_with_exception(
             f"File extension `{self._upload_file.filename}` does not match "
             f"content type `{self._upload_file.content_type}`",
             assert_checks=False,
         )
 
-    def test_create_with_file_extension_not_allowed(self):
+    def test_create_with_file_extension_not_supported(self):
         """Test creating an image with"with a file extension that is not allowed."""
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif", "image/gif")
-        self.call_create_expecting_error(InvalidFilenameExtension)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif")
+        self.call_create_expecting_error(FileTypeMismatchException)
         self.check_create_failed_with_exception(
             f"File extension `{self._upload_file.filename}` is not supported", assert_checks=False
         )
@@ -189,7 +188,7 @@ class TestCreate(CreateDSL):
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
 
-        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png", "image/png")
+        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png")
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
@@ -418,7 +417,7 @@ class TestUpdate(UpdateDSL):
             image_patch_data={**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"},
             stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
         )
-        self.call_update_expecting_error(image_id, InvalidFilenameExtension)
+        self.call_update_expecting_error(image_id, FileTypeMismatchException)
         self.check_update_failed_with_exception(
             f"Patch filename extension `{self._image_patch.file_name}` "
             f"does not match stored image `{self._stored_image.file_name}`"
