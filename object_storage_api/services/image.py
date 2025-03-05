@@ -59,7 +59,7 @@ class ImageService:
         """
 
         file_extension = Path(upload_file.filename).suffix
-        if not file_extension or file_extension not in config.image.allowed_file_extensions:
+        if not file_extension or file_extension.lower() not in config.image.allowed_file_extensions:
             raise FileTypeMismatchException(f"File extension `{upload_file.filename}` is not supported")
 
         expected_file_type, _ = mimetypes.guess_type(upload_file.filename)
