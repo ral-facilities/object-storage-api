@@ -96,8 +96,8 @@ class ImageConfig(BaseModel):
     Configuration model for images.
     """
 
-    max_upload_limit: int
     thumbnail_max_size_pixels: int
+    upload_limit: int
 
 
 class Config(BaseSettings):
