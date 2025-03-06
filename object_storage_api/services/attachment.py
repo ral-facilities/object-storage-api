@@ -57,7 +57,7 @@ class AttachmentService:
         :return: Created attachment with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         """
-        if self._attachment_repository.count_by_entity_id(attachment.entity_id) == config.attachment.max_upload_limit:
+        if self._attachment_repository.count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
             raise AttachmentUploadLimitReached("Unable to create an attachment as the upload limit has been reached")
 
         # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database
