@@ -1,7 +1,7 @@
 """
 Unit tests for the `ImageService` service.
 """
-from object_storage_api.core.config import config
+
 from test.mock_data import (
     IMAGE_IN_DATA_ALL_VALUES,
     IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
@@ -14,6 +14,7 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
+from object_storage_api.core.config import config
 from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError, ImageUploadLimitReached
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
@@ -186,9 +187,7 @@ class TestCreate(CreateDSL):
 
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", config.image.upload_limit)
         self.call_create_expecting_error(ImageUploadLimitReached)
-        self.check_create_failed_with_exception(
-            "Unable to create an image as the upload limit has been reached", True
-        )
+        self.check_create_failed_with_exception("Unable to create an image as the upload limit has been reached", True)
 
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
