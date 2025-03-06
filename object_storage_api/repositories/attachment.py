@@ -172,11 +172,6 @@ class AttachmentRepo:
         :param session: PyMongo ClientSession to use for database operations.
         """
         logger.info("Counting number of attachments with entity ID: %s in the database", entity_id)
-        try:
-            entity_id = CustomObjectId(entity_id)
-        except InvalidObjectIdError:
-            # As this method counts using a filter, and to hide the database behaviour, we treat any invalid id
-            # the same as a valid one that doesn't exist i.e. return an empty list
-            return 0
-
-        return self._attachments_collection.count_documents(filter={"entity_id": entity_id}, session=session)
+        return self._attachments_collection.count_documents(
+            filter={"entity_id": CustomObjectId(entity_id)}, session=session
+        )

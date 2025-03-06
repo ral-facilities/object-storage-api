@@ -11,6 +11,7 @@ from bson import ObjectId
 from fastapi import Depends
 
 from object_storage_api.core.config import config
+from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import (
     AttachmentUploadLimitReached,
     InvalidFilenameExtension,
@@ -56,23 +57,24 @@ class AttachmentService:
         :param attachment: Attachment to be created.
         :return: Created attachment with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
+        :raises AttachmentUploadLimitReached: If the upload limit has been reached.
         """
-        if self._attachment_repository.count_by_entity_id(attachment.entity_id) == config.attachment.max_upload_limit:
-            raise AttachmentUploadLimitReached("Unable to create an attachment as the upload limit has been reached")
-
-        # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database
-        # before generating the presigned URL which would then require transactions
-        attachment_id = str(ObjectId())
-
-        object_key, upload_info = self._attachment_store.create_presigned_post(attachment_id, attachment)
-
         try:
-            attachment_in = AttachmentIn(**attachment.model_dump(), id=attachment_id, object_key=object_key)
+            CustomObjectId(attachment.entity_id)
         except InvalidObjectIdError as exc:
             # Provide more specific detail
             exc.response_detail = "Invalid `entity_id` given"
             raise exc
 
+        if self._attachment_repository.count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
+            raise AttachmentUploadLimitReached("Unable to create an attachment as the upload limit has been reached")
+
+        # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database
+        # before generating the presigned URL which would then require transactions
+        attachment_id = str(ObjectId())
+        object_key, upload_info = self._attachment_store.create_presigned_post(attachment_id, attachment)
+
+        attachment_in = AttachmentIn(**attachment.model_dump(), id=attachment_id, object_key=object_key)
         attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)
