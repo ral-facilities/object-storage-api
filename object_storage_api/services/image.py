@@ -55,7 +55,7 @@ class ImageService:
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
-        if self._image_repository.count_by_entity_id(image_metadata.entity_id) == config.image.max_upload_limit:
+        if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
             raise ImageUploadLimitReached("Unable to create an image as the upload limit has been reached")
 
         expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
