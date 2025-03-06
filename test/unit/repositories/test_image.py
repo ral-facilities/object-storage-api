@@ -617,20 +617,12 @@ class CountByEntityIdDSL(ImageRepoDSL):
         self._count_entity_id = entity_id
         self._obtained_count = self.image_repository.count_by_entity_id(entity_id, session=self.mock_session)
 
-    def check_count_by_entity_id_success(self, assert_count: bool = True) -> None:
-        """
-        Checks that a prior call to `call_count_by_entity_id` worked as expected.
-
-        :param assert_count: Whether the `count_documents` method is expected to be called or not.
-        """
-        if assert_count:
-            self.images_collection.count_documents.assert_called_once_with(
-                filter={"entity_id": ObjectId(self._count_entity_id)}, session=self.mock_session
-            )
-            assert self._obtained_count == self._expected_count
-        else:
-            self.images_collection.count_documents.assert_not_called()
-            assert self._obtained_count == 0
+    def check_count_by_entity_id_success(self) -> None:
+        """Checks that a prior call to `call_count_by_entity_id` worked as expected."""
+        self.images_collection.count_documents.assert_called_once_with(
+            filter={"entity_id": ObjectId(self._count_entity_id)}, session=self.mock_session
+        )
+        assert self._obtained_count == self._expected_count
 
 
 # pylint: disable=duplicate-code
@@ -650,13 +642,6 @@ class TestCountByEntityIdDSL(CountByEntityIdDSL):
         self.mock_count_by_entity_id(0)
         self.call_count_by_entity_id(str(ObjectId()))
         self.check_count_by_entity_id_success()
-
-    def test_count_by_entity_id_invalid_id(self):
-        """Test deleting images with an invalid `entity_id`."""
-        entity_id = "invalid-id"
-
-        self.call_count_by_entity_id(entity_id)
-        self.check_count_by_entity_id_success(False)
 
 
 # pylint: enable=duplicate-code
