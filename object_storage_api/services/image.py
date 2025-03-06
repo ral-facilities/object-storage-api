@@ -11,6 +11,7 @@ from bson import ObjectId
 from fastapi import Depends, UploadFile
 
 from object_storage_api.core.config import config
+from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import ImageUploadLimitReached, InvalidFilenameExtension, InvalidObjectIdError
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
@@ -55,6 +56,13 @@ class ImageService:
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
+        try:
+            CustomObjectId(image_metadata.entity_id)
+        except InvalidObjectIdError as exc:
+            # Provide more specific detail
+            exc.response_detail = "Invalid `entity_id` given"
+            raise exc
+
         if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
             raise ImageUploadLimitReached("Unable to create an image as the upload limit has been reached")
 
@@ -74,19 +82,13 @@ class ImageService:
         # Upload the full size image to object storage
         object_key = self._image_store.upload(image_id, image_metadata, upload_file)
 
-        try:
-            image_in = ImageIn(
-                **image_metadata.model_dump(),
-                id=image_id,
-                file_name=upload_file.filename,
-                object_key=object_key,
-                thumbnail_base64=thumbnail_base64,
-            )
-        except InvalidObjectIdError as exc:
-            # Provide more specific detail
-            exc.response_detail = "Invalid `entity_id` given"
-            raise exc
-
+        image_in = ImageIn(
+            **image_metadata.model_dump(),
+            id=image_id,
+            file_name=upload_file.filename,
+            object_key=object_key,
+            thumbnail_base64=thumbnail_base64,
+        )
         image_out = self._image_repository.create(image_in)
 
         return ImageMetadataSchema(**image_out.model_dump())
