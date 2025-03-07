@@ -8,6 +8,9 @@ on:
         default: false
   pull_request:
   push:
+    branches:
+      - main
+      - develop
 
 permissions:
   contents: read
