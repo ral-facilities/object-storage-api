@@ -14,7 +14,11 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
-from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError
+from object_storage_api.core.exceptions import (
+    FileTypeMismatchException,
+    InvalidObjectIdError,
+    UnsupportedFileExtensionException,
+)
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
     ImageMetadataSchema,
@@ -172,17 +176,17 @@ class TestCreate(CreateDSL):
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
         self.call_create_expecting_error(FileTypeMismatchException)
         self.check_create_failed_with_exception(
-            f"File extension `{self._upload_file.filename}` does not match "
-            f"content type `{self._upload_file.content_type}`",
+            f"File extension of '{self._upload_file.filename}' does not match "
+            f"content type '{self._upload_file.content_type}'",
             assert_checks=False,
         )
 
     def test_create_with_file_extension_not_supported(self):
-        """Test creating an image with"with a file extension that is not allowed."""
+        """Test creating an image with a file extension that is not supported."""
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif")
-        self.call_create_expecting_error(FileTypeMismatchException)
+        self.call_create_expecting_error(UnsupportedFileExtensionException)
         self.check_create_failed_with_exception(
-            f"File extension `{self._upload_file.filename}` is not supported", assert_checks=False
+            f"File extension of '{self._upload_file.filename}' is not supported", assert_checks=False
         )
 
     def test_create_with_invalid_entity_id(self):
@@ -419,8 +423,8 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(image_id, FileTypeMismatchException)
         self.check_update_failed_with_exception(
-            f"Patch filename extension `{self._image_patch.file_name}` "
-            f"does not match stored image `{self._stored_image.file_name}`"
+            f"Patch filename extension '{self._image_patch.file_name}' "
+            f"does not match stored image '{self._stored_image.file_name}'"
         )
 
 

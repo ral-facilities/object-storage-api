@@ -377,8 +377,8 @@ class TestUpdate(UpdateDSL):
 
         self.call_update_expecting_error(attachment_id, FileTypeMismatchException)
         self.check_update_failed_with_exception(
-            f"Patch filename extension `{self._attachment_patch.file_name}` "
-            f"does not match stored attachment `{self._stored_attachment.file_name}`"
+            f"Patch filename extension '{self._attachment_patch.file_name}' "
+            f"does not match stored attachment '{self._stored_attachment.file_name}'"
         )
 
 

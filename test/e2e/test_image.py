@@ -127,6 +127,12 @@ class TestCreate(CreateDSL):
         )
         self.check_post_image_failed_with_detail(422, "File extension and content type do not match")
 
+    def test_create_with_unsupported_file_extension(self):
+        """Test creating an image with an unsupported file extension."""
+
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.webp")
+        self.check_post_image_failed_with_detail(415, "File extension is not supported")
+
 
 class GetDSL(CreateDSL):
     """Base class for get tests."""
