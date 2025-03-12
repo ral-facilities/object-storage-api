@@ -57,9 +57,9 @@ class ImageService:
         :param image_metadata: Metadata of the image to be created.
         :param upload_file: Upload file of the image to be created.
         :return: Created image with a pre-signed upload URL.
+        :raises UnsupportedFileExtensionException: If the file extension of the image is not supported.
+        :raises FileTypeMismatchException: If the extension and content type of the image do not match.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
-        :raises InvalidFilenameExtension: If the image has a mismatched file extension or the file extension is not
-            supported.
         """
 
         file_extension = Path(upload_file.filename).suffix
@@ -128,12 +128,12 @@ class ImageService:
         :param image_id: The ID of the image to update.
         :param image: The image containing the fields to be updated.
         :return: The updated image.
-        :raises InvalidFilenameExtension: If the image has a mismatched file extension.
+        :raises InvalidFilenameExtension: If the extensions of the stored and updated image do not match.
         """
         stored_image = self._image_repository.get(image_id=image_id)
 
-        stored_type, _ = mimetypes.guess_type(stored_image.file_name)
         if image.file_name is not None:
+            stored_type, _ = mimetypes.guess_type(stored_image.file_name)
             update_type, _ = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
                 raise FileTypeMismatchException(

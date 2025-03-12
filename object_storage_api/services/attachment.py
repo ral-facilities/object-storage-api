@@ -5,12 +5,18 @@ store.
 
 import logging
 import mimetypes
+from pathlib import Path
 from typing import Annotated, Optional
 
 from bson import ObjectId
 from fastapi import Depends
 
-from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError
+from object_storage_api.core.config import config
+from object_storage_api.core.exceptions import (
+    FileTypeMismatchException,
+    InvalidObjectIdError,
+    UnsupportedFileExtensionException,
+)
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import (
@@ -50,8 +56,13 @@ class AttachmentService:
 
         :param attachment: Attachment to be created.
         :return: Created attachment with a pre-signed upload URL.
+        :raises UnsupportedFileExtensionException: If the file extension of the attachment is not supported.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         """
+
+        file_extension = Path(attachment.file_name).suffix
+        if not file_extension or file_extension.lower() not in config.attachment.allowed_file_extensions:
+            raise UnsupportedFileExtensionException(f"File extension of '{attachment.file_name}' is not supported")
 
         # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database
         # before generating the presigned URL which would then require transactions
@@ -101,14 +112,14 @@ class AttachmentService:
         :param attachment_id: The ID of the attachment to update.
         :param attachment: The attachment containing the fields to be updated.
         :return: The updated attachment.
-        :raises InvalidFilenameExtension: If the attachment has a mismatched file extension.
+        :raises FileTypeMismatchException: If the extensions of the stored and updated attachment do not match.
         """
 
         stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
 
-        stored_type = mimetypes.guess_type(stored_attachment.file_name)
         if attachment.file_name is not None:
-            update_type = mimetypes.guess_type(attachment.file_name)
+            stored_type, _ = mimetypes.guess_type(stored_attachment.file_name)
+            update_type, _ = mimetypes.guess_type(attachment.file_name)
             if update_type != stored_type:
                 raise FileTypeMismatchException(
                     f"Patch filename extension '{attachment.file_name}' does not match "
