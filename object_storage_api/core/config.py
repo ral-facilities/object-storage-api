@@ -87,6 +87,7 @@ class AttachmentConfig(BaseModel):
     Configuration model for attachments.
     """
 
+    allowed_file_extensions: list[str]
     max_size_bytes: int
 
 
