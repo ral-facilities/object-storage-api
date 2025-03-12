@@ -13,7 +13,11 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError
+from object_storage_api.core.exceptions import (
+    FileTypeMismatchException,
+    InvalidObjectIdError,
+    UnsupportedFileExtensionException,
+)
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
@@ -129,17 +133,19 @@ class CreateDSL(AttachmentServiceDSL):
 
         assert self._created_attachment == self._expected_attachment
 
-    def check_create_failed_with_exception(self, message: str) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_checks: bool = True) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Message of the raised exception.
+        :param assert_checks: Whether the `create_presigned_post` method is expected to be called.
         """
 
-        self.mock_attachment_store.create_presigned_post.assert_called_once_with(
-            str(self._expected_attachment_id), self._attachment_post
-        )
+        if assert_checks:
+            self.mock_attachment_store.create_presigned_post.assert_called_once_with(
+                str(self._expected_attachment_id), self._attachment_post
+            )
         self.mock_attachment_repository.create.assert_not_called()
 
         assert str(self._create_exception.value) == message
@@ -155,12 +161,19 @@ class TestCreate(CreateDSL):
         self.call_create()
         self.check_create_success()
 
+    def test_create_with_file_extension_not_supported(self):
+        """Test creating an attachment with a file extension that is not supported."""
+        file_name = "test.html"
+        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": file_name})
+        self.call_create_expecting_error(UnsupportedFileExtensionException)
+        self.check_create_failed_with_exception(f"File extension of '{file_name}' is not supported", False)
+
     def test_create_with_invalid_entity_id(self):
         """Test creating an attachment with an invalid `entity_id`."""
 
         self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": "invalid-id"})
         self.call_create_expecting_error(InvalidObjectIdError)
-        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'", True)
 
 
 class GetDSL(AttachmentServiceDSL):

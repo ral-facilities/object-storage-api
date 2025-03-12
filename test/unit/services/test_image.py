@@ -149,6 +149,7 @@ class CreateDSL(ImageServiceDSL):
         with the correct message.
 
         :param message: Message of the raised exception.
+        :param assert_checks: Whether the `generate_thumbnail_base64_str` and `upload` method are expected to be called.
         """
         if assert_checks:
             self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
