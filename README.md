@@ -107,11 +107,13 @@ be synced to the container next time you run the tests. The e2e tests require a 
 Instances of these can be started using the `docker-compose.yml` file.
 
 1. Start a MongoDB and a MinIO instance:
+
    ```bash
    docker compose up --detach mongo-db minio
    ```
 
 2. Once the MongoDB and MinIO containers are running, run the container for creating the MinIO buckets:
+
    ```bash
    docker compose up minio-create-buckets
    ```
@@ -157,7 +159,7 @@ be synced to the container next time you run the tests.
     object-storage-api:test \
     pytest --config-file test/pytest.ini --cov object_storage_api --cov-report term-missing test/unit -v
    ```
-   
+
 #### Using `Dockerfile` for running the e2e tests
 
 Use the `Dockerfile`'s `test` stage to run the e2e tests in a container. Mounting the `object_storage_api` and `test`
@@ -166,11 +168,13 @@ be synced to the container next time you run the tests. These tests require a Mo
 Instances of these can be started using the `docker-compose.yml` file.
 
 1. Start a MongoDB and a MinIO instance:
+
    ```bash
    docker compose up --detach mongo-db minio
    ```
 
 2. Once the MongoDB and MinIO containers are running, run the container for creating the MinIO buckets:
+
    ```bash
    docker compose up minio-create-buckets
    ```
@@ -251,7 +255,7 @@ values loaded from the `.env` file.
 Listed below are the environment variables supported by the application.
 
 | Environment Variable                           | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Mandatory           | Default Value                                    |
-|------------------------------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------| ------------------- | ------------------------------------------------ |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | ------------------------------------------------ |
 | `API__TITLE`                                   | The title of the API which is added to the generated OpenAPI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 | No                  | `Object Storage Service API`                     |
 | `API__DESCRIPTION`                             | The description of the API which is added to the generated OpenAPI.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                           | No                  | `This is the API for the Object Storage Service` |
 | `API__ROOT_PATH`                               | (If using a proxy) The path prefix handled by a proxy that is not seen by the app.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | No                  | ` `                                              |
