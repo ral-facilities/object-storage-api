@@ -64,7 +64,10 @@ class ImageService:
             raise exc
 
         if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
-            raise ImageUploadLimitReached("Unable to create an image as the upload limit has been reached")
+            raise ImageUploadLimitReached(
+                "Unable to create an image as the upload limit for images with "
+                f"`entity_id` {image_metadata.entity_id} has been reached"
+            )
 
         expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
         if expected_file_type != upload_file.content_type:

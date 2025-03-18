@@ -187,7 +187,11 @@ class TestCreate(CreateDSL):
 
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", config.image.upload_limit)
         self.call_create_expecting_error(ImageUploadLimitReached)
-        self.check_create_failed_with_exception("Unable to create an image as the upload limit has been reached", True)
+        self.check_create_failed_with_exception(
+            "Unable to create an image as the upload limit for images with `entity_id` "
+            f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]} has been reached",
+            True,
+        )
 
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
