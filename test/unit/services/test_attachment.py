@@ -185,7 +185,9 @@ class TestCreate(CreateDSL):
         self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES, config.attachment.upload_limit)
         self.call_create_expecting_error(AttachmentUploadLimitReached)
         self.check_create_failed_with_exception(
-            "Unable to create an attachment as the upload limit has been reached", True
+            "Unable to create an attachment as the upload limit for attachments with `entity_id` "
+            f"'{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}' has been reached",
+            True,
         )
 
 

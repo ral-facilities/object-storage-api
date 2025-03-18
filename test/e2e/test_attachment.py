@@ -49,6 +49,46 @@ class CreateDSL:
             self._post_response_attachment.json()["id"] if self._post_response_attachment.status_code == 201 else None
         )
 
+    def post_test_attachments(self) -> list[dict]:
+        """
+        Posts three attachments. The first two attachments have the same entity ID, the last attachment has a different
+        one.
+
+        :return: List of dictionaries containing the expected item data returned from a get endpoint in
+                 the form of an `AttachmentMetadataSchema`.
+        """
+        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
+
+        # First item
+        attachment_a_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+        )
+
+        # Second item
+        attachment_b_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+        )
+
+        # Third item
+        attachment_c_id = self.post_attachment(
+            {
+                **ATTACHMENT_POST_DATA_ALL_VALUES,
+                "entity_id": entity_id_b,
+            },
+        )
+
+        return [
+            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
+            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
+            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
+        ]
+
     def upload_attachment(self, file_data: str = "Some test data\nnew line") -> None:
         """
         Uploads an attachment to the last posted attachment's `upload_url`.
@@ -138,6 +178,18 @@ class TestCreate(CreateDSL):
         self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": "invalid-id"})
         self.check_post_attachment_failed_with_detail(422, "Invalid `entity_id` given")
 
+    def test_create_when_upload_limit_reached(self):
+        """
+        Test creating an attachment when the upload limit has been reached.
+        """
+
+        attachments = self.post_test_attachments()
+
+        self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": attachments[0]["entity_id"]})
+        self.check_post_attachment_failed_with_detail(
+            422, "Limit for the maximum number of attachments for the provided `entity_id` has been reached"
+        )
+
 
 class GetDSL(CreateDSL):
     """Base class for get tests."""
@@ -204,46 +256,6 @@ class ListDSL(GetDSL):
         :param filters: Filters to use in the request.
         """
         self._get_response_attachment = self.test_client.get("/attachments", params=filters)
-
-    def post_test_attachments(self) -> list[dict]:
-        """
-        Posts three attachments. The first two attachments have the same entity ID, the last attachment has a different
-        one.
-
-        :return: List of dictionaries containing the expected item data returned from a get endpoint in
-                 the form of an `AttachmentMetadataSchema`.
-        """
-        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
-
-        # First item
-        attachment_a_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
-        )
-
-        # Second item
-        attachment_b_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
-        )
-
-        # Third item
-        attachment_c_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-            },
-        )
-
-        return [
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
-        ]
 
     def check_get_attachments_success(self, expected_attachments_get_data: list[dict]) -> None:
         """
