@@ -137,8 +137,8 @@ class ImageService:
             update_type, _ = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
                 raise FileTypeMismatchException(
-                    f"Patch filename extension '{image.file_name}' does not match "
-                    f"stored image '{stored_image.file_name}'"
+                    f"Patch filename extension of '{image.file_name}' does not match "
+                    f"that of the stored image '{stored_image.file_name}'"
                 )
 
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
