@@ -67,7 +67,10 @@ class AttachmentService:
             raise exc
 
         if self._attachment_repository.count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
-            raise AttachmentUploadLimitReached("Unable to create an attachment as the upload limit has been reached")
+            raise AttachmentUploadLimitReached(
+                "Unable to create an attachment as the upload limit for attachments "
+                f"with `entity_id` '{attachment.entity_id}' has been reached"
+            )
 
         # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database
         # before generating the presigned URL which would then require transactions
