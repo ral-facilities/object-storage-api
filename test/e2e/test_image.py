@@ -69,6 +69,42 @@ class CreateDSL:
             )
         return self._post_response_image.json()["id"] if self._post_response_image.status_code == 201 else None
 
+    def post_test_images(self) -> list[dict]:
+        """
+        Posts three images. The first two images have the same entity ID, the last image has a different one.
+
+        :return: List of dictionaries containing the expected image data returned from a get endpoint in
+                 the form of an `ImageMetadataSchema`.
+        """
+        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
+
+        # First image
+        image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
+
+        # Second image
+        image_b_id = self.post_image(
+            {
+                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+            },
+            "image.jpg",
+        )
+
+        # Third image
+        image_c_id = self.post_image(
+            {
+                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
+                "entity_id": entity_id_b,
+            },
+            "image.jpg",
+        )
+
+        return [
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_a_id},
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_b_id},
+            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": image_c_id},
+        ]
+
     def check_post_image_success(self, expected_image_get_data: dict) -> None:
         """
         Checks that a prior call to `post_image` gave a successful response with the expected data returned.
@@ -126,6 +162,20 @@ class TestCreate(CreateDSL):
             IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg"
         )
         self.check_post_image_failed_with_detail(422, "Filename does not contain the correct extension")
+
+    def test_create_when_upload_limit_reached(self):
+        """
+        Test creating an image when the upload limit has been reached.
+        """
+
+        images = self.post_test_images()
+
+        self.post_image(
+            {**IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": images[0]["entity_id"]}, "image.jpg"
+        )
+        self.check_post_image_failed_with_detail(
+            422, "Limit for the maximum number of images for the provided `entity_id` has been reached"
+        )
 
 
 class GetDSL(CreateDSL):
@@ -193,42 +243,6 @@ class ListDSL(GetDSL):
         :param filters: Filters to use in the request.
         """
         self._get_response_image = self.test_client.get("/images", params=filters)
-
-    def post_test_images(self) -> list[dict]:
-        """
-        Posts three images. The first two images have the same entity ID, the last image has a different one.
-
-        :return: List of dictionaries containing the expected image data returned from a get endpoint in
-                 the form of an `ImageMetadataSchema`.
-        """
-        entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
-
-        # First image
-        image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
-
-        # Second image
-        image_b_id = self.post_image(
-            {
-                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
-            "image.jpg",
-        )
-
-        # Third image
-        image_c_id = self.post_image(
-            {
-                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-            },
-            "image.jpg",
-        )
-
-        return [
-            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_a_id},
-            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_b_id},
-            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": image_c_id},
-        ]
 
     def check_get_images_success(self, expected_images_get_data: list[dict]) -> None:
         """
