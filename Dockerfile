@@ -1,4 +1,4 @@
-FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as dev
+FROM python:3.12.9-alpine3.21@sha256:28b8a72c4e0704dd2048b79830e692e94ac2d43d30c914d54def6abf74448a4e as dev
 
 WORKDIR /app
 
@@ -18,7 +18,16 @@ CMD ["fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--por
 EXPOSE 8000
 
 
-FROM python:3.12.8-alpine3.20@sha256:0c4f778362f30cc50ff734a3e9e7f3b2ae876d8386f470e0c3ee1ab299cec21b as prod
+FROM dev as test
+
+WORKDIR /app
+
+COPY test/ test/
+
+CMD ["pytest",  "--config-file", "test/pytest.ini", "-v"]
+
+
+FROM python:3.12.9-alpine3.21@sha256:28b8a72c4e0704dd2048b79830e692e94ac2d43d30c914d54def6abf74448a4e as prod
 
 WORKDIR /app
 

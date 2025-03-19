@@ -33,8 +33,10 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           python -m pip install .[code-analysis]
+
       - name: Run black
         run: black --check --line-length 120 object_storage_api test
+
       - name: Run pylint
         run: pylint object_storage_api test
 
@@ -45,23 +47,17 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Set up Python
-        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install .[test]
-          python -m pip install -r requirements.txt
-
       - name: Create logging configuration file
         run: cp object_storage_api/logging.example.ini object_storage_api/logging.ini
 
       - name: Run unit tests
-        run: pytest -c test/pytest.ini test/unit/ --cov
+        run: |
+          docker build --file Dockerfile --target test --tag object-storage-api:test .
+          docker run \
+           --name object-storage-api \
+           object-storage-api:test \
+           pytest --config-file test/pytest.ini --cov object_storage_api --cov-report xml test/unit -v
+          docker cp object-storage-api:/app/coverage.xml coverage.xml
 
       - name: Upload coverage reports to Codecov
         if: success()
@@ -77,44 +73,38 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
-      - name: Set up Python
-        uses: actions/setup-python@42375524e23c412d93fb67b49958b491fce71c38 # v5.4.0
-        with:
-          python-version: "3.12"
-          cache: "pip"
-
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          python -m pip install .[test]
-          python -m pip install -r requirements.txt
-
       - name: Create logging configuration file
         run: cp object_storage_api/logging.example.ini object_storage_api/logging.ini
 
       # Sleep 10 seconds to give time for containers to start
       - name: Start MongoDB and MinIO
         run: |
-          docker compose up -d mongo-db minio minio_create_buckets
+          docker compose up --detach mongo-db minio
           sleep 10
       - name: Create MinIO buckets
         run: |
-          docker compose up minio_create_buckets
+          docker compose up minio-create-buckets
 
       - name: Run e2e tests
-        run: pytest -c test/pytest.ini test/e2e/ --cov
+        run: |
+          docker build --file Dockerfile --target test --tag object-storage-api:test .
+          docker run \
+           --name object-storage-api \
+           --add-host localhost:host-gateway \
+           object-storage-api:test \
+           pytest --config-file test/pytest.ini test/e2e -v
 
       - name: Output docker logs (mongodb)
         if: failure()
-        run: docker logs object_storage_api_mongodb_container
+        run: docker logs object-storage-api-mongodb
 
       - name: Output docker logs (minio)
         if: failure()
-        run: docker logs object-storage-api-minio-1
+        run: docker logs object-storage-minio
 
   docker:
-    # This job builds the production Docker image and if the workflow is manually triggered 
-    # while the `push-docker-image-to-harbor` input is set to `true`, it pushes it to Harbor.
+    # This job triggers only if all the other jobs succeed. It builds the Docker image 
+    # and if run manually from Github Actions, it pushes to Harbor.
     needs: [linting, unit-tests, e2e-tests]
     name: Docker
     runs-on: ubuntu-latest
@@ -124,21 +114,22 @@ jobs:
       - name: Check out repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
 
+      - name: Extract metadata (tags, labels) for Docker
+        id: meta
+        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804 # v5.7.0
+        with:
+          images: ${{ vars.HARBOR_URL }}/object-storage-api
+
       - name: Login to Harbor
+        if: ${{ fromJSON(env.PUSH_DOCKER_IMAGE_TO_HARBOR) }}
         uses: docker/login-action@9780b0c442fbb1117ed29e0efdff1e18412f7567 # v3.3.0
         with:
-          registry: ${{ secrets.HARBOR_URL }}
+          registry: ${{ vars.HARBOR_URL }}
           username: ${{ secrets.HARBOR_USERNAME }}
           password: ${{ secrets.HARBOR_TOKEN }}
 
-      - name: Extract metadata (tags, labels) for Docker
-        id: meta
-        uses: docker/metadata-action@369eb591f429131d6889c46b94e711f089e6ca96 # v5.6.1
-        with:
-          images: ${{ secrets.HARBOR_URL }}/object-storage-api
-
       - name: ${{ fromJSON(env.PUSH_DOCKER_IMAGE_TO_HARBOR) && 'Build and push Docker image to Harbor' || 'Build Docker image' }}
-        uses: docker/build-push-action@ca877d9245402d1537745e0e356eab47c3520991 # v6.13.0
+        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4 # v6.15.0
         with:
           context: .
           push: ${{ fromJSON(env.PUSH_DOCKER_IMAGE_TO_HARBOR) }}
