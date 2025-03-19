@@ -101,7 +101,7 @@ class AttachmentService:
         :param attachment_id: The ID of the attachment to update.
         :param attachment: The attachment containing the fields to be updated.
         :return: The updated attachment.
-        :raises InvalidFilenameExtension: If the attachment has a mismatched file extension.
+        :raises FileTypeMismatchException: If the extensions of the stored and updated attachment do not match.
         """
 
         stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
