@@ -424,8 +424,8 @@ class TestUpdate(UpdateDSL):
         )
         self.call_update_expecting_error(image_id, FileTypeMismatchException)
         self.check_update_failed_with_exception(
-            f"Patch filename extension '{self._image_patch.file_name}' "
-            f"does not match stored image '{self._stored_image.file_name}'"
+            f"Patch filename extension of '{self._image_patch.file_name}' does not match "
+            f"that of the stored image '{self._stored_image.file_name}'"
         )
 
 

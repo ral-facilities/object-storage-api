@@ -122,8 +122,8 @@ class AttachmentService:
             update_type, _ = mimetypes.guess_type(attachment.file_name)
             if update_type != stored_type:
                 raise FileTypeMismatchException(
-                    f"Patch filename extension '{attachment.file_name}' does not match "
-                    f"stored attachment '{stored_attachment.file_name}'"
+                    f"Patch filename extension of '{attachment.file_name}' does not match "
+                    f"that of the stored attachment '{stored_attachment.file_name}'"
                 )
 
         updated_attachment = self._attachment_repository.update(

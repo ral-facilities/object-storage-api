@@ -128,7 +128,7 @@ class ImageService:
         :param image_id: The ID of the image to update.
         :param image: The image containing the fields to be updated.
         :return: The updated image.
-        :raises InvalidFilenameExtension: If the extensions of the stored and updated image do not match.
+        :raises FileTypeMismatchException: If the extensions of the stored and updated image do not match.
         """
         stored_image = self._image_repository.get(image_id=image_id)
 
@@ -137,8 +137,8 @@ class ImageService:
             update_type, _ = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
                 raise FileTypeMismatchException(
-                    f"Patch filename extension '{image.file_name}' does not match "
-                    f"stored image '{stored_image.file_name}'"
+                    f"Patch filename extension of '{image.file_name}' does not match "
+                    f"that of the stored image '{stored_image.file_name}'"
                 )
 
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
