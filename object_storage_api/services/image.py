@@ -52,8 +52,9 @@ class ImageService:
 
         :param image_metadata: Metadata of the image to be created.
         :param upload_file: Upload file of the image to be created.
-        :return: Created image with an pre-signed upload URL.
+        :return: Created image with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
+        :raises ImageUploadLimitReached: If the upload limit has been reached.
         :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
         try:
