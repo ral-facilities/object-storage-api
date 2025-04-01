@@ -14,11 +14,7 @@ import pytest
 from bson import ObjectId
 
 from object_storage_api.core.config import config
-from object_storage_api.core.exceptions import (
-    InvalidFilenameExtension,
-    InvalidObjectIdError,
-    AttachmentUploadLimitReached,
-)
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError, UploadLimitReachedError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
@@ -183,7 +179,7 @@ class TestCreate(CreateDSL):
         """Test creating an attachment when the upload limit has been reached."""
 
         self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES, config.attachment.upload_limit)
-        self.call_create_expecting_error(AttachmentUploadLimitReached)
+        self.call_create_expecting_error(UploadLimitReachedError)
         self.check_create_failed_with_exception(
             "Unable to create an attachment as the upload limit for attachments with `entity_id` "
             f"'{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}' has been reached",

@@ -61,18 +61,16 @@ class InvalidFilenameExtension(BaseAPIException):
     response_detail = "Filename does not contain the correct extension"
 
 
-class AttachmentUploadLimitReached(BaseAPIException):
-    """The limit for the maximum number of attachments for the provided `entity_id` has been reached."""
+class UploadLimitReachedError(BaseAPIException):
+    """The limit for the maximum number of attachments or images for the provided `entity_id` has been reached."""
 
     status_code = 422
-    response_detail = "Limit for the maximum number of attachments for the provided `entity_id` has been reached"
 
-
-class ImageUploadLimitReached(BaseAPIException):
-    """The limit for the maximum number of images for the provided `entity_id` has been reached."""
-
-    status_code = 422
-    response_detail = "Limit for the maximum number of images for the provided `entity_id` has been reached"
+    def __init__(self, detail: str, entity_name: str):
+        response_detail = (
+            f"Limit for the maximum number of {entity_name}s for the provided `entity_id` has been reached"
+        )
+        super().__init__(detail, response_detail)
 
 
 class MissingRecordError(DatabaseError):

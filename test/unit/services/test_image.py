@@ -15,7 +15,7 @@ from bson import ObjectId
 from fastapi import UploadFile
 
 from object_storage_api.core.config import config
-from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError, ImageUploadLimitReached
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError, UploadLimitReachedError
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
     ImageMetadataSchema,
@@ -186,7 +186,7 @@ class TestCreate(CreateDSL):
         """Test creating an attachment when the upload limit has been reached."""
 
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", config.image.upload_limit)
-        self.call_create_expecting_error(ImageUploadLimitReached)
+        self.call_create_expecting_error(UploadLimitReachedError)
         self.check_create_failed_with_exception(
             "Unable to create an image as the upload limit for images with `entity_id` "
             f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]} has been reached",

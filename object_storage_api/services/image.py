@@ -12,7 +12,11 @@ from fastapi import Depends, UploadFile
 
 from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
-from object_storage_api.core.exceptions import ImageUploadLimitReached, InvalidFilenameExtension, InvalidObjectIdError
+from object_storage_api.core.exceptions import (
+    InvalidFilenameExtension,
+    InvalidObjectIdError,
+    UploadLimitReachedError,
+)
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
@@ -54,7 +58,7 @@ class ImageService:
         :param upload_file: Upload file of the image to be created.
         :return: Created image with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
-        :raises ImageUploadLimitReached: If the upload limit has been reached.
+        :raises UploadLimitReachedError: If the upload limit has been reached.
         :raises InvalidFilenameExtension: If the image has a mismatched file extension.
         """
         try:
@@ -65,9 +69,10 @@ class ImageService:
             raise exc
 
         if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
-            raise ImageUploadLimitReached(
-                "Unable to create an image as the upload limit for images with "
-                f"`entity_id` {image_metadata.entity_id} has been reached"
+            raise UploadLimitReachedError(
+                detail="Unable to create an image as the upload limit for images with "
+                f"`entity_id` {image_metadata.entity_id} has been reached",
+                entity_name="image",
             )
 
         expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
