@@ -67,6 +67,14 @@ class UploadLimitReachedError(BaseAPIException):
     status_code = 422
 
     def __init__(self, detail: str, entity_name: str):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
+                       and not returned in a response).
+        :param entity_name: Name of the entity to include in the response detail.
+        """
+
         response_detail = (
             f"Limit for the maximum number of {entity_name}s for the provided `entity_id` has been reached"
         )

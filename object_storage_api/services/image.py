@@ -12,11 +12,7 @@ from fastapi import Depends, UploadFile
 
 from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
-from object_storage_api.core.exceptions import (
-    InvalidFilenameExtension,
-    InvalidObjectIdError,
-    UploadLimitReachedError,
-)
+from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError, UploadLimitReachedError
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo

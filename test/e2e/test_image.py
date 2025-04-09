@@ -82,22 +82,10 @@ class CreateDSL:
         image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
 
         # Second image
-        image_b_id = self.post_image(
-            {
-                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
-            "image.jpg",
-        )
+        image_b_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
 
         # Third image
-        image_c_id = self.post_image(
-            {
-                **IMAGE_POST_METADATA_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-            },
-            "image.jpg",
-        )
+        image_c_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_b}, "image.jpg")
 
         return [
             {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_a_id},

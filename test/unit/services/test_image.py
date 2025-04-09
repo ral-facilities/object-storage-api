@@ -158,9 +158,10 @@ class CreateDSL(ImageServiceDSL):
             )
         else:
             self.mock_image_repository.count_by_entity_id.create.assert_not_called()
-            self.mock_generate_thumbnail_base64_str.create.assert_not_called()
-            self.mock_image_store.upload.create.assert_not_called()
-            self.mock_image_repository.create.assert_not_called()
+
+        self.mock_generate_thumbnail_base64_str.create.assert_not_called()
+        self.mock_image_store.upload.create.assert_not_called()
+        self.mock_image_repository.create.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
