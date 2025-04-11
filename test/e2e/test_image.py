@@ -149,7 +149,13 @@ class TestCreate(CreateDSL):
         self.post_image_with_file_extension_content_type_mismatch(
             IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg"
         )
-        self.check_post_image_failed_with_detail(422, "Filename does not contain the correct extension")
+        self.check_post_image_failed_with_detail(422, "File extension and content type do not match")
+
+    def test_create_with_unsupported_file_extension(self):
+        """Test creating an image with an unsupported file extension."""
+
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.webp")
+        self.check_post_image_failed_with_detail(415, "File extension is not supported")
 
     def test_create_when_upload_limit_reached(self):
         """
@@ -389,7 +395,7 @@ class TestUpdate(UpdateDSL):
         """Test updating an image with a different extension."""
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
         self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"})
-        self.check_patch_image_failed_with_detail(422, "Filename does not contain the correct extension")
+        self.check_patch_image_failed_with_detail(422, "File extension and content type do not match")
 
     def test_update_primary(self):
         """Test updating primary to True, triggering other database updates."""

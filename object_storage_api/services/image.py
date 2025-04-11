@@ -5,6 +5,7 @@ store.
 
 import logging
 import mimetypes
+from pathlib import Path
 from typing import Annotated, Optional
 
 from bson import ObjectId
@@ -12,7 +13,7 @@ from fastapi import Depends, UploadFile
 
 from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
-from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError, UploadLimitReachedError
+from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError, UploadLimitReachedError, UnsupportedFileExtensionException
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
 from object_storage_api.repositories.image import ImageRepo
@@ -55,7 +56,8 @@ class ImageService:
         :return: Created image with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         :raises UploadLimitReachedError: If the upload limit has been reached.
-        :raises InvalidFilenameExtension: If the image has a mismatched file extension.
+        :raises UnsupportedFileExtensionException: If the file extension of the image is not supported.
+        :raises FileTypeMismatchException: If the extension and content type of the image do not match.
         """
         try:
             CustomObjectId(image_metadata.entity_id)
@@ -71,10 +73,14 @@ class ImageService:
                 entity_name="image",
             )
 
-        expected_file_type = mimetypes.guess_type(upload_file.filename)[0]
+        file_extension = Path(upload_file.filename).suffix
+        if not file_extension or file_extension.lower() not in config.image.allowed_file_extensions:
+            raise UnsupportedFileExtensionException(f"File extension of '{upload_file.filename}' is not supported")
+
+        expected_file_type, _ = mimetypes.guess_type(upload_file.filename)
         if expected_file_type != upload_file.content_type:
-            raise InvalidFilenameExtension(
-                f"File extension `{upload_file.filename}` does not match content type `{upload_file.content_type}`"
+            raise FileTypeMismatchException(
+                f"File extension of '{upload_file.filename}' does not match content type '{upload_file.content_type}'"
             )
 
         # Generate a unique ID for the image - this needs to be known now to avoid inserting into the database
@@ -127,17 +133,17 @@ class ImageService:
         :param image_id: The ID of the image to update.
         :param image: The image containing the fields to be updated.
         :return: The updated image.
-        :raises InvalidFilenameExtension: If the image has a mismatched file extension.
+        :raises FileTypeMismatchException: If the extensions of the stored and updated image do not match.
         """
         stored_image = self._image_repository.get(image_id=image_id)
 
-        stored_type = mimetypes.guess_type(stored_image.file_name)
+        stored_type, _ = mimetypes.guess_type(stored_image.file_name)
         if image.file_name is not None:
-            update_type = mimetypes.guess_type(image.file_name)
+            update_type, _ = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
-                raise InvalidFilenameExtension(
-                    f"Patch filename extension `{image.file_name}` does not match "
-                    f"stored image `{stored_image.file_name}`"
+                raise FileTypeMismatchException(
+                    f"Patch filename extension of '{image.file_name}' does not match "
+                    f"that of the stored image '{stored_image.file_name}'"
                 )
 
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False

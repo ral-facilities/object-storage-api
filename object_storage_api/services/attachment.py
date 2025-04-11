@@ -12,7 +12,7 @@ from fastapi import Depends
 
 from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
-from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError, UploadLimitReachedError
+from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError, UploadLimitReachedError
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import (
@@ -110,7 +110,7 @@ class AttachmentService:
         :param attachment_id: The ID of the attachment to update.
         :param attachment: The attachment containing the fields to be updated.
         :return: The updated attachment.
-        :raises InvalidFilenameExtension: If the attachment has a mismatched file extension.
+        :raises FileTypeMismatchException: If the extensions of the stored and updated attachment do not match.
         """
 
         stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
@@ -119,9 +119,9 @@ class AttachmentService:
         if attachment.file_name is not None:
             update_type = mimetypes.guess_type(attachment.file_name)
             if update_type != stored_type:
-                raise InvalidFilenameExtension(
-                    f"Patch filename extension `{attachment.file_name}` does not match "
-                    f"stored attachment `{stored_attachment.file_name}`"
+                raise FileTypeMismatchException(
+                    f"Patch filename extension of '{attachment.file_name}' does not match "
+                    f"that of the stored attachment '{stored_attachment.file_name}'"
                 )
 
         updated_attachment = self._attachment_repository.update(

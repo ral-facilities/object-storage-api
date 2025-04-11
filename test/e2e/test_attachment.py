@@ -384,7 +384,7 @@ class TestUpdate(UpdateDSL):
         """Test updating an attachment with a different extension."""
         attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.patch_attachment(attachment_id, {**ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "report.mp3"})
-        self.check_patch_attachment_failed_with_detail(422, "Filename does not contain the correct extension")
+        self.check_patch_attachment_failed_with_detail(422, "File extension and content type do not match")
 
 
 class DeleteDSL(ListDSL):
