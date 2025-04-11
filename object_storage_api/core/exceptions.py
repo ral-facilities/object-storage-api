@@ -68,6 +68,13 @@ class UnsupportedFileExtensionException(BaseAPIException):
     response_detail = "File extension is not supported"
 
 
+class AttachmentUploadLimitReached(BaseAPIException):
+    """The limit for the maximum number of attachments for the provided `entity_id` has been reached."""
+
+    status_code = 422
+    response_detail = "Limit for the maximum number of attachments for the provided `entity_id` has been reached"
+
+
 class MissingRecordError(DatabaseError):
     """A specific database record was requested but could not be found."""
 

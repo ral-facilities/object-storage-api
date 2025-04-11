@@ -88,6 +88,7 @@ class AttachmentConfig(BaseModel):
     """
 
     max_size_bytes: int
+    upload_limit: int
 
 
 class ImageConfig(BaseModel):
