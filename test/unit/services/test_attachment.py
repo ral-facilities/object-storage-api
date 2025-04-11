@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.exceptions import InvalidFilenameExtension, InvalidObjectIdError
+from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
@@ -375,10 +375,10 @@ class TestUpdate(UpdateDSL):
             stored_attachment_post_data=ATTACHMENT_IN_DATA_ALL_VALUES,
         )
 
-        self.call_update_expecting_error(attachment_id, InvalidFilenameExtension)
+        self.call_update_expecting_error(attachment_id, FileTypeMismatchException)
         self.check_update_failed_with_exception(
-            f"Patch filename extension `{self._attachment_patch.file_name}` "
-            f"does not match stored attachment `{self._stored_attachment.file_name}`"
+            f"Patch filename extension of '{self._attachment_patch.file_name}' does not match "
+            f"that of the stored attachment '{self._stored_attachment.file_name}'"
         )
 
 
