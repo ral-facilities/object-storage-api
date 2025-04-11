@@ -107,11 +107,13 @@ be synced to the container next time you run the tests. The e2e tests require a 
 Instances of these can be started using the `docker-compose.yml` file.
 
 1. Start a MongoDB and a MinIO instance:
+
    ```bash
    docker compose up --detach mongo-db minio
    ```
 
 2. Once the MongoDB and MinIO containers are running, run the container for creating the MinIO buckets:
+
    ```bash
    docker compose up minio-create-buckets
    ```
@@ -157,7 +159,7 @@ be synced to the container next time you run the tests.
     object-storage-api:test \
     pytest --config-file test/pytest.ini --cov object_storage_api --cov-report term-missing test/unit -v
    ```
-   
+
 #### Using `Dockerfile` for running the e2e tests
 
 Use the `Dockerfile`'s `test` stage to run the e2e tests in a container. Mounting the `object_storage_api` and `test`
@@ -166,11 +168,13 @@ be synced to the container next time you run the tests. These tests require a Mo
 Instances of these can be started using the `docker-compose.yml` file.
 
 1. Start a MongoDB and a MinIO instance:
+
    ```bash
    docker compose up --detach mongo-db minio
    ```
 
 2. Once the MongoDB and MinIO containers are running, run the container for creating the MinIO buckets:
+
    ```bash
    docker compose up minio-create-buckets
    ```
@@ -272,6 +276,7 @@ Listed below are the environment variables supported by the application.
 | `OBJECT_STORAGE__BUCKET_NAME`                  | The name of the S3 bucket to use for object storage.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          | Yes                 |                                                  |
 | `OBJECT_STORAGE__PRESIGNED_URL_EXPIRY_SECONDS` | The expiry time of presigned URLs.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | Yes                 |                                                  |
 | `ATTACHMENT__MAX_SIZE_BYTES`                   | The maximum file size of an attachment given in bytes. **Note**: File systems use a factor of 1024 for GB, MB and KB instead of 1000, so here the former is expected despite them really being GiB, MiB and KiB.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              | Yes                 |                                                  |
+| `IMAGE__ALLOWED_FILE_EXTENSIONS`               | The list of image file extensions that are allowed to be uploaded. They must be in a lowercase format.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Yes                 |                                                  |
 | `IMAGE__THUMBNAIL_MAX_SIZE_PIXELS`             | The maximum width/height of generated image thumbnails. The actual width and height should maintain the original aspect ratio but neither the width nor height will exceed this value.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        | Yes                 |                                                  |
 
 ### JWT Authentication/Authorization
