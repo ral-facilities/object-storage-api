@@ -176,9 +176,9 @@ class TestCreate(CreateDSL):
     def test_create_with_file_extension_not_supported(self):
         """Test creating an attachment with a file extension that is not supported."""
         file_name = "test.html"
-        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": file_name})
+        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": file_name}, 0)
         self.call_create_expecting_error(UnsupportedFileExtensionException)
-        self.check_create_failed_with_exception(f"File extension of '{file_name}' is not supported", False)
+        self.check_create_failed_with_exception(f"File extension of '{file_name}' is not supported", True)
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an attachment with an invalid `entity_id`."""

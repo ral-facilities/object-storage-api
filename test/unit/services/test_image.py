@@ -162,7 +162,7 @@ class CreateDSL(ImageServiceDSL):
                 str(self._expected_image_in.entity_id)
             )
         else:
-            self.mock_image_repository.count_by_entity_id.create.assert_not_called()
+            self.mock_image_repository.count_by_entity_id.assert_not_called()
 
         self.mock_generate_thumbnail_base64_str.create.assert_not_called()
         self.mock_image_store.upload.create.assert_not_called()
@@ -189,7 +189,7 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception(
             f"File extension of '{self._upload_file.filename}' does not match "
             f"content type '{self._upload_file.content_type}'",
-            assert_count=False,
+            assert_count=True,
         )
 
     def test_create_with_file_extension_not_supported(self):
@@ -197,7 +197,7 @@ class TestCreate(CreateDSL):
         self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif", 0)
         self.call_create_expecting_error(UnsupportedFileExtensionException)
         self.check_create_failed_with_exception(
-            f"File extension of '{self._upload_file.filename}' is not supported", assert_count=False
+            f"File extension of '{self._upload_file.filename}' is not supported", assert_count=True
         )
 
     def test_create_with_invalid_entity_id(self):
