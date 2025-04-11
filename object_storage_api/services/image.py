@@ -142,8 +142,8 @@ class ImageService:
         """
         stored_image = self._image_repository.get(image_id=image_id)
 
-        stored_type, _ = mimetypes.guess_type(stored_image.file_name)
         if image.file_name is not None:
+            stored_type, _ = mimetypes.guess_type(stored_image.file_name)
             update_type, _ = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
                 raise FileTypeMismatchException(

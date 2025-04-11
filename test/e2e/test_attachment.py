@@ -178,6 +178,12 @@ class TestCreate(CreateDSL):
         self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": "invalid-id"})
         self.check_post_attachment_failed_with_detail(422, "Invalid `entity_id` given")
 
+    def test_create_with_unsupported_file_extension(self):
+        """Test creating an attachment with an unsupported file extension."""
+
+        self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "file_name": "test.html"})
+        self.check_post_attachment_failed_with_detail(415, "File extension is not supported")
+
     def test_create_when_upload_limit_reached(self):
         """
         Test creating an attachment when the upload limit has been reached.

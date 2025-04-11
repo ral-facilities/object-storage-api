@@ -14,7 +14,12 @@ import pytest
 from bson import ObjectId
 
 from object_storage_api.core.config import config
-from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError, UploadLimitReachedError
+from object_storage_api.core.exceptions import (
+    FileTypeMismatchException,
+    InvalidObjectIdError,
+    UnsupportedFileExtensionException,
+    UploadLimitReachedError,
+)
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
     AttachmentMetadataSchema,
@@ -167,6 +172,13 @@ class TestCreate(CreateDSL):
         self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES, 0)
         self.call_create()
         self.check_create_success()
+
+    def test_create_with_file_extension_not_supported(self):
+        """Test creating an attachment with a file extension that is not supported."""
+        file_name = "test.html"
+        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": file_name}, 0)
+        self.call_create_expecting_error(UnsupportedFileExtensionException)
+        self.check_create_failed_with_exception(f"File extension of '{file_name}' is not supported", True)
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an attachment with an invalid `entity_id`."""
