@@ -12,11 +12,7 @@ from fastapi import Depends
 
 from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
-from object_storage_api.core.exceptions import (
-    AttachmentUploadLimitReached,
-    FileTypeMismatchException,
-    InvalidObjectIdError,
-)
+from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError, UploadLimitReachedError
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
 from object_storage_api.schemas.attachment import (
@@ -57,7 +53,7 @@ class AttachmentService:
         :param attachment: Attachment to be created.
         :return: Created attachment with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
-        :raises AttachmentUploadLimitReached: If the upload limit has been reached.
+        :raises UploadLimitReachedError: If the upload limit has been reached.
         """
         try:
             CustomObjectId(attachment.entity_id)
@@ -67,9 +63,10 @@ class AttachmentService:
             raise exc
 
         if self._attachment_repository.count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
-            raise AttachmentUploadLimitReached(
-                "Unable to create an attachment as the upload limit for attachments "
-                f"with `entity_id` '{attachment.entity_id}' has been reached"
+            raise UploadLimitReachedError(
+                detail="Unable to create an attachment as the upload limit for attachments "
+                f"with `entity_id` '{attachment.entity_id}' has been reached",
+                entity_name="attachment",
             )
 
         # Generate a unique ID for the attachment - this needs to be known now to avoid inserting into the database

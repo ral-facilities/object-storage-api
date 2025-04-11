@@ -590,3 +590,58 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
 
 
 # pylint: enable=duplicate-code
+
+
+class CountByEntityIdDSL(ImageRepoDSL):
+    """Base class for `count_by_entity_id` tests."""
+
+    _expected_count: int
+    _count_entity_id: str
+    _obtained_count: int
+
+    def mock_count_by_entity_id(self, count: int) -> None:
+        """
+        Mocks database methods appropriately to test the `count_by_entity_id` repo method.
+
+        :param count: Number of documents found.
+        """
+        self._expected_count = count
+        RepositoryTestHelpers.mock_count_documents(self.images_collection, count)
+
+    def call_count_by_entity_id(self, entity_id: str) -> None:
+        """
+        Calls the `ImageRepo` `mock_count_by_entity_id` method.
+
+        :param entity_id: The entity ID to use to select which documents to count.
+        """
+        self._count_entity_id = entity_id
+        self._obtained_count = self.image_repository.count_by_entity_id(entity_id, session=self.mock_session)
+
+    def check_count_by_entity_id_success(self) -> None:
+        """Checks that a prior call to `call_count_by_entity_id` worked as expected."""
+        self.images_collection.count_documents.assert_called_once_with(
+            filter={"entity_id": ObjectId(self._count_entity_id)}, session=self.mock_session
+        )
+        assert self._obtained_count == self._expected_count
+
+
+# pylint: disable=duplicate-code
+
+
+class TestCountByEntityIdDSL(CountByEntityIdDSL):
+    """Tests for counting images by `entity_id`."""
+
+    def test_count_by_entity_id(self):
+        """Test counting images."""
+        self.mock_count_by_entity_id(3)
+        self.call_count_by_entity_id(str(ObjectId()))
+        self.check_count_by_entity_id_success()
+
+    def test_count_by_entity_id_with_no_results(self):
+        """Test counting all images returning no results."""
+        self.mock_count_by_entity_id(0)
+        self.call_count_by_entity_id(str(ObjectId()))
+        self.check_count_by_entity_id_success()
+
+
+# pylint: enable=duplicate-code

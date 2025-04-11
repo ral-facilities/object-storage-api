@@ -14,10 +14,12 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
+from object_storage_api.core.config import config
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
     UnsupportedFileExtensionException,
+    UploadLimitReachedError,
 )
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
@@ -75,13 +77,14 @@ class CreateDSL(ImageServiceDSL):
     _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_post_metadata_data: dict, filename: str) -> None:
+    def mock_create(self, image_post_metadata_data: dict, filename: str, image_count: int) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
         :param filename: Filename of the image.
+        :param image_count: The number of images currently stored in the database.
         """
 
         self._image_post_metadata = ImagePostMetadataSchema(**image_post_metadata_data)
@@ -90,6 +93,8 @@ class CreateDSL(ImageServiceDSL):
 
         self._expected_image_id = ObjectId()
         self.mock_object_id.return_value = self._expected_image_id
+
+        self.mock_image_repository.count_by_entity_id.return_value = image_count
 
         # Thumbnail
         expected_thumbnail_base64 = "some_thumbnail"
@@ -123,7 +128,7 @@ class CreateDSL(ImageServiceDSL):
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """Calls the `ImageService` `create` method with the appropriate data from a prior call to
-        `mock_create` while expecting an error to be raised..
+        `mock_create` while expecting an error to be raised.
 
         :param error_type: Expected exception to be raised.
         """
@@ -135,6 +140,7 @@ class CreateDSL(ImageServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
+        self.mock_image_repository.count_by_entity_id.assert_called_once_with(str(self._expected_image_in.entity_id))
         self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
         self.mock_image_store.upload.assert_called_once_with(
             str(self._expected_image_id), self._image_post_metadata, self._upload_file
@@ -143,18 +149,23 @@ class CreateDSL(ImageServiceDSL):
 
         assert self._created_image == self._expected_image
 
-    def check_create_failed_with_exception(self, message: str, assert_checks: bool = True) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_count: bool = True) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Message of the raised exception.
+        :param assert_count: Whether the `count_by_entity_id` repo method is expected to be called or not.
         """
-        if assert_checks:
-            self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
-            self.mock_image_store.upload.assert_called_once_with(
-                str(self._expected_image_id), self._image_post_metadata, self._upload_file
+        if assert_count:
+            self.mock_image_repository.count_by_entity_id.assert_called_once_with(
+                str(self._expected_image_in.entity_id)
             )
+        else:
+            self.mock_image_repository.count_by_entity_id.create.assert_not_called()
+
+        self.mock_generate_thumbnail_base64_str.create.assert_not_called()
+        self.mock_image_store.upload.create.assert_not_called()
         self.mock_image_repository.create.assert_not_called()
 
         assert str(self._create_exception.value) == message
@@ -166,35 +177,46 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an image."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", 0)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg", 0)
         self.call_create_expecting_error(FileTypeMismatchException)
         self.check_create_failed_with_exception(
             f"File extension of '{self._upload_file.filename}' does not match "
             f"content type '{self._upload_file.content_type}'",
-            assert_checks=False,
+            assert_count=False,
         )
 
     def test_create_with_file_extension_not_supported(self):
         """Test creating an image with a file extension that is not supported."""
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif", 0)
         self.call_create_expecting_error(UnsupportedFileExtensionException)
         self.check_create_failed_with_exception(
-            f"File extension of '{self._upload_file.filename}' is not supported", assert_checks=False
+            f"File extension of '{self._upload_file.filename}' is not supported", assert_count=False
         )
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
 
-        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png")
+        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png", 0)
         self.call_create_expecting_error(InvalidObjectIdError)
-        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'", False)
+
+    def test_create_when_upload_limit_reached(self):
+        """Test creating an attachment when the upload limit has been reached."""
+
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", config.image.upload_limit)
+        self.call_create_expecting_error(UploadLimitReachedError)
+        self.check_create_failed_with_exception(
+            "Unable to create an image as the upload limit for images with `entity_id` "
+            f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]} has been reached",
+            True,
+        )
 
 
 class GetDSL(ImageServiceDSL):
