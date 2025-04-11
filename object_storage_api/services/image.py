@@ -12,9 +12,11 @@ from bson import ObjectId
 from fastapi import Depends, UploadFile
 
 from object_storage_api.core.config import config
+from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
+    UploadLimitReachedError,
     UnsupportedFileExtensionException,
 )
 from object_storage_api.core.image import generate_thumbnail_base64_str
@@ -57,10 +59,24 @@ class ImageService:
         :param image_metadata: Metadata of the image to be created.
         :param upload_file: Upload file of the image to be created.
         :return: Created image with a pre-signed upload URL.
+        :raises InvalidObjectIdError: If the image has any invalid ID's in it.
+        :raises UploadLimitReachedError: If the upload limit has been reached.
         :raises UnsupportedFileExtensionException: If the file extension of the image is not supported.
         :raises FileTypeMismatchException: If the extension and content type of the image do not match.
-        :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         """
+        try:
+            CustomObjectId(image_metadata.entity_id)
+        except InvalidObjectIdError as exc:
+            # Provide more specific detail
+            exc.response_detail = "Invalid `entity_id` given"
+            raise exc
+
+        if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
+            raise UploadLimitReachedError(
+                detail="Unable to create an image as the upload limit for images with "
+                f"`entity_id` {image_metadata.entity_id} has been reached",
+                entity_name="image",
+            )
 
         file_extension = Path(upload_file.filename).suffix
         if not file_extension or file_extension.lower() not in config.image.allowed_file_extensions:
@@ -82,19 +98,13 @@ class ImageService:
         # Upload the full size image to object storage
         object_key = self._image_store.upload(image_id, image_metadata, upload_file)
 
-        try:
-            image_in = ImageIn(
-                **image_metadata.model_dump(),
-                id=image_id,
-                file_name=upload_file.filename,
-                object_key=object_key,
-                thumbnail_base64=thumbnail_base64,
-            )
-        except InvalidObjectIdError as exc:
-            # Provide more specific detail
-            exc.response_detail = "Invalid `entity_id` given"
-            raise exc
-
+        image_in = ImageIn(
+            **image_metadata.model_dump(),
+            id=image_id,
+            file_name=upload_file.filename,
+            object_key=object_key,
+            thumbnail_base64=thumbnail_base64,
+        )
         image_out = self._image_repository.create(image_in)
 
         return ImageMetadataSchema(**image_out.model_dump())

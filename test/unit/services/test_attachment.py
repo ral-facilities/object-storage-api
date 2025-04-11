@@ -13,10 +13,12 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
+from object_storage_api.core.config import config
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
     UnsupportedFileExtensionException,
+    UploadLimitReachedError,
 )
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
@@ -70,18 +72,21 @@ class CreateDSL(AttachmentServiceDSL):
     _created_attachment: AttachmentPostResponseSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, attachment_post_data: dict) -> None:
+    def mock_create(self, attachment_post_data: dict, attachment_count: int) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
         :param attachment_post_data: Dictionary containing the basic attachment data as would be required for a
             `AttachmentPostSchema` (i.e. no created and modified times required).
+        :param attachment_count: The number of attachments currently stored in the database.
         """
 
         self._attachment_post = AttachmentPostSchema(**attachment_post_data)
 
         self._expected_attachment_id = ObjectId()
         self.mock_object_id.return_value = self._expected_attachment_id
+
+        self.mock_attachment_repository.count_by_entity_id.return_value = attachment_count
 
         # Store
         expected_object_key = "some/object/key"
@@ -114,7 +119,7 @@ class CreateDSL(AttachmentServiceDSL):
 
     def call_create_expecting_error(self, error_type: type[BaseException]) -> None:
         """Calls the `AttachmentService` `create` method with the appropriate data from a prior call to
-        `mock_create` while expecting an error to be raised..
+        `mock_create` while expecting an error to be raised.
 
         :param error_type: Expected exception to be raised.
         """
@@ -126,6 +131,10 @@ class CreateDSL(AttachmentServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
+        self.mock_attachment_repository.count_by_entity_id.assert_called_once_with(
+            str(self._expected_attachment_in.entity_id)
+        )
+
         self.mock_attachment_store.create_presigned_post.assert_called_once_with(
             str(self._expected_attachment_id), self._attachment_post
         )
@@ -133,19 +142,22 @@ class CreateDSL(AttachmentServiceDSL):
 
         assert self._created_attachment == self._expected_attachment
 
-    def check_create_failed_with_exception(self, message: str, assert_checks: bool = True) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_count: bool = True) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Message of the raised exception.
-        :param assert_checks: Whether the `create_presigned_post` method is expected to be called.
+        :param assert_count: Whether the `count_by_entity_id` repo method is expected to be called or not.
         """
-
-        if assert_checks:
-            self.mock_attachment_store.create_presigned_post.assert_called_once_with(
-                str(self._expected_attachment_id), self._attachment_post
+        if assert_count:
+            self.mock_attachment_repository.count_by_entity_id.assert_called_once_with(
+                str(self._expected_attachment_in.entity_id)
             )
+        else:
+            self.mock_attachment_repository.count_by_entity_id.assert_not_called()
+
+        self.mock_attachment_store.create_presigned_post.assert_not_called()
         self.mock_attachment_repository.create.assert_not_called()
 
         assert str(self._create_exception.value) == message
@@ -157,7 +169,7 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an attachment."""
 
-        self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES)
+        self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES, 0)
         self.call_create()
         self.check_create_success()
 
@@ -171,9 +183,20 @@ class TestCreate(CreateDSL):
     def test_create_with_invalid_entity_id(self):
         """Test creating an attachment with an invalid `entity_id`."""
 
-        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": "invalid-id"})
+        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": "invalid-id"}, 0)
         self.call_create_expecting_error(InvalidObjectIdError)
-        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'", True)
+        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'", False)
+
+    def test_create_when_upload_limit_reached(self):
+        """Test creating an attachment when the upload limit has been reached."""
+
+        self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES, config.attachment.upload_limit)
+        self.call_create_expecting_error(UploadLimitReachedError)
+        self.check_create_failed_with_exception(
+            "Unable to create an attachment as the upload limit for attachments with `entity_id` "
+            f"'{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}' has been reached",
+            True,
+        )
 
 
 class GetDSL(AttachmentServiceDSL):

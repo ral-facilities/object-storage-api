@@ -89,6 +89,7 @@ class AttachmentConfig(BaseModel):
 
     allowed_file_extensions: list[str]
     max_size_bytes: int
+    upload_limit: int
 
 
 class ImageConfig(BaseModel):
@@ -98,6 +99,7 @@ class ImageConfig(BaseModel):
 
     allowed_file_extensions: list[str]
     thumbnail_max_size_pixels: int
+    upload_limit: int
 
 
 class Config(BaseSettings):
