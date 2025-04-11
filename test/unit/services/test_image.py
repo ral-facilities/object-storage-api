@@ -15,7 +15,12 @@ from bson import ObjectId
 from fastapi import UploadFile
 
 from object_storage_api.core.config import config
-from object_storage_api.core.exceptions import FileTypeMismatchException, InvalidObjectIdError, UnsupportedFileExtensionException, UploadLimitReachedError
+from object_storage_api.core.exceptions import (
+    FileTypeMismatchException,
+    InvalidObjectIdError,
+    UnsupportedFileExtensionException,
+    UploadLimitReachedError,
+)
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
     ImageMetadataSchema,
@@ -179,20 +184,20 @@ class TestCreate(CreateDSL):
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg", 0)
         self.call_create_expecting_error(FileTypeMismatchException)
         self.check_create_failed_with_exception(
             f"File extension of '{self._upload_file.filename}' does not match "
             f"content type '{self._upload_file.content_type}'",
-            assert_checks=False,
+            assert_count=False,
         )
 
     def test_create_with_file_extension_not_supported(self):
         """Test creating an image with a file extension that is not supported."""
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif")
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif", 0)
         self.call_create_expecting_error(UnsupportedFileExtensionException)
         self.check_create_failed_with_exception(
-            f"File extension of '{self._upload_file.filename}' is not supported", assert_checks=False
+            f"File extension of '{self._upload_file.filename}' is not supported", assert_count=False
         )
 
     def test_create_with_invalid_entity_id(self):
