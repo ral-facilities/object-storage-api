@@ -96,18 +96,18 @@ class ImageService:
         # Generate the thumbnail
         thumbnail_base64 = generate_thumbnail_base64_str(upload_file)
 
-        # Upload the full size image to object storage
-        object_key = self._image_store.upload(image_id, image_metadata, upload_file)
-
         image_in = ImageIn(
             **image_metadata.model_dump(),
             id=image_id,
             file_name=upload_file.filename,
             code=utils.generate_code(upload_file.filename, "image"),
-            object_key=object_key,
+            object_key=self._image_store.get_object_key(image_id, image_metadata),
             thumbnail_base64=thumbnail_base64,
         )
         image_out = self._image_repository.create(image_in)
+
+        # Upload the full size image to object storage
+        self._image_store.upload(image_in, upload_file)
 
         return ImageMetadataSchema(**image_out.model_dump())
 
