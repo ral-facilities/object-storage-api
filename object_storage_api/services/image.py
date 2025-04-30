@@ -61,7 +61,6 @@ class ImageService:
         :param upload_file: Upload file of the image to be created.
         :return: Created image with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
-        :raises UploadLimitReachedError: If the upload limit has been reached.
         :raises UnsupportedFileExtensionException: If the file extension of the image is not supported.
         :raises FileTypeMismatchException: If the extension and content type of the image do not match.
         """
@@ -71,13 +70,6 @@ class ImageService:
             # Provide more specific detail
             exc.response_detail = "Invalid `entity_id` given"
             raise exc
-
-        if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
-            raise UploadLimitReachedError(
-                detail="Unable to create an image as the upload limit for images with "
-                f"`entity_id` {image_metadata.entity_id} has been reached",
-                entity_name="image",
-            )
 
         file_extension = Path(upload_file.filename).suffix
         if not file_extension or file_extension.lower() not in config.image.allowed_file_extensions:
