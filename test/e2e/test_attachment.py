@@ -6,6 +6,7 @@ from test.mock_data import (
     ATTACHMENT_GET_DATA_ALL_VALUES,
     ATTACHMENT_GET_METADATA_ALL_VALUES,
     ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH,
+    ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
     ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
@@ -13,10 +14,11 @@ from test.mock_data import (
     ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY,
 )
 from typing import Optional
+from unittest.mock import ANY
 
 import pytest
-from bson import ObjectId
 import requests
+from bson import ObjectId
 from fastapi.testclient import TestClient
 from httpx import Response
 
@@ -61,32 +63,35 @@ class CreateDSL:
 
         # First item
         attachment_a_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
+            {**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_a},
         )
 
         # Second item
         attachment_b_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
+            {**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": entity_id_a},
         )
 
         # Third item
         attachment_c_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-            },
+            {**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_b},
         )
 
         return [
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
+            {
+                **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
+                "entity_id": entity_id_a,
+                "id": attachment_a_id,
+            },
+            {
+                **ATTACHMENT_GET_METADATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+                "id": attachment_b_id,
+            },
+            {
+                **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
+                "entity_id": entity_id_b,
+                "id": attachment_c_id,
+            },
         ]
 
     def upload_attachment(self, file_data: str = "Some test data\nnew line") -> None:

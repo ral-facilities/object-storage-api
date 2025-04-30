@@ -184,7 +184,7 @@ class TestCreate(CreateDSL):
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg", 0)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", 0)
         self.call_create_expecting_error(FileTypeMismatchException)
         self.check_create_failed_with_exception(
             f"File extension of '{self._upload_file.filename}' does not match "
