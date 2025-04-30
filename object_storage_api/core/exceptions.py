@@ -107,3 +107,26 @@ class MissingRecordError(DatabaseError):
 
         if entity_name is not None:
             self.response_detail = f"{entity_name.capitalize()} not found"
+
+
+class DuplicateRecordError(DatabaseError):
+    """The record being added to the database is a duplicate."""
+
+    status_code = 409
+    response_detail = "Duplicate record found in the database"
+
+    def __init__(self, detail: str, response_detail: Optional[str] = None, entity_name: Optional[str] = None):
+        """
+        Initialise the exception.
+
+        :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
+                       and not returned in a response).
+        :param response_detail: Generic detail of the exception to be returned in the response.
+        :param entity_name: Name of the entity to include in the response detail.
+        """
+        super().__init__(detail, response_detail)
+
+        if entity_name is not None:
+            self.response_detail = (
+                f"An {entity_name.capitalize()} with the same file name already exists within the parent entity."
+            )

@@ -28,6 +28,7 @@ from object_storage_api.schemas.attachment import (
     AttachmentPostSchema,
     AttachmentSchema,
 )
+from object_storage_api.services import utils
 from object_storage_api.stores.attachment import AttachmentStore
 
 logger = logging.getLogger()
@@ -86,7 +87,12 @@ class AttachmentService:
 
         object_key, upload_info = self._attachment_store.create_presigned_post(attachment_id, attachment)
 
-        attachment_in = AttachmentIn(**attachment.model_dump(), id=attachment_id, object_key=object_key)
+        attachment_in = AttachmentIn(
+            **attachment.model_dump(),
+            id=attachment_id,
+            code=utils.generate_code(attachment.file_name, "attachment"),
+            object_key=object_key,
+        )
         attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)
@@ -124,10 +130,11 @@ class AttachmentService:
         :return: The updated attachment.
         :raises FileTypeMismatchException: If the extensions of the stored and updated attachment do not match.
         """
+        update_data = attachment.model_dump(exclude_unset=True)
 
         stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
 
-        if attachment.file_name is not None:
+        if "file_name" in update_data and attachment.file_name != stored_attachment.file_name:
             stored_type, _ = mimetypes.guess_type(stored_attachment.file_name)
             update_type, _ = mimetypes.guess_type(attachment.file_name)
             if update_type != stored_type:
@@ -136,9 +143,11 @@ class AttachmentService:
                     f"that of the stored attachment '{stored_attachment.file_name}'"
                 )
 
+            update_data["code"] = utils.generate_code(attachment.file_name, "attachment")
+
         updated_attachment = self._attachment_repository.update(
             attachment_id=attachment_id,
-            attachment=AttachmentIn(**{**stored_attachment.model_dump(), **attachment.model_dump(exclude_unset=True)}),
+            attachment=AttachmentIn(**{**stored_attachment.model_dump(), **update_data}),
         )
 
         return AttachmentMetadataSchema(**updated_attachment.model_dump())

@@ -16,8 +16,8 @@ from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
-    UploadLimitReachedError,
     UnsupportedFileExtensionException,
+    UploadLimitReachedError,
 )
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
@@ -28,6 +28,7 @@ from object_storage_api.schemas.image import (
     ImagePostMetadataSchema,
     ImageSchema,
 )
+from object_storage_api.services import utils
 from object_storage_api.stores.image import ImageStore
 
 logger = logging.getLogger()
@@ -102,6 +103,7 @@ class ImageService:
             **image_metadata.model_dump(),
             id=image_id,
             file_name=upload_file.filename,
+            code=utils.generate_code(upload_file.filename, "image"),
             object_key=object_key,
             thumbnail_base64=thumbnail_base64,
         )
@@ -140,9 +142,11 @@ class ImageService:
         :return: The updated image.
         :raises FileTypeMismatchException: If the extensions of the stored and updated image do not match.
         """
+        update_data = image.model_dump(exclude_unset=True)
+
         stored_image = self._image_repository.get(image_id=image_id)
 
-        if image.file_name is not None:
+        if "file_name" in update_data and image.file_name != stored_image.file_name:
             stored_type, _ = mimetypes.guess_type(stored_image.file_name)
             update_type, _ = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
@@ -151,10 +155,12 @@ class ImageService:
                     f"that of the stored image '{stored_image.file_name}'"
                 )
 
+            update_data["code"] = utils.generate_code(image.file_name, "image")
+
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
         updated_image = self._image_repository.update(
             image_id=image_id,
-            image=ImageIn(**{**stored_image.model_dump(), **image.model_dump(exclude_unset=True)}),
+            image=ImageIn(**{**stored_image.model_dump(), **update_data}),
             update_primary=update_primary,
         )
 

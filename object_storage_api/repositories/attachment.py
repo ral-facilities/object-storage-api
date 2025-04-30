@@ -10,7 +10,7 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
-from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from object_storage_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 
 logger = logging.getLogger()
@@ -38,6 +38,9 @@ class AttachmentRepo:
         :param session: PyMongo ClientSession to use for database operations.
         :return: Created attachment.
         """
+
+        if self._is_duplicate(attachment.entity_id, attachment.code, session=session):
+            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_name="attachment")
 
         logger.info("Inserting the new attachment into the database")
         result = self._attachments_collection.insert_one(attachment.model_dump(by_alias=True), session=session)
@@ -113,17 +116,25 @@ class AttachmentRepo:
         :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
 
-        logger.info("Updating attachment metadata with ID: %s", attachment_id)
-
         try:
             attachment_id = CustomObjectId(attachment_id)
-            self._attachments_collection.update_one(
-                {"_id": attachment_id}, {"$set": attachment.model_dump(by_alias=True)}, session=session
-            )
         except InvalidObjectIdError as exc:
             exc.status_code = 404
             exc.response_detail = "Attachment not found"
             raise exc
+
+        logger.info("Updating attachment metadata with ID: %s", attachment_id)
+
+        stored_attachment = self.get(str(attachment_id), session=session)
+        if attachment.file_name != stored_attachment.file_name and self._is_duplicate(
+            attachment.entity_id, attachment.code, attachment_id, session=session
+        ):
+            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_name="image")
+
+        logger.info("Updating attachment metadata with ID: %s", attachment_id)
+        self._attachments_collection.update_one(
+            {"_id": attachment_id}, {"$set": attachment.model_dump(by_alias=True)}, session=session
+        )
 
         return self.get(attachment_id=str(attachment_id), session=session)
 
@@ -174,4 +185,32 @@ class AttachmentRepo:
         logger.info("Counting number of attachments with entity ID: %s in the database", entity_id)
         return self._attachments_collection.count_documents(
             filter={"entity_id": CustomObjectId(entity_id)}, session=session
+        )
+
+    def _is_duplicate(
+        self,
+        entity_id: CustomObjectId,
+        code: str,
+        attachment_id: Optional[CustomObjectId] = None,
+        session: Optional[ClientSession] = None,
+    ) -> bool:
+        """
+        Check if an attachment with the same code already exists for the same entity.
+
+        :param entity_id: ID of the entity.
+        :param code: Code of the attachment to check for duplicates.
+        :param attachment_id: ID of the attachment to check if the duplicate attachment found is itself.
+        :param session: PyMongo ClientSession to use for database operations
+        :return: `True` if a duplicate attachment code is found, `False` otherwise.
+        """
+        logger.info(
+            "Checking if attachment with code '%s' already exists within the entity with id '%s'", code, entity_id
+        )
+
+        return (
+            self._attachments_collection.find_one(
+                {"entity_id": entity_id, "code": code, "_id": {"$ne": attachment_id}},
+                session=session,
+            )
+            is not None
         )

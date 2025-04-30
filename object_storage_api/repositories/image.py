@@ -11,7 +11,7 @@ from pymongo.collection import Collection
 
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
-from object_storage_api.core.exceptions import InvalidObjectIdError, MissingRecordError
+from object_storage_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 
 logger = logging.getLogger()
@@ -39,6 +39,9 @@ class ImageRepo:
         :param session: PyMongo ClientSession to use for database operations.
         :return: Created image.
         """
+
+        if self._is_duplicate(image.entity_id, image.code, session=session):
+            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_name="image")
 
         logger.info("Inserting the new image into the database")
         result = self._images_collection.insert_one(image.model_dump(by_alias=True), session=session)
@@ -118,25 +121,31 @@ class ImageRepo:
         :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
 
-        logger.info("Updating image metadata with ID: %s", image_id)
         try:
             image_id = CustomObjectId(image_id)
-            if update_primary:
-                bulkwrite_update = [
-                    UpdateMany(
-                        filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}
-                    ),
-                    UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
-                ]
-                self._images_collection.bulk_write(bulkwrite_update, session=session)
-            else:
-                self._images_collection.update_one(
-                    {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
-                )
         except InvalidObjectIdError as exc:
             exc.status_code = 404
             exc.response_detail = "Image not found"
             raise exc
+
+        stored_image = self.get(str(image_id), session=session)
+        if image.file_name != stored_image.file_name and self._is_duplicate(
+            image.entity_id, image.code, image_id, session=session
+        ):
+            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_name="image")
+
+        logger.info("Updating image metadata with ID: %s", image_id)
+        if update_primary:
+            bulkwrite_update = [
+                UpdateMany(filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}),
+                UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
+            ]
+            self._images_collection.bulk_write(bulkwrite_update, session=session)
+        else:
+            self._images_collection.update_one(
+                {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
+            )
+
         return self.get(image_id=str(image_id), session=session)
 
     def delete(self, image_id: str, session: Optional[ClientSession] = None) -> None:
@@ -185,3 +194,29 @@ class ImageRepo:
         """
         logger.info("Counting number of images with entity ID: %s in the database", entity_id)
         return self._images_collection.count_documents(filter={"entity_id": CustomObjectId(entity_id)}, session=session)
+
+    def _is_duplicate(
+        self,
+        entity_id: CustomObjectId,
+        code: str,
+        image_id: Optional[CustomObjectId] = None,
+        session: Optional[ClientSession] = None,
+    ) -> bool:
+        """
+        Check if an image with the same code already exists for the same entity.
+
+        :param entity_id: ID of the entity.
+        :param code: Code of the image to check for duplicates.
+        :param image_id: ID of the image to check if the duplicate image found is itself.
+        :param session: PyMongo ClientSession to use for database operations
+        :return: `True` if a duplicate image code is found, `False` otherwise.
+        """
+        logger.info("Checking if image with code '%s' already exists within the entity with id '%s'", code, entity_id)
+
+        return (
+            self._images_collection.find_one(
+                {"entity_id": entity_id, "code": code, "_id": {"$ne": image_id}},
+                session=session,
+            )
+            is not None
+        )
