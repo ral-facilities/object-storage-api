@@ -13,13 +13,10 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from bson import ObjectId
 
-from object_storage_api.core.config import config
-from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
     UnsupportedFileExtensionException,
-    UploadLimitReachedError,
 )
 from object_storage_api.models.attachment import AttachmentIn, AttachmentOut
 from object_storage_api.schemas.attachment import (
@@ -61,8 +58,8 @@ class AttachmentServiceDSL:
         self.attachment_service = attachment_service
 
         with patch("object_storage_api.services.attachment.utils", wraps=utils) as wrapped_utils:
+            self.wrapped_utils = wrapped_utils
             with patch("object_storage_api.services.attachment.ObjectId") as object_id_mock:
-                self.wrapped_utils = wrapped_utils
                 self.mock_object_id = object_id_mock
                 yield
 
@@ -357,6 +354,12 @@ class UpdateDSL(AttachmentServiceDSL):
 
         # Ensure obtained old attachment
         self.mock_attachment_repository.get.assert_called_once_with(attachment_id=self._updated_attachment_id)
+
+        # Ensure new code was obtained if patching name
+        if self._attachment_patch.file_name and self._stored_attachment.file_name != self._attachment_patch.file_name:
+            self.wrapped_utils.generate_code.assert_called_once_with(self._attachment_patch.file_name, "attachment")
+        else:
+            self.wrapped_utils.generate_code.assert_not_called()
 
         # Ensure updated with expected data
         self.mock_attachment_repository.update.assert_called_once_with(

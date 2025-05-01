@@ -182,7 +182,7 @@ IMAGE_GET_DATA_REQUIRED_VALUES_ONLY = {
 IMAGE_PATCH_METADATA_DATA_ALL_VALUES = {
     "title": "Shattered Laser",
     "description": "An image of a shattered laser.",
-    "file_name": "picture.jpg",
+    "file_name": "picture.png",
     "primary": False,
 }
 
@@ -219,9 +219,9 @@ IMAGE_GET_METADATA_DATA_ALL_VALUES = {
 }
 
 IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH = {
-    **IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    **IMAGE_GET_METADATA_DATA_ALL_VALUES,
     **IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
-    "code": "picture.jpg",
+    "code": "picture.png",
 }
 
 IMAGE_GET_DATA_ALL_VALUES = {

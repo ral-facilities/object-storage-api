@@ -14,7 +14,6 @@ from test.mock_data import (
     ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY,
 )
 from typing import Optional
-from unittest.mock import ANY
 
 import pytest
 import requests

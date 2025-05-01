@@ -387,7 +387,7 @@ class TestUpdate(UpdateDSL):
 
     def test_update_all_fields(self):
         """Test updating every field of an image."""
-        image_id = self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.png")
         self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES)
         self.check_patch_image_success(IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH)
 
