@@ -187,17 +187,6 @@ class TestCreate(CreateDSL):
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'", False)
 
-    def test_create_when_upload_limit_reached(self):
-        """Test creating an attachment when the upload limit has been reached."""
-
-        self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES, config.attachment.upload_limit)
-        self.call_create_expecting_error(UploadLimitReachedError)
-        self.check_create_failed_with_exception(
-            "Unable to create an attachment as the upload limit for attachments with `entity_id` "
-            f"'{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}' has been reached",
-            True,
-        )
-
 
 class GetDSL(AttachmentServiceDSL):
     """Base class for `get` tests."""

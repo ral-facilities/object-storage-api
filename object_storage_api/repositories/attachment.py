@@ -47,7 +47,7 @@ class AttachmentRepo:
         :raises DuplicateRecordError: If a duplicate attachment is found within the parent entity.
         """
 
-        if self._count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
+        if self._count_by_entity_id(attachment.entity_id, session=session) >= config.attachment.upload_limit:
             raise UploadLimitReachedError(
                 detail="Unable to create an attachment as the upload limit for attachments "
                 f"with `entity_id` '{attachment.entity_id}' has been reached",
@@ -139,13 +139,11 @@ class AttachmentRepo:
             exc.response_detail = "Attachment not found"
             raise exc
 
-        logger.info("Updating attachment metadata with ID: %s", attachment_id)
-
         stored_attachment = self.get(str(attachment_id), session=session)
         if attachment.file_name != stored_attachment.file_name and self._is_duplicate(
             attachment.entity_id, attachment.code, attachment_id, session=session
         ):
-            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_name="image")
+            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_name="image")
 
         logger.info("Updating attachment metadata with ID: %s", attachment_id)
         self._attachments_collection.update_one(
@@ -191,14 +189,14 @@ class AttachmentRepo:
             # we treat any invalid entity_id the same as a valid one that has no attachments associated to it.
             pass
 
-    def _count_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> int:
+    def _count_by_entity_id(self, entity_id: CustomObjectId, session: Optional[ClientSession] = None) -> int:
         """
         Count the number of attachments matching the provided entity ID in a MongoDB database.
 
         :param entity_id: The entity ID to use to select which documents to count.
         :param session: PyMongo ClientSession to use for database operations.
         """
-        logger.info("Counting number of attachments with entity ID: %s in the database", entity_id)
+        logger.info("Counting number of attachments with entity ID: %s in the database", str(entity_id))
         return self._attachments_collection.count_documents(filter={"entity_id": entity_id}, session=session)
 
     def _is_duplicate(

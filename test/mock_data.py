@@ -74,14 +74,11 @@ ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY = {
     "file_name": "report.txt",
 }
 
-ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
+ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY = {
     **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
-    **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
-    "id": ANY,
+    "id": str(ObjectId()),
     "code": "report.txt",
-    "title": None,
-    "description": None,
+    "object_key": "attachments/65df5ee771892ddcc08bd28d/65e0a624d64aaae884abaaed",
 }
 
 ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY = {
@@ -98,13 +95,12 @@ ATTACHMENT_GET_DATA_REQUIRED_VALUES_ONLY = {
     "download_url": ANY,
 }
 
-# All values
-
-ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES = {
-    "title": "Shattered Laser",
-    "description": "A text attachment describing damage to a laser.",
-    "file_name": "laserDamage.pdf",
+ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
+    **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
+    **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
 }
+
+# All values
 
 ATTACHMENT_POST_DATA_ALL_VALUES = {
     "entity_id": str(ObjectId()),
@@ -118,6 +114,12 @@ ATTACHMENT_IN_DATA_ALL_VALUES = {
     "id": str(ObjectId()),
     "code": "report.pdf",
     "object_key": "attachments/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
+}
+
+ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES = {
+    "title": "Shattered Laser",
+    "description": "A text attachment describing damage to a laser.",
+    "file_name": "laserDamage.pdf",
 }
 
 ATTACHMENT_GET_METADATA_ALL_VALUES = {

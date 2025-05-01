@@ -48,7 +48,7 @@ class ImageRepo:
         :raises DuplicateRecordError: If a duplicate image is found within the parent entity.
         """
 
-        if self._count_by_entity_id(image.entity_id) >= config.image.upload_limit:
+        if self._count_by_entity_id(image.entity_id, session=session) >= config.image.upload_limit:
             raise UploadLimitReachedError(
                 detail="Unable to create an image as the upload limit for images "
                 f"with `entity_id` '{image.entity_id}' has been reached",
@@ -201,7 +201,7 @@ class ImageRepo:
             # treat any invalid entity_id the same as a valid one that has no images associated to it.
             pass
 
-    def _count_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> int:
+    def _count_by_entity_id(self, entity_id: CustomObjectId, session: Optional[ClientSession] = None) -> int:
         """
         Count the number of images matching the provided entity ID in a MongoDB database.
 
