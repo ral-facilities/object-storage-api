@@ -151,6 +151,15 @@ IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY = {
     "entity_id": str(ObjectId()),
 }
 
+IMAGE_IN_DATA_REQUIRED_VALUES_ONLY = {
+    **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    "id": str(ObjectId()),
+    "file_name": "image.jpg",
+    "code": "image.jpg",
+    "object_key": "images/65df5ee771892ddcc08bd28d/65e0a624d64aaae884abaaed",
+    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
+}
+
 IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY = {
     **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
@@ -190,7 +199,10 @@ IMAGE_IN_DATA_ALL_VALUES = {
     "file_name": "image.png",
     "code": "image.png",
     "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
-    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
+    "thumbnail_base64": (
+        "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAmywAVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZ"
+        "t7gA/v5HN3b9v7Icf/I53pUYAAAA"
+    ),
 }
 
 IMAGE_GET_METADATA_DATA_ALL_VALUES = {

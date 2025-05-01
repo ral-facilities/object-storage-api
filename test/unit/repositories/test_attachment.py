@@ -87,7 +87,7 @@ class AttachmentRepoDSL:
 
         :param expected_entity_id: Expected `entity_id` used in the database calls.
         :param expected_code: Expected `code` used in the database calls.
-        :param expected_attachment_id: Expected `image_id` used in the database calls.
+        :param expected_attachment_id: Expected `attachment_id` used in the database calls.
         """
         return call(
             {"entity_id": expected_entity_id, "code": expected_code, "_id": {"$ne": expected_attachment_id}},
@@ -552,7 +552,7 @@ class UpdateDSL(AttachmentRepoDSL):
     """Base class for `update` tests."""
 
     _attachment_in: AttachmentIn
-    _stored_attachment_out: AttachmentOut
+    _stored_attachment_out: Optional[AttachmentOut]
     _expected_attachment_out: AttachmentOut
     _updated_attachment_id: str
     _updated_attachment: AttachmentOut
@@ -578,8 +578,8 @@ class UpdateDSL(AttachmentRepoDSL):
 
         :param new_attachment_in_data: Dictionary containing the new attachment data as would be required for an
             `Attachment_In` database model (i.e. no created and modified times required).
-        :param stored_catalogue_category_in_data: Dictionary containing the attachment data for the existing
-                                    stored attachment as would be required for an `AttachmentIn` database model.
+        :param stored_attachment_in_data: Dictionary containing the attachment data for the existing stored attachment
+             as would be required for an `AttachmentIn` database model.
         :param duplicate_attachment_in_data: Either `None` or a dictionary containing attachment data for a duplicate
                                              attachment.
         """
@@ -601,7 +601,7 @@ class UpdateDSL(AttachmentRepoDSL):
             self._stored_attachment_out.model_dump() if self._stored_attachment_out else None,
         )
 
-        # Duplicate check (which only runs if changing the name)
+        # Duplicate check (which only runs if changing the file name)
         if self._stored_attachment_out and self._attachment_in.file_name != self._stored_attachment_out.file_name:
             self.mock_is_duplicate(duplicate_attachment_in_data)
 
@@ -721,7 +721,7 @@ class TestUpdate(UpdateDSL):
         self.call_update(attachment_id)
         self.check_update_success()
 
-    def test_update_filename_to_duplicate_within_parent(self):
+    def test_update_file_name_to_duplicate_within_parent(self):
         """Test updating an attachment's file name to one that is a duplicate within the parent entity."""
 
         attachment_id = str(ObjectId())
