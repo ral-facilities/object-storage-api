@@ -181,6 +181,15 @@ class TestCreate(CreateDSL):
             422, "Limit for the maximum number of images for the provided `entity_id` has been reached"
         )
 
+    def test_create_with_duplicate_file_name_within_parent(self):
+        """Test creating an attachment with the same name as another within the parent entity."""
+
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
+        self.check_post_image_failed_with_detail(
+            409, "An image with the same file name already exists within the parent entity."
+        )
+
 
 class GetDSL(CreateDSL):
     """Base class for get tests."""
@@ -428,6 +437,16 @@ class TestUpdate(UpdateDSL):
 
         self.get_image(image_id_c)
         self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True, "entity_id": entity_id})
+
+    def test_update_file_name_to_duplicate(self):
+        """Test updating the name of an image to conflict with a pre-existing one."""
+
+        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "another_image.png")
+        self.patch_image(image_id, {"file_name": "image.png"})
+        self.check_patch_image_failed_with_detail(
+            409, "An image with the same file name already exists within the parent entity."
+        )
 
 
 class DeleteDSL(ListDSL):

@@ -127,6 +127,4 @@ class DuplicateRecordError(DatabaseError):
         super().__init__(detail, response_detail)
 
         if entity_name is not None:
-            self.response_detail = (
-                f"An {entity_name.capitalize()} with the same file name already exists within the parent entity."
-            )
+            self.response_detail = f"An {entity_name} with the same file name already exists within the parent entity."

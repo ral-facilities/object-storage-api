@@ -143,7 +143,7 @@ class AttachmentRepo:
         if attachment.file_name != stored_attachment.file_name and self._is_duplicate(
             attachment.entity_id, attachment.code, attachment_id, session=session
         ):
-            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_name="image")
+            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_name="attachment")
 
         logger.info("Updating attachment metadata with ID: %s", attachment_id)
         self._attachments_collection.update_one(

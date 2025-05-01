@@ -200,6 +200,15 @@ class TestCreate(CreateDSL):
             422, "Limit for the maximum number of attachments for the provided `entity_id` has been reached"
         )
 
+    def test_create_with_duplicate_file_name_within_parent(self):
+        """Test creating an attachment with the same name as another within the parent entity."""
+
+        self.post_attachment(ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_attachment(ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_attachment_failed_with_detail(
+            409, "An attachment with the same file name already exists within the parent entity."
+        )
+
 
 class GetDSL(CreateDSL):
     """Base class for get tests."""
@@ -395,6 +404,16 @@ class TestUpdate(UpdateDSL):
         attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.patch_attachment(attachment_id, {**ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "report.mp3"})
         self.check_patch_attachment_failed_with_detail(422, "File extension and content type do not match")
+
+    def test_update_file_name_to_duplicate(self):
+        """Test updating the name of an attachment to conflict with a pre-existing one."""
+
+        self.post_attachment({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": "test.pdf"})
+        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
+        self.patch_attachment(attachment_id, {"file_name": "test.pdf"})
+        self.check_patch_attachment_failed_with_detail(
+            409, "An attachment with the same file name already exists within the parent entity."
+        )
 
 
 class DeleteDSL(ListDSL):
