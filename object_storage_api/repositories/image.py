@@ -52,11 +52,11 @@ class ImageRepo:
             raise UploadLimitReachedError(
                 detail="Unable to create an image as the upload limit for images "
                 f"with `entity_id` '{image.entity_id}' has been reached",
-                entity_name="image",
+                entity_type="image",
             )
 
         if self._is_duplicate(image.entity_id, image.code, session=session):
-            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_name="image")
+            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_type="image")
 
         logger.info("Inserting the new image into the database")
         result = self._images_collection.insert_one(image.model_dump(by_alias=True), session=session)
@@ -82,7 +82,7 @@ class ImageRepo:
             raise exc
         if image:
             return ImageOut(**image)
-        raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_name="image")
+        raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_type="image")
 
     def list(
         self, entity_id: Optional[str], primary: Optional[bool], session: Optional[ClientSession] = None
@@ -148,7 +148,7 @@ class ImageRepo:
         if image.file_name != stored_image.file_name and self._is_duplicate(
             image.entity_id, image.code, image_id, session=session
         ):
-            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_name="image")
+            raise DuplicateRecordError("Duplicate image found within the parent entity", entity_type="image")
 
         logger.info("Updating image metadata with ID: %s", image_id)
         if update_primary:
@@ -182,7 +182,7 @@ class ImageRepo:
             raise exc
         response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No image found with ID: {image_id}", entity_name="image")
+            raise MissingRecordError(f"No image found with ID: {image_id}", entity_type="image")
 
     def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
         """

@@ -410,7 +410,7 @@ class TestUpdate(UpdateDSL):
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
 
-    def test_partial_update_with_file_extension_content_type_mismatch(self):
+    def test_update_with_file_extension_content_type_mismatch(self):
         """Test updating an image with a different extension."""
         image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
         self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "image.jpg"})

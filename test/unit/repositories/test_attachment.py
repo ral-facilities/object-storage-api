@@ -2,6 +2,9 @@
 Unit tests for the `AttachmentRepo` repository.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import ATTACHMENT_IN_DATA_ALL_VALUES, ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
@@ -364,10 +367,6 @@ class ListDSL(AttachmentRepoDSL):
         assert self._obtained_attachment_out == []
 
 
-# Expect some duplicate code inside tests as the tests for the different entities can be very similar
-# pylint: disable=duplicate-code
-
-
 class TestList(ListDSL):
     """Tests for listing attachments."""
 
@@ -409,143 +408,6 @@ class TestList(ListDSL):
         self.mock_list([ATTACHMENT_IN_DATA_ALL_VALUES])
         self.call_list(entity_id)
         self.check_list_returned_an_empty_list()
-
-
-class DeleteDSL(AttachmentRepoDSL):
-    """Base class for `delete` tests."""
-
-    _delete_attachment_id: str
-    _delete_exception: pytest.ExceptionInfo
-
-    def mock_delete(self, deleted_count: int) -> None:
-        """
-        Mocks database methods appropriately to test the `delete` repo method.
-        :param deleted_count: Number of documents deleted successfully.
-        """
-        RepositoryTestHelpers.mock_delete_one(self.attachments_collection, deleted_count)
-
-    def call_delete(self, attachment_id: str) -> None:
-        """
-        Calls the `AttachmentRepo` `delete` method.
-        :param attachment_id: ID of the attachment to be deleted.
-        """
-        self._delete_attachment_id = attachment_id
-        self.attachment_repository.delete(attachment_id, session=self.mock_session)
-
-    def call_delete_expecting_error(self, attachment_id: str, error_type: type[BaseException]) -> None:
-        """
-        Calls the `AttachmentRepo` `delete` method while expecting an error to be raised.
-        :param attachment_id: ID of the attachment to be deleted.
-        :param error_type: Expected exception to be raised.
-        """
-        self._delete_attachment_id = attachment_id
-        with pytest.raises(error_type) as exc:
-            self.attachment_repository.delete(attachment_id, session=self.mock_session)
-        self._delete_exception = exc
-
-    def check_delete_success(self) -> None:
-        """Checks that a prior call to `call_delete` worked as expected."""
-        self.attachments_collection.delete_one.assert_called_once_with(
-            filter={"_id": ObjectId(self._delete_attachment_id)}, session=self.mock_session
-        )
-
-    def check_delete_failed_with_exception(self, message: str, assert_delete: bool = False) -> None:
-        """
-        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
-        with the correct message.
-        :param message: Expected message of the raised exception.
-        :param assert_delete: Whether the `find_one_and_delete` method is expected to be called or not.
-        """
-        if not assert_delete:
-            self.attachments_collection.delete_one.assert_not_called()
-        else:
-            self.attachments_collection.delete_one.assert_called_once_with(
-                filter={"_id": ObjectId(self._delete_attachment_id)},
-                session=self.mock_session,
-            )
-
-        assert str(self._delete_exception.value) == message
-
-
-class TestDelete(DeleteDSL):
-    """Tests for deleting an attachment."""
-
-    def test_delete(self):
-        """Test deleting an attachment."""
-        self.mock_delete(1)
-        self.call_delete(str(ObjectId()))
-        self.check_delete_success()
-
-    def test_delete_non_existent_id(self):
-        """Test deleting an attachment with a non-existent ID."""
-        attachment_id = str(ObjectId())
-
-        self.mock_delete(0)
-        self.call_delete_expecting_error(attachment_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No attachment found with ID: {attachment_id}", assert_delete=True)
-
-    def test_delete_invalid_id(self):
-        """Test deleting an attachment with an invalid ID."""
-        attachment_id = "invalid-id"
-
-        self.call_delete_expecting_error(attachment_id, InvalidObjectIdError)
-        self.check_delete_failed_with_exception(f"Invalid ObjectId value '{attachment_id}'")
-
-
-class DeleteByEntityIdDSL(AttachmentRepoDSL):
-    """Base class for `delete_by_entity_id` tests."""
-
-    _delete_entity_id: str
-
-    def mock_delete_by_entity_id(self, deleted_count: int) -> None:
-        """
-        Mocks database methods appropriately to test the `delete_by_entity_id` repo method.
-
-        :param deleted_count: Number of documents deleted successfully.
-        """
-        RepositoryTestHelpers.mock_delete_many(self.attachments_collection, deleted_count)
-
-    def call_delete_by_entity_id(self, entity_id: str) -> None:
-        """
-        Calls the `AttachmentRepo` `delete_by_entity_id` method.
-
-        :param entity_id: The entity ID of the attachments to be deleted.
-        """
-        self._delete_entity_id = entity_id
-        self.attachment_repository.delete_by_entity_id(entity_id, session=self.mock_session)
-
-    def check_delete_by_entity_id_success(self, assert_delete: bool = True) -> None:
-        """
-        Checks that a prior call to `call_delete_by_entity_id` worked as expected.
-
-        :param assert_delete: Whether the `delete_many` method is expected to be called or not.
-        """
-        if assert_delete:
-            self.attachments_collection.delete_many.assert_called_once_with(
-                filter={"entity_id": ObjectId(self._delete_entity_id)}, session=self.mock_session
-            )
-        else:
-            self.attachments_collection.delete_many.assert_not_called()
-
-
-class TestDeleteByEntityId(DeleteByEntityIdDSL):
-    """Tests for deleting attachments by `entity_id`."""
-
-    def test_delete_by_entity_id(self):
-        """Test deleting attachments."""
-        self.mock_delete_by_entity_id(3)
-        self.call_delete_by_entity_id(str(ObjectId()))
-        self.check_delete_by_entity_id_success()
-
-    def test_delete_by_entity_id_invalid_id(self):
-        """Test deleting attachments with an invalid `entity_id`."""
-        entity_id = "invalid-id"
-
-        self.call_delete_by_entity_id(entity_id)
-        self.check_delete_by_entity_id_success(False)
-
-
-# pylint: enable=duplicate-code
 
 
 class UpdateDSL(AttachmentRepoDSL):
@@ -742,3 +604,137 @@ class TestUpdate(UpdateDSL):
         self.set_update_data(ATTACHMENT_IN_DATA_ALL_VALUES)
         self.call_update_expecting_error(attachment_id, InvalidObjectIdError)
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+
+class DeleteDSL(AttachmentRepoDSL):
+    """Base class for `delete` tests."""
+
+    _delete_attachment_id: str
+    _delete_exception: pytest.ExceptionInfo
+
+    def mock_delete(self, deleted_count: int) -> None:
+        """
+        Mocks database methods appropriately to test the `delete` repo method.
+        :param deleted_count: Number of documents deleted successfully.
+        """
+        RepositoryTestHelpers.mock_delete_one(self.attachments_collection, deleted_count)
+
+    def call_delete(self, attachment_id: str) -> None:
+        """
+        Calls the `AttachmentRepo` `delete` method.
+        :param attachment_id: ID of the attachment to be deleted.
+        """
+        self._delete_attachment_id = attachment_id
+        self.attachment_repository.delete(attachment_id, session=self.mock_session)
+
+    def call_delete_expecting_error(self, attachment_id: str, error_type: type[BaseException]) -> None:
+        """
+        Calls the `AttachmentRepo` `delete` method while expecting an error to be raised.
+        :param attachment_id: ID of the attachment to be deleted.
+        :param error_type: Expected exception to be raised.
+        """
+        self._delete_attachment_id = attachment_id
+        with pytest.raises(error_type) as exc:
+            self.attachment_repository.delete(attachment_id, session=self.mock_session)
+        self._delete_exception = exc
+
+    def check_delete_success(self) -> None:
+        """Checks that a prior call to `call_delete` worked as expected."""
+        self.attachments_collection.delete_one.assert_called_once_with(
+            filter={"_id": ObjectId(self._delete_attachment_id)}, session=self.mock_session
+        )
+
+    def check_delete_failed_with_exception(self, message: str, assert_delete: bool = False) -> None:
+        """
+        Checks that a prior call to `call_delete_expecting_error` worked as expected, raising an exception
+        with the correct message.
+        :param message: Expected message of the raised exception.
+        :param assert_delete: Whether the `find_one_and_delete` method is expected to be called or not.
+        """
+        if not assert_delete:
+            self.attachments_collection.delete_one.assert_not_called()
+        else:
+            self.attachments_collection.delete_one.assert_called_once_with(
+                filter={"_id": ObjectId(self._delete_attachment_id)},
+                session=self.mock_session,
+            )
+
+        assert str(self._delete_exception.value) == message
+
+
+class TestDelete(DeleteDSL):
+    """Tests for deleting an attachment."""
+
+    def test_delete(self):
+        """Test deleting an attachment."""
+        self.mock_delete(1)
+        self.call_delete(str(ObjectId()))
+        self.check_delete_success()
+
+    def test_delete_non_existent_id(self):
+        """Test deleting an attachment with a non-existent ID."""
+        attachment_id = str(ObjectId())
+
+        self.mock_delete(0)
+        self.call_delete_expecting_error(attachment_id, MissingRecordError)
+        self.check_delete_failed_with_exception(f"No attachment found with ID: {attachment_id}", assert_delete=True)
+
+    def test_delete_invalid_id(self):
+        """Test deleting an attachment with an invalid ID."""
+        attachment_id = "invalid-id"
+
+        self.call_delete_expecting_error(attachment_id, InvalidObjectIdError)
+        self.check_delete_failed_with_exception(f"Invalid ObjectId value '{attachment_id}'")
+
+
+class DeleteByEntityIdDSL(AttachmentRepoDSL):
+    """Base class for `delete_by_entity_id` tests."""
+
+    _delete_entity_id: str
+
+    def mock_delete_by_entity_id(self, deleted_count: int) -> None:
+        """
+        Mocks database methods appropriately to test the `delete_by_entity_id` repo method.
+
+        :param deleted_count: Number of documents deleted successfully.
+        """
+        RepositoryTestHelpers.mock_delete_many(self.attachments_collection, deleted_count)
+
+    def call_delete_by_entity_id(self, entity_id: str) -> None:
+        """
+        Calls the `AttachmentRepo` `delete_by_entity_id` method.
+
+        :param entity_id: The entity ID of the attachments to be deleted.
+        """
+        self._delete_entity_id = entity_id
+        self.attachment_repository.delete_by_entity_id(entity_id, session=self.mock_session)
+
+    def check_delete_by_entity_id_success(self, assert_delete: bool = True) -> None:
+        """
+        Checks that a prior call to `call_delete_by_entity_id` worked as expected.
+
+        :param assert_delete: Whether the `delete_many` method is expected to be called or not.
+        """
+        if assert_delete:
+            self.attachments_collection.delete_many.assert_called_once_with(
+                filter={"entity_id": ObjectId(self._delete_entity_id)}, session=self.mock_session
+            )
+        else:
+            self.attachments_collection.delete_many.assert_not_called()
+
+
+class TestDeleteByEntityId(DeleteByEntityIdDSL):
+    """Tests for deleting attachments by `entity_id`."""
+
+    def test_delete_by_entity_id(self):
+        """Test deleting attachments."""
+        self.mock_delete_by_entity_id(3)
+        self.call_delete_by_entity_id(str(ObjectId()))
+        self.check_delete_by_entity_id_success()
+
+    def test_delete_by_entity_id_invalid_id(self):
+        """Test deleting attachments with an invalid `entity_id`."""
+        entity_id = "invalid-id"
+
+        self.call_delete_by_entity_id(entity_id)
+        self.check_delete_by_entity_id_success(False)

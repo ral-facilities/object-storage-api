@@ -2,6 +2,9 @@
 Unit tests for the `ImageRepo` repository.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import IMAGE_IN_DATA_ALL_VALUES, IMAGE_IN_DATA_REQUIRED_VALUES_ONLY
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
@@ -360,10 +363,6 @@ class ListDSL(ImageRepoDSL):
         assert self._obtained_image_out == []
 
 
-# Expect some duplicate code inside tests as the tests for the different entities can be very similar
-# pylint: disable=duplicate-code
-
-
 class TestList(ListDSL):
     """Tests for listing images."""
 
@@ -419,9 +418,6 @@ class TestList(ListDSL):
         self.mock_list([IMAGE_IN_DATA_ALL_VALUES])
         self.call_list(entity_id)
         self.check_list_returned_an_empty_list()
-
-
-# pylint: enable=duplicate-code
 
 
 class UpdateDSL(ImageRepoDSL):
@@ -634,10 +630,6 @@ class TestUpdate(UpdateDSL):
         self.check_update_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
 
-# Expect some duplicate code inside tests as the tests for the different entities can be very similar
-# pylint: disable=duplicate-code
-
-
 class DeleteDSL(ImageRepoDSL):
     """Base class for `delete` tests."""
 
@@ -782,6 +774,3 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
 
         self.call_delete_by_entity_id(entity_id)
         self.check_delete_by_entity_id_success(False)
-
-
-# pylint: enable=duplicate-code

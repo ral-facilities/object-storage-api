@@ -399,7 +399,7 @@ class TestUpdate(UpdateDSL):
         self.patch_attachment("invalid-id", {})
         self.check_patch_attachment_failed_with_detail(404, "Attachment not found")
 
-    def test_partial_update_with_file_extension_content_type_mismatch(self):
+    def test_update_with_file_extension_content_type_mismatch(self):
         """Test updating an attachment with a different extension."""
         attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.patch_attachment(attachment_id, {**ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "report.mp3"})

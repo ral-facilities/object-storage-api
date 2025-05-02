@@ -51,11 +51,11 @@ class AttachmentRepo:
             raise UploadLimitReachedError(
                 detail="Unable to create an attachment as the upload limit for attachments "
                 f"with `entity_id` '{attachment.entity_id}' has been reached",
-                entity_name="attachment",
+                entity_type="attachment",
             )
 
         if self._is_duplicate(attachment.entity_id, attachment.code, session=session):
-            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_name="attachment")
+            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_type="attachment")
 
         logger.info("Inserting the new attachment into the database")
         result = self._attachments_collection.insert_one(attachment.model_dump(by_alias=True), session=session)
@@ -84,7 +84,7 @@ class AttachmentRepo:
 
         if attachment:
             return AttachmentOut(**attachment)
-        raise MissingRecordError(detail=f"No attachment found with ID: {attachment_id}", entity_name="attachment")
+        raise MissingRecordError(detail=f"No attachment found with ID: {attachment_id}", entity_type="attachment")
 
     def list(self, entity_id: Optional[str], session: Optional[ClientSession] = None) -> list[AttachmentOut]:
         """
@@ -143,7 +143,7 @@ class AttachmentRepo:
         if attachment.file_name != stored_attachment.file_name and self._is_duplicate(
             attachment.entity_id, attachment.code, attachment_id, session=session
         ):
-            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_name="attachment")
+            raise DuplicateRecordError("Duplicate attachment found within the parent entity", entity_type="attachment")
 
         logger.info("Updating attachment metadata with ID: %s", attachment_id)
         self._attachments_collection.update_one(
@@ -170,7 +170,7 @@ class AttachmentRepo:
             raise exc
         response = self._attachments_collection.delete_one(filter={"_id": attachment_id}, session=session)
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", entity_name="attachment")
+            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", entity_type="attachment")
 
     def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
         """

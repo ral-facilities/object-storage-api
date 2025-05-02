@@ -2,6 +2,9 @@
 Unit tests for the `AttachmentService` service.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import (
     ATTACHMENT_IN_DATA_ALL_VALUES,
     ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
@@ -499,10 +502,6 @@ class DeleteByEntityIdDSL(AttachmentServiceDSL):
             self.mock_attachment_repository.delete_by_entity_id.assert_not_called()
 
 
-# Expect some duplicate code inside tests as the tests for the different entities can be very similar
-# pylint: disable=duplicate-code
-
-
 class TestDeleteByEntityId(DeleteByEntityIdDSL):
     """Tests for deleting attachments by `entity_id`."""
 
@@ -517,6 +516,3 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
         self.mock_delete_by_entity_id([])
         self.call_delete_by_entity_id()
         self.check_delete_by_entity_id_success(False)
-
-
-# pylint: enable=duplicate-code
