@@ -17,6 +17,7 @@ from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
     UnsupportedFileExtensionException,
+    UploadLimitReachedError,
 )
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
@@ -62,6 +63,7 @@ class ImageService:
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
         :raises UnsupportedFileExtensionException: If the file extension of the image is not supported.
         :raises FileTypeMismatchException: If the extension and content type of the image do not match.
+        :raises UploadLimitReachedError: If the upload limit has been reached.
         """
         try:
             CustomObjectId(image_metadata.entity_id)
@@ -95,6 +97,15 @@ class ImageService:
             object_key=self._image_store.get_object_key(image_id, image_metadata),
             thumbnail_base64=thumbnail_base64,
         )
+
+        # This should be checked as close to the actual create as possible to avoid concurrency issues
+        if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
+            raise UploadLimitReachedError(
+                detail="Unable to create an image as the upload limit for images with "
+                f"`entity_id` {image_metadata.entity_id} has been reached",
+                entity_type="image",
+            )
+
         image_out = self._image_repository.create(image_in)
 
         # Upload the full size image to object storage

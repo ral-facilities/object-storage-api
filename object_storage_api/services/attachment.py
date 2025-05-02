@@ -17,6 +17,7 @@ from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
     UnsupportedFileExtensionException,
+    UploadLimitReachedError,
 )
 from object_storage_api.models.attachment import AttachmentIn
 from object_storage_api.repositories.attachment import AttachmentRepo
@@ -60,6 +61,7 @@ class AttachmentService:
         :return: Created attachment with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
         :raises UnsupportedFileExtensionException: If the file extension of the attachment is not supported.
+        :raises UploadLimitReachedError: If the upload limit has been reached.
         """
         try:
             CustomObjectId(attachment.entity_id)
@@ -84,6 +86,15 @@ class AttachmentService:
             code=utils.generate_code(attachment.file_name, "attachment"),
             object_key=object_key,
         )
+
+        # This should be checked as close to the actual create as possible to avoid concurrency issues
+        if self._attachment_repository.count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
+            raise UploadLimitReachedError(
+                detail="Unable to create an attachment as the upload limit for attachments "
+                f"with `entity_id` '{attachment.entity_id}' has been reached",
+                entity_type="attachment",
+            )
+
         attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)

@@ -9,15 +9,9 @@ from pymongo import UpdateMany, UpdateOne
 from pymongo.client_session import ClientSession
 from pymongo.collection import Collection
 
-from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.database import DatabaseDep
-from object_storage_api.core.exceptions import (
-    DuplicateRecordError,
-    InvalidObjectIdError,
-    MissingRecordError,
-    UploadLimitReachedError,
-)
+from object_storage_api.core.exceptions import DuplicateRecordError, InvalidObjectIdError, MissingRecordError
 from object_storage_api.models.image import ImageIn, ImageOut
 
 logger = logging.getLogger()
@@ -44,16 +38,8 @@ class ImageRepo:
         :param image: Image to be created.
         :param session: PyMongo ClientSession to use for database operations.
         :return: Created image.
-        :raises UploadLimitReachedError: If the upload limit has been reached.
         :raises DuplicateRecordError: If a duplicate image is found within the parent entity.
         """
-
-        if self._count_by_entity_id(image.entity_id, session=session) >= config.image.upload_limit:
-            raise UploadLimitReachedError(
-                detail="Unable to create an image as the upload limit for images "
-                f"with `entity_id` '{image.entity_id}' has been reached",
-                entity_type="image",
-            )
 
         if self._is_duplicate(image.entity_id, image.code, session=session):
             raise DuplicateRecordError("Duplicate image found within the parent entity", entity_type="image")
@@ -201,7 +187,7 @@ class ImageRepo:
             # treat any invalid entity_id the same as a valid one that has no images associated to it.
             pass
 
-    def _count_by_entity_id(self, entity_id: CustomObjectId, session: Optional[ClientSession] = None) -> int:
+    def count_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> int:
         """
         Count the number of images matching the provided entity ID in a MongoDB database.
 
@@ -209,7 +195,7 @@ class ImageRepo:
         :param session: PyMongo ClientSession to use for database operations.
         """
         logger.info("Counting number of images with entity ID: %s in the database", entity_id)
-        return self._images_collection.count_documents(filter={"entity_id": entity_id}, session=session)
+        return self._images_collection.count_documents(filter={"entity_id": CustomObjectId(entity_id)}, session=session)
 
     def _is_duplicate(
         self,

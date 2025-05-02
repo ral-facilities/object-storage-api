@@ -18,10 +18,12 @@ import pytest
 from bson import ObjectId
 from fastapi import UploadFile
 
+from object_storage_api.core.config import config
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
     UnsupportedFileExtensionException,
+    UploadLimitReachedError,
 )
 from object_storage_api.models.image import ImageIn, ImageOut
 from object_storage_api.schemas.image import (
@@ -83,7 +85,7 @@ class CreateDSL(ImageServiceDSL):
     _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_post_metadata_data: dict, filename: str) -> None:
+    def mock_create(self, image_post_metadata_data: dict, filename: str, image_count: int = 0) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
@@ -119,6 +121,8 @@ class CreateDSL(ImageServiceDSL):
                 thumbnail_base64=expected_thumbnail_base64,
             )
 
+            self.mock_image_repository.count_by_entity_id.return_value = image_count
+
             # Repo (The contents of the returned output model does not matter here as long as its valid)
             expected_image_out = ImageOut(**self._expected_image_in.model_dump(by_alias=True))
             self.mock_image_repository.create.return_value = expected_image_out
@@ -150,23 +154,34 @@ class CreateDSL(ImageServiceDSL):
             str(self._expected_image_id), self._image_post_metadata
         )
         self.wrapped_utils.generate_code.assert_called_once_with(self._expected_image_in.file_name, "image")
+        self.mock_image_repository.count_by_entity_id.assert_called_once_with(str(self._expected_image_in.entity_id))
         self.mock_image_repository.create.assert_called_once_with(self._expected_image_in)
 
         self.mock_image_store.upload.assert_called_once_with(self._expected_image_in, self._upload_file)
 
         assert self._created_image == self._expected_image
 
-    def check_create_failed_with_exception(self, message: str) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_count: bool = False) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
 
         :param message: Message of the raised exception.
+        :param assert_count: Whether the `count_by_entity_id` repo method is expected to be called or not.
         """
 
-        self.mock_generate_thumbnail_base64_str.create.assert_not_called()
-        self.mock_image_store.upload.create.assert_not_called()
-        self.mock_image_repository.create.assert_not_called()
+        if assert_count:
+            self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
+            self.mock_image_repository.count_by_entity_id.assert_called_once_with(
+                str(self._expected_image_in.entity_id)
+            )
+            self.mock_image_repository.create.assert_not_called()
+            self.mock_image_store.upload.assert_not_called()
+        else:
+            self.mock_generate_thumbnail_base64_str.create.assert_not_called()
+            self.mock_image_repository.count_by_entity_id.assert_not_called()
+            self.mock_image_repository.create.assert_not_called()
+            self.mock_image_store.upload.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
@@ -203,6 +218,17 @@ class TestCreate(CreateDSL):
         self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png")
         self.call_create_expecting_error(InvalidObjectIdError)
         self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
+
+    def test_create_when_upload_limit_reached(self):
+        """Test creating an attachment when the upload limit has been reached."""
+
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", config.image.upload_limit)
+        self.call_create_expecting_error(UploadLimitReachedError)
+        self.check_create_failed_with_exception(
+            "Unable to create an image as the upload limit for images with `entity_id` "
+            f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]} has been reached",
+            assert_count=True,
+        )
 
 
 class GetDSL(ImageServiceDSL):
