@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 code-analysis = [
     "black==25.1.0",
-    "pylint==3.3.6",
+    "pylint==3.3.7",
     "object-storage-api[test]"
 ]
 
@@ -34,7 +34,7 @@ test = [
 
 scripts = [
     "faker==37.1.0",
-    "faker-file[pdf,docx,images]==0.18.1",
+    "faker-file[pdf,docx,images]==0.18.2",
 ]
 
 dev = [
