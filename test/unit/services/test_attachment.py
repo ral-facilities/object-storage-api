@@ -150,7 +150,7 @@ class CreateDSL(AttachmentServiceDSL):
 
         assert self._created_attachment == self._expected_attachment
 
-    def check_create_failed_with_exception(self, message: str, assert_count=False) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_count: bool = False) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.

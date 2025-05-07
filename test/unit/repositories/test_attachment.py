@@ -36,43 +36,6 @@ class AttachmentRepoDSL:
         self.attachment_repository = AttachmentRepo(database_mock)
         self.attachments_collection = database_mock.attachments
 
-    def mock_is_duplicate(self, duplicate_attachment_in_data: Optional[dict]) -> None:
-        """
-        Mocks database methods appropriately for when the `_is_duplicate` repo method will be called.
-
-        :param duplicate_attachment_in_data: Either `None` or a dictionary containing attachment data for a duplicate
-                                             attachment.
-        """
-        RepositoryTestHelpers.mock_find_one(
-            self.attachments_collection,
-            (
-                {
-                    **AttachmentIn(**duplicate_attachment_in_data).model_dump(by_alias=True),
-                    "_id": ObjectId(),
-                }
-                if duplicate_attachment_in_data
-                else None
-            ),
-        )
-
-    def get_is_duplicate_expected_find_one_call(
-        self,
-        expected_entity_id: CustomObjectId,
-        expected_code: str,
-        expected_attachment_id: Optional[CustomObjectId] = None,
-    ) -> None:
-        """
-        Checks that a call to `_is_duplicate` performed the expected function calls.
-
-        :param expected_entity_id: Expected `entity_id` used in the database calls.
-        :param expected_code: Expected `code` used in the database calls.
-        :param expected_attachment_id: Expected `attachment_id` used in the database calls.
-        """
-        return call(
-            {"entity_id": expected_entity_id, "code": expected_code, "_id": {"$ne": expected_attachment_id}},
-            session=self.mock_session,
-        )
-
 
 class CreateDSL(AttachmentRepoDSL):
     """Base class for `create` tests."""
@@ -82,14 +45,13 @@ class CreateDSL(AttachmentRepoDSL):
     _created_attachment: AttachmentOut
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, attachment_in_data: dict, duplicate_attachment_in_data: Optional[dict] = None) -> None:
+    def mock_create(self, attachment_in_data: dict, raise_duplicate_key_error: bool = False) -> None:
         """
         Mocks database methods appropriately to test the `create` repo method.
 
         :param attachment_in_data: Dictionary containing the attachment data as would be required for a `AttachmentIn`
                                    database model (i.e. no created and modified times required).
-        :param duplicate_attachment_in_data: Either `None` or a dictionary containing attachment data for a duplicate
-                                             attachment.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo insert.
         """
 
         # Pass through `AttachmentIn` first as need creation and modified times
@@ -97,9 +59,9 @@ class CreateDSL(AttachmentRepoDSL):
 
         self._expected_attachment_out = AttachmentOut(**self._attachment_in.model_dump())
 
-        self.mock_is_duplicate(duplicate_attachment_in_data)
-
-        RepositoryTestHelpers.mock_insert_one(self.attachments_collection, self._attachment_in.id)
+        RepositoryTestHelpers.mock_insert_one(
+            self.attachments_collection, self._attachment_in.id, raise_duplicate_key_error=raise_duplicate_key_error
+        )
         RepositoryTestHelpers.mock_find_one(
             self.attachments_collection, {**self._attachment_in.model_dump(), "_id": self._attachment_in.id}
         )
@@ -123,17 +85,12 @@ class CreateDSL(AttachmentRepoDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        expected_find_one_calls = []
-
-        expected_find_one_calls.append(
-            self.get_is_duplicate_expected_find_one_call(self._attachment_in.entity_id, self._attachment_in.code)
-        )
-
         self.attachments_collection.insert_one.assert_called_once_with(
             self._attachment_in.model_dump(by_alias=True), session=self.mock_session
         )
-        expected_find_one_calls.append(call({"_id": self._attachment_in.id}, session=self.mock_session))
-        self.attachments_collection.find_one.assert_has_calls(expected_find_one_calls)
+        self.attachments_collection.find_one.assert_called_once_with(
+            {"_id": self._attachment_in.id}, session=self.mock_session
+        )
 
         assert self._created_attachment == self._expected_attachment_out
 
@@ -145,7 +102,10 @@ class CreateDSL(AttachmentRepoDSL):
         :param message: Expected message of the raised exception.
         """
 
-        self.attachments_collection.insert_one.assert_not_called()
+        self.attachments_collection.insert_one.assert_called_once_with(
+            self._attachment_in.model_dump(by_alias=True), session=None
+        )
+        self.attachments_collection.find_one.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
@@ -163,9 +123,7 @@ class TestCreate(CreateDSL):
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating an attachment with a duplicate attachment being found in the parent entity."""
 
-        self.mock_create(
-            ATTACHMENT_IN_DATA_ALL_VALUES, duplicate_attachment_in_data=ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY
-        )
+        self.mock_create(ATTACHMENT_IN_DATA_ALL_VALUES, raise_duplicate_key_error=True)
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate attachment found within the parent entity")
 
@@ -394,39 +352,20 @@ class UpdateDSL(AttachmentRepoDSL):
     def mock_update(
         self,
         new_attachment_in_data: dict,
-        stored_attachment_in_data: Optional[dict],
-        duplicate_attachment_in_data: Optional[dict] = None,
+        raise_duplicate_key_error: bool = False,
     ) -> None:
         """Mocks database methods appropriately to test the `update` repo method.
 
         :param new_attachment_in_data: Dictionary containing the new attachment data as would be required for an
             `Attachment_In` database model (i.e. no created and modified times required).
-        :param stored_attachment_in_data: Dictionary containing the attachment data for the existing stored attachment
-             as would be required for an `AttachmentIn` database model.
-        :param duplicate_attachment_in_data: Either `None` or a dictionary containing attachment data for a duplicate
-                                             attachment.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo update.
         """
 
         self.set_update_data(new_attachment_in_data)
 
-        # Stored attachment
-        self._stored_attachment_out = (
-            AttachmentOut(
-                **AttachmentIn(
-                    **stored_attachment_in_data,
-                ).model_dump(),
-            )
-            if stored_attachment_in_data
-            else None
+        RepositoryTestHelpers.mock_update_one(
+            self.attachments_collection, raise_duplicate_key_error=raise_duplicate_key_error
         )
-        RepositoryTestHelpers.mock_find_one(
-            self.attachments_collection,
-            self._stored_attachment_out.model_dump() if self._stored_attachment_out else None,
-        )
-
-        # Duplicate check (which only runs if changing the file name)
-        if self._stored_attachment_out and self._attachment_in.file_name != self._stored_attachment_out.file_name:
-            self.mock_is_duplicate(duplicate_attachment_in_data)
 
         # Newly inserted attachment
         self._expected_attachment_out = AttachmentOut(**self._attachment_in.model_dump())
@@ -459,36 +398,13 @@ class UpdateDSL(AttachmentRepoDSL):
         :param error_type: Expected exception to be raised.
         """
 
+        self._updated_attachment_id = attachment_id
         with pytest.raises(error_type) as exc:
             self.attachment_repository.update(attachment_id, self._attachment_in)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
-
-        # Obtain a list of expected find_one calls
-        expected_find_one_calls = []
-
-        # Stored attachment
-        expected_find_one_calls.append(
-            call(
-                {"_id": CustomObjectId(self._updated_attachment_id)},
-                session=self.mock_session,
-            )
-        )
-
-        # Duplicate check (which only runs if changing the name)
-        if self._stored_attachment_out and self._attachment_in.file_name != self._stored_attachment_out.file_name:
-            expected_find_one_calls.append(
-                self.get_is_duplicate_expected_find_one_call(
-                    self._attachment_in.entity_id, self._attachment_in.code, CustomObjectId(self._updated_attachment_id)
-                )
-            )
-
-        # Newly inserted attachment
-        expected_find_one_calls.append(
-            call({"_id": CustomObjectId(self._updated_attachment_id)}, session=self.mock_session)
-        )
 
         self.attachments_collection.update_one.assert_called_once_with(
             {
@@ -500,19 +416,36 @@ class UpdateDSL(AttachmentRepoDSL):
             session=self.mock_session,
         )
 
-        self.attachments_collection.find_one.assert_has_calls(expected_find_one_calls)
+        # Newly inserted attachment
+        self.attachments_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._updated_attachment_id)}, session=self.mock_session
+        )
 
         assert self._updated_attachment == self._expected_attachment_out
 
-    def check_update_failed_with_exception(self, message: str) -> None:
+    def check_update_failed_with_exception(self, message: str, assert_update: bool = False) -> None:
         """
         Checks that a prior call to `call_update_expecting_error` failed as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param assert_update: Whether the appropriate pymongo update method is expected to be called or not.
         """
 
-        self.attachments_collection.update_one.assert_not_called()
+        if assert_update:
+            self.attachments_collection.update_one.assert_called_once_with(
+                {
+                    "_id": CustomObjectId(self._updated_attachment_id),
+                },
+                {
+                    "$set": self._attachment_in.model_dump(by_alias=True),
+                },
+                session=None,
+            )
+        else:
+            self.attachments_collection.update_one.assert_not_called()
+
+        self.attachments_collection.find_one.assert_not_called()
 
         assert str(self._update_exception.value) == message
 
@@ -525,10 +458,7 @@ class TestUpdate(UpdateDSL):
 
         attachment_id = str(ObjectId())
 
-        self.mock_update(
-            new_attachment_in_data=ATTACHMENT_IN_DATA_ALL_VALUES,
-            stored_attachment_in_data=ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY,
-        )
+        self.mock_update(new_attachment_in_data=ATTACHMENT_IN_DATA_ALL_VALUES)
         self.call_update(attachment_id)
         self.check_update_success()
 
@@ -537,10 +467,7 @@ class TestUpdate(UpdateDSL):
 
         attachment_id = str(ObjectId())
 
-        self.mock_update(
-            new_attachment_in_data=ATTACHMENT_IN_DATA_ALL_VALUES,
-            stored_attachment_in_data=ATTACHMENT_IN_DATA_ALL_VALUES,
-        )
+        self.mock_update(new_attachment_in_data=ATTACHMENT_IN_DATA_ALL_VALUES)
         self.call_update(attachment_id)
         self.check_update_success()
 
@@ -549,13 +476,11 @@ class TestUpdate(UpdateDSL):
 
         attachment_id = str(ObjectId())
 
-        self.mock_update(
-            new_attachment_in_data=ATTACHMENT_IN_DATA_ALL_VALUES,
-            stored_attachment_in_data=ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY,
-            duplicate_attachment_in_data=ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY,
-        )
+        self.mock_update(new_attachment_in_data=ATTACHMENT_IN_DATA_ALL_VALUES, raise_duplicate_key_error=True)
         self.call_update_expecting_error(attachment_id, DuplicateRecordError)
-        self.check_update_failed_with_exception("Duplicate attachment found within the parent entity")
+        self.check_update_failed_with_exception(
+            "Duplicate attachment found within the parent entity", assert_update=True
+        )
 
     def test_update_with_invalid_id(self):
         """Test updating an attachment with an invalid ID."""

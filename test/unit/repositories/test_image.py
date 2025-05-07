@@ -37,42 +37,6 @@ class ImageRepoDSL:
         self.image_repository = ImageRepo(database_mock)
         self.images_collection = database_mock.images
 
-    def mock_is_duplicate(self, duplicate_image_in_data: Optional[dict]) -> None:
-        """
-        Mocks database methods appropriately for when the `_is_duplicate` repo method will be called.
-
-        :param duplicate_image_in_data: Either `None` or a dictionary containing image data for a duplicate image.
-        """
-        RepositoryTestHelpers.mock_find_one(
-            self.images_collection,
-            (
-                {
-                    **ImageIn(**duplicate_image_in_data).model_dump(by_alias=True),
-                    "_id": ObjectId(),
-                }
-                if duplicate_image_in_data
-                else None
-            ),
-        )
-
-    def get_is_duplicate_expected_find_one_call(
-        self,
-        expected_entity_id: CustomObjectId,
-        expected_code: str,
-        expected_image_id: Optional[CustomObjectId] = None,
-    ) -> None:
-        """
-        Checks that a call to `_is_duplicate` performed the expected function calls.
-
-        :param expected_entity_id: Expected `entity_id` used in the database calls.
-        :param expected_code: Expected `code` used in the database calls.
-        :param expected_image_id: Expected `image_id` used in the database calls.
-        """
-        return call(
-            {"entity_id": expected_entity_id, "code": expected_code, "_id": {"$ne": expected_image_id}},
-            session=self.mock_session,
-        )
-
 
 class CreateDSL(ImageRepoDSL):
     """Base class for `create` tests."""
@@ -82,13 +46,13 @@ class CreateDSL(ImageRepoDSL):
     _created_image: ImageOut
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_in_data: dict, duplicate_image_in_data: Optional[dict] = None) -> None:
+    def mock_create(self, image_in_data: dict, raise_duplicate_key_error: bool = False) -> None:
         """
         Mocks database methods appropriately to test the `create` repo method.
 
         :param image_in_data: Dictionary containing the image data as would be required for an `ImageIn`
                                    database model (i.e. no created and modified times required).
-        :param duplicate_image_in_data: Either `None` or a dictionary containing image data for a duplicate image.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo insert.
         """
 
         # Pass through `ImageIn` first as need creation and modified times
@@ -96,9 +60,9 @@ class CreateDSL(ImageRepoDSL):
 
         self._expected_image_out = ImageOut(**self._image_in.model_dump())
 
-        self.mock_is_duplicate(duplicate_image_in_data)
-
-        RepositoryTestHelpers.mock_insert_one(self.images_collection, self._image_in.id)
+        RepositoryTestHelpers.mock_insert_one(
+            self.images_collection, self._image_in.id, raise_duplicate_key_error=raise_duplicate_key_error
+        )
         RepositoryTestHelpers.mock_find_one(
             self.images_collection, {**self._image_in.model_dump(), "_id": self._image_in.id}
         )
@@ -111,17 +75,10 @@ class CreateDSL(ImageRepoDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        expected_find_one_calls = []
-
-        expected_find_one_calls.append(
-            self.get_is_duplicate_expected_find_one_call(self._image_in.entity_id, self._image_in.code)
-        )
-
         self.images_collection.insert_one.assert_called_once_with(
             self._image_in.model_dump(by_alias=True), session=self.mock_session
         )
-        expected_find_one_calls.append(call({"_id": self._image_in.id}, session=self.mock_session))
-        self.images_collection.find_one.assert_has_calls(expected_find_one_calls)
+        self.images_collection.find_one.assert_called_once_with({"_id": self._image_in.id}, session=self.mock_session)
 
         assert self._created_image == self._expected_image_out
 
@@ -144,7 +101,10 @@ class CreateDSL(ImageRepoDSL):
         :param message: Expected message of the raised exception.
         """
 
-        self.images_collection.insert_one.assert_not_called()
+        self.images_collection.insert_one.assert_called_once_with(
+            self._image_in.model_dump(by_alias=True), session=None
+        )
+        self.images_collection.find_one.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
@@ -162,7 +122,7 @@ class TestCreate(CreateDSL):
     def test_create_with_duplicate_name_within_parent(self):
         """Test creating an image with a duplicate image being found in the parent entity."""
 
-        self.mock_create(IMAGE_IN_DATA_ALL_VALUES, duplicate_image_in_data=IMAGE_IN_DATA_REQUIRED_VALUES_ONLY)
+        self.mock_create(IMAGE_IN_DATA_ALL_VALUES, raise_duplicate_key_error=True)
         self.call_create_expecting_error(DuplicateRecordError)
         self.check_create_failed_with_exception("Duplicate image found within the parent entity")
 
@@ -403,38 +363,25 @@ class UpdateDSL(ImageRepoDSL):
     def mock_update(
         self,
         new_image_in_data: dict,
-        stored_image_in_data: Optional[dict],
-        duplicate_image_in_data: Optional[dict] = None,
+        raise_duplicate_key_error: bool = False,
     ) -> None:
         """
         Mocks database methods appropriately to test the `update` repo method.
 
         :param new_image_in_data: Dictionary containing the new image data as would be required for an `ImageIn`
                                   database model (i.e. no created and modified times required).
-        :param stored_image_in_data: Dictionary containing the image data for the existing stored image as would be
-                                     required for an `ImageIn` database model.
-        :param duplicate_image_in_data: Either `None` or a dictionary containing image data for a duplicate image.
+        :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo update.
         """
         self.set_update_data(new_image_in_data)
 
-        # Stored image
-        self._stored_image_out = (
-            ImageOut(
-                **ImageIn(
-                    **stored_image_in_data,
-                ).model_dump(),
+        if self._image_in.primary is True:
+            RepositoryTestHelpers.mock_bulk_write(
+                self.images_collection, raise_duplicate_key_error=raise_duplicate_key_error
             )
-            if stored_image_in_data
-            else None
-        )
-        RepositoryTestHelpers.mock_find_one(
-            self.images_collection,
-            self._stored_image_out.model_dump() if self._stored_image_out else None,
-        )
-
-        # Duplicate check (which only runs if changing the file name)
-        if self._stored_image_out and self._image_in.file_name != self._stored_image_out.file_name:
-            self.mock_is_duplicate(duplicate_image_in_data)
+        else:
+            RepositoryTestHelpers.mock_update_one(
+                self.images_collection, raise_duplicate_key_error=raise_duplicate_key_error
+            )
 
         # Newly inserted image
         self._expected_image_out = ImageOut(**self._image_in.model_dump())
@@ -462,34 +409,13 @@ class UpdateDSL(ImageRepoDSL):
         :param error_type: Expected exception to be raised.
         """
 
+        self._updated_image_id = image_id
         with pytest.raises(error_type) as exc:
-            self.image_repository.update(image_id, self._image_in, update_primary=False)
+            self.image_repository.update(image_id, self._image_in, update_primary=self._image_in.primary)
         self._update_exception = exc
 
     def check_update_success(self) -> None:
         """Checks that a prior call to `call_update` worked as expected."""
-
-        # Obtain a list of expected find_one calls
-        expected_find_one_calls = []
-
-        # Stored image
-        expected_find_one_calls.append(
-            call(
-                {"_id": CustomObjectId(self._updated_image_id)},
-                session=self.mock_session,
-            )
-        )
-
-        # Duplicate check (which only runs if changing the file name)
-        if self._stored_image_out and self._image_in.file_name != self._stored_image_out.file_name:
-            expected_find_one_calls.append(
-                self.get_is_duplicate_expected_find_one_call(
-                    self._image_in.entity_id, self._image_in.code, CustomObjectId(self._updated_image_id)
-                )
-            )
-
-        # Newly inserted image
-        expected_find_one_calls.append(call({"_id": CustomObjectId(self._updated_image_id)}, session=self.mock_session))
 
         if self._expected_image_out.primary is True:
             self.images_collection.bulk_write.assert_called_once_with(
@@ -516,19 +442,49 @@ class UpdateDSL(ImageRepoDSL):
                 session=self.mock_session,
             )
 
-        self.images_collection.find_one.assert_has_calls(expected_find_one_calls)
+        # Newly inserted image
+        self.images_collection.find_one.assert_called_once_with(
+            {"_id": CustomObjectId(self._updated_image_id)}, session=self.mock_session
+        )
 
         assert self._updated_image == self._expected_image_out
 
-    def check_update_failed_with_exception(self, message: str) -> None:
+    def check_update_failed_with_exception(self, message: str, assert_update: bool = False) -> None:
         """
         Checks that a prior call to `call_update_expecting_error` failed as expected, raising an exception
         with the correct message.
 
         :param message: Expected message of the raised exception.
+        :param assert_update: Whether the appropriate pymongo update method is expected to be called or not.
         """
 
-        self.images_collection.update_one.assert_not_called()
+        if assert_update:
+            if self._expected_image_out.primary is True:
+                self.images_collection.bulk_write.assert_called_once_with(
+                    [
+                        UpdateMany(
+                            {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
+                            {"$set": {"primary": False}},
+                        ),
+                        UpdateOne(
+                            {"_id": ObjectId(self._updated_image_id)},
+                            {"$set": self._image_in.model_dump(by_alias=True)},
+                        ),
+                    ],
+                    session=None,
+                )
+            else:
+                self.images_collection.update_one.assert_called_once_with(
+                    {
+                        "_id": ObjectId(self._updated_image_id),
+                    },
+                    {
+                        "$set": self._image_in.model_dump(by_alias=True),
+                    },
+                    session=None,
+                )
+
+        self.images_collection.find_one.assert_not_called()
 
         assert str(self._update_exception.value) == message
 
@@ -541,9 +497,7 @@ class TestUpdate(UpdateDSL):
 
         image_id = str(ObjectId())
 
-        self.mock_update(
-            new_image_in_data=IMAGE_IN_DATA_ALL_VALUES, stored_image_in_data=IMAGE_IN_DATA_REQUIRED_VALUES_ONLY
-        )
+        self.mock_update(new_image_in_data=IMAGE_IN_DATA_ALL_VALUES)
         self.call_update(image_id)
         self.check_update_success()
 
@@ -552,7 +506,7 @@ class TestUpdate(UpdateDSL):
 
         image_id = str(ObjectId())
 
-        self.mock_update(new_image_in_data=IMAGE_IN_DATA_ALL_VALUES, stored_image_in_data=IMAGE_IN_DATA_ALL_VALUES)
+        self.mock_update(new_image_in_data=IMAGE_IN_DATA_ALL_VALUES)
         self.call_update(image_id)
         self.check_update_success()
 
@@ -563,7 +517,6 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             new_image_in_data={**IMAGE_IN_DATA_ALL_VALUES, "primary": True},
-            stored_image_in_data=IMAGE_IN_DATA_ALL_VALUES,
         )
         self.call_update(image_id)
         self.check_update_success()
@@ -575,11 +528,23 @@ class TestUpdate(UpdateDSL):
 
         self.mock_update(
             new_image_in_data=IMAGE_IN_DATA_ALL_VALUES,
-            stored_image_in_data=IMAGE_IN_DATA_REQUIRED_VALUES_ONLY,
-            duplicate_image_in_data=IMAGE_IN_DATA_REQUIRED_VALUES_ONLY,
+            raise_duplicate_key_error=True,
         )
         self.call_update_expecting_error(image_id, DuplicateRecordError)
-        self.check_update_failed_with_exception("Duplicate image found within the parent entity")
+        self.check_update_failed_with_exception("Duplicate image found within the parent entity", assert_update=True)
+
+    def test_update_file_name_to_duplicate_within_parent_while_setting_primary(self):
+        """Test updating an image's file name to one that is a duplicate within the parent entity while at the same time
+        attempting to set it as a primary."""
+
+        image_id = str(ObjectId())
+
+        self.mock_update(
+            new_image_in_data={**IMAGE_IN_DATA_ALL_VALUES, "primary": True},
+            raise_duplicate_key_error=True,
+        )
+        self.call_update_expecting_error(image_id, DuplicateRecordError)
+        self.check_update_failed_with_exception("Duplicate image found within the parent entity", assert_update=True)
 
     def test_update_with_invalid_id(self):
         """Test updating an image with an invalid ID."""

@@ -456,6 +456,21 @@ class TestUpdate(UpdateDSL):
             409, "An image with the same file name already exists within the parent entity."
         )
 
+    # def test_update_file_name_to_duplicate_while_setting_primary(self):
+    #     """Test updating the name of an image to conflict with a pre-existing one while at the same time attempting to
+    #     set it as a primary (no image content should change)."""
+
+    #     self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
+    #     image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "another_image.png")
+    #     self.patch_image(image_id, {"file_name": "image.png", "primary": True})
+    #     self.check_patch_image_failed_with_detail(
+    #         409, "An image with the same file name already exists within the parent entity."
+    #     )
+
+    #     # Ensure the image contents is completely unchanged (with primary still false)
+    #     self.get_image(image_id)
+    #     self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": False})
+
 
 class DeleteDSL(ListDSL):
     """Base class for delete tests."""
