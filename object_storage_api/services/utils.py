@@ -2,13 +2,13 @@
 Collection of some utility functions used by services
 """
 
+# pylint:disable=fixme
+# TODO: Some of this file is identical to the one in inventory-management-system-api - Use common repo?
+
 import logging
 import re
 
 logger = logging.getLogger()
-
-# pylint:disable=fixme
-# TODO: Some of this file is identical to the one in inventory-management-system-api - Use common repo?
 
 
 def generate_code(name: str, entity_type: str) -> str:
