@@ -102,19 +102,16 @@ class CreateDSL:
                 **IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
                 "entity_id": entity_id_a,
                 "id": image_a_id,
-                "code": f"{entity_id_a}-{IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY["file_name"]}",
             },
             {
                 **IMAGE_GET_METADATA_DATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": image_b_id,
-                "code": f"{entity_id_a}-{IMAGE_GET_METADATA_DATA_ALL_VALUES["file_name"]}",
             },
             {
                 **IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
                 "entity_id": entity_id_b,
                 "id": image_c_id,
-                "code": f"{entity_id_b}-{IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY["file_name"]}",
             },
         ]
 

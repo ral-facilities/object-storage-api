@@ -80,19 +80,16 @@ class CreateDSL:
                 **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
                 "entity_id": entity_id_a,
                 "id": attachment_a_id,
-                "code": f"{entity_id_a}-{ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY["file_name"]}",
             },
             {
                 **ATTACHMENT_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": attachment_b_id,
-                "code": f"{entity_id_a}-{ATTACHMENT_GET_METADATA_ALL_VALUES["file_name"]}",
             },
             {
                 **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
                 "entity_id": entity_id_b,
                 "id": attachment_c_id,
-                "code": f"{entity_id_b}-{ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY["file_name"]}",
             },
         ]
 
@@ -313,7 +310,9 @@ class TestList(ListDSL):
 
         attachments = self.post_test_attachments()
         self.get_attachments(filters={"entity_id": attachments[0]["entity_id"]})
-        self.check_get_attachments_success(attachments[:2])
+        # Order is reversed to the order they were created (as due to indexing its order will be entity_id then code
+        # ascending)
+        self.check_get_attachments_success(attachments[:2][::-1])
 
     def test_list_with_entity_id_filter_with_no_matching_results(self):
         """
