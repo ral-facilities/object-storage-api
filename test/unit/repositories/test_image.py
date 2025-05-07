@@ -5,10 +5,10 @@ Unit tests for the `ImageRepo` repository.
 # Expect some duplicate code inside tests as the tests for the different entities can be very similar
 # pylint: disable=duplicate-code
 
-from test.mock_data import IMAGE_IN_DATA_ALL_VALUES, IMAGE_IN_DATA_REQUIRED_VALUES_ONLY
+from test.mock_data import IMAGE_IN_DATA_ALL_VALUES
 from test.unit.repositories.conftest import RepositoryTestHelpers
 from typing import Optional
-from unittest.mock import MagicMock, Mock, call
+from unittest.mock import MagicMock, Mock
 
 import pytest
 from bson import ObjectId
@@ -420,13 +420,17 @@ class UpdateDSL(ImageRepoDSL):
         if self._expected_image_out.primary is True:
             self.images_collection.bulk_write.assert_called_once_with(
                 [
+                    UpdateOne(
+                        {"_id": ObjectId(self._updated_image_id)},
+                        {"$set": self._image_in.model_dump(by_alias=True, exclude="primary")},
+                    ),
                     UpdateMany(
                         {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
                         {"$set": {"primary": False}},
                     ),
                     UpdateOne(
                         {"_id": ObjectId(self._updated_image_id)},
-                        {"$set": self._image_in.model_dump(by_alias=True)},
+                        {"$set": {"primary": self._image_in.primary}},
                     ),
                 ],
                 session=self.mock_session,
@@ -462,13 +466,17 @@ class UpdateDSL(ImageRepoDSL):
             if self._expected_image_out.primary is True:
                 self.images_collection.bulk_write.assert_called_once_with(
                     [
+                        UpdateOne(
+                            {"_id": ObjectId(self._updated_image_id)},
+                            {"$set": self._image_in.model_dump(by_alias=True, exclude="primary")},
+                        ),
                         UpdateMany(
                             {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
                             {"$set": {"primary": False}},
                         ),
                         UpdateOne(
                             {"_id": ObjectId(self._updated_image_id)},
-                            {"$set": self._image_in.model_dump(by_alias=True)},
+                            {"$set": {"primary": self._image_in.primary}},
                         ),
                     ],
                     session=None,

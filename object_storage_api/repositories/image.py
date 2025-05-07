@@ -131,21 +131,26 @@ class ImageRepo:
             exc.response_detail = "Image not found"
             raise exc
 
-        # TODO: Adjust to ensure no other updates are done before erroring - do UpdateOne without primary value first
         try:
             if update_primary:
                 bulkwrite_update = [
+                    UpdateOne(
+                        filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True, exclude="primary")}
+                    ),
                     UpdateMany(
                         filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}
                     ),
-                    UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
+                    UpdateOne(filter={"_id": image_id}, update={"$set": {"primary": image.primary}}),
                 ]
                 self._images_collection.bulk_write(bulkwrite_update, session=session)
             else:
                 self._images_collection.update_one(
                     {"_id": image_id}, {"$set": image.model_dump(by_alias=True)}, session=session
                 )
-        except pymongo.errors.DuplicateKeyError as exc:
+        # DuplicateKeyError is thrown for `update_one`` but BulkWriteError for `bulk_write` (could dig down to actual
+        # errors and find a write error with the same duplicate key error message, but we dont currently expect this
+        # error to occur for anything else at the moment)
+        except (pymongo.errors.DuplicateKeyError, pymongo.errors.BulkWriteError) as exc:
             raise DuplicateRecordError("Duplicate image found within the parent entity", entity_type="image") from exc
 
         return self.get(image_id=str(image_id), session=session)

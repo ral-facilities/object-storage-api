@@ -105,7 +105,7 @@ class RepositoryTestHelpers:
         :param raise_duplicate_key_error: Whether a duplicate key error should be raised by the pymongo update_one.
         """
         if raise_duplicate_key_error:
-            collection_mock.bulk_write.side_effect = pymongo.errors.DuplicateKeyError("Mock duplicate key error")
+            collection_mock.bulk_write.side_effect = pymongo.errors.BulkWriteError(MagicMock())
         else:
             collection_mock.bulk_write.return_value = MagicMock()
 

@@ -456,20 +456,36 @@ class TestUpdate(UpdateDSL):
             409, "An image with the same file name already exists within the parent entity."
         )
 
-    # def test_update_file_name_to_duplicate_while_setting_primary(self):
-    #     """Test updating the name of an image to conflict with a pre-existing one while at the same time attempting to
-    #     set it as a primary (no image content should change)."""
+    def test_update_file_name_to_duplicate_while_setting_primary(self):
+        """Test updating the name of an image to conflict with a pre-existing one while at the same time attempting to
+        set it as a primary (no image content should change)."""
 
-    #     self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
-    #     image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "another_image.png")
-    #     self.patch_image(image_id, {"file_name": "image.png", "primary": True})
-    #     self.check_patch_image_failed_with_detail(
-    #         409, "An image with the same file name already exists within the parent entity."
-    #     )
+        # First image, set to be primary
+        image_1_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
+        self.patch_image(image_1_id, {"file_name": "image.png", "primary": True})
+        self.check_patch_image_success({**IMAGE_GET_METADATA_DATA_ALL_VALUES, "primary": True})
 
-    #     # Ensure the image contents is completely unchanged (with primary still false)
-    #     self.get_image(image_id)
-    #     self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": False})
+        # Second image, try and change the name to be the same as the first, while also making it primary
+        image_2_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "another_image.png")
+        self.patch_image(image_2_id, {"file_name": "image.png", "primary": True})
+        self.check_patch_image_failed_with_detail(
+            409, "An image with the same file name already exists within the parent entity."
+        )
+
+        # Ensure the original image contents is unchanged (primary still true)
+        self.get_image(image_1_id)
+        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True})
+
+        # Ensure the patched image contents is unchanged (same old file name and primary still false)
+        self.get_image(image_2_id)
+        self.check_get_image_success(
+            {
+                **IMAGE_GET_DATA_ALL_VALUES,
+                "file_name": "another_image.png",
+                "code": "another_image.png",
+                "primary": False,
+            }
+        )
 
 
 class DeleteDSL(ListDSL):
