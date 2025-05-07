@@ -115,7 +115,7 @@ class CreateDSL(ImageServiceDSL):
             self._expected_image_in = ImageIn(
                 **self._image_post_metadata.model_dump(),
                 id=str(self._expected_image_id),
-                code=utils.generate_code(self._upload_file.filename, "image"),
+                code=utils.generate_code(self._image_post_metadata.entity_id, self._upload_file.filename, "image"),
                 object_key=expected_object_key,
                 file_name=self._upload_file.filename,
                 thumbnail_base64=expected_thumbnail_base64,
@@ -153,7 +153,9 @@ class CreateDSL(ImageServiceDSL):
         self.mock_image_store.get_object_key.assert_called_once_with(
             str(self._expected_image_id), self._image_post_metadata
         )
-        self.wrapped_utils.generate_code.assert_called_once_with(self._expected_image_in.file_name, "image")
+        self.wrapped_utils.generate_code.assert_called_once_with(
+            str(self._expected_image_in.entity_id), self._expected_image_in.file_name, "image"
+        )
         self.mock_image_repository.count_by_entity_id.assert_called_once_with(str(self._expected_image_in.entity_id))
         self.mock_image_repository.create.assert_called_once_with(self._expected_image_in)
 
@@ -358,7 +360,9 @@ class UpdateDSL(ImageServiceDSL):
                     **stored_image_post_metadata_data,
                     id=image_id,
                     file_name=stored_image_filename,
-                    code=utils.generate_code(stored_image_filename, "image"),
+                    code=utils.generate_code(
+                        stored_image_post_metadata_data["entity_id"], stored_image_filename, "image"
+                    ),
                     # Actual values dont matter here
                     object_key="some/object/key",
                     thumbnail_base64="some_data",
@@ -381,7 +385,7 @@ class UpdateDSL(ImageServiceDSL):
         self._expected_image_in = ImageIn(
             **merged_image_data,
             id=image_id,
-            code=utils.generate_code(merged_image_data["file_name"], "image"),
+            code=utils.generate_code(self._stored_image.entity_id, merged_image_data["file_name"], "image"),
             # Actual values dont matter here
             object_key="some/object/key",
             thumbnail_base64="some_data",

@@ -83,7 +83,7 @@ class AttachmentService:
         attachment_in = AttachmentIn(
             **attachment.model_dump(),
             id=attachment_id,
-            code=utils.generate_code(attachment.file_name, "attachment"),
+            code=utils.generate_code(attachment.entity_id, attachment.file_name, "attachment"),
             object_key=object_key,
         )
 
@@ -145,7 +145,7 @@ class AttachmentService:
                     f"that of the stored attachment '{stored_attachment.file_name}'"
                 )
 
-            update_data["code"] = utils.generate_code(attachment.file_name, "attachment")
+            update_data["code"] = utils.generate_code(stored_attachment.entity_id, attachment.file_name, "attachment")
 
         updated_attachment = self._attachment_repository.update(
             attachment_id=attachment_id,

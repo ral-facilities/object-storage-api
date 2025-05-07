@@ -77,7 +77,7 @@ ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY = {
 ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY = {
     **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     "id": str(ObjectId()),
-    "code": "report.txt",
+    "code": f"{ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY["entity_id"]}-report.txt",
     "object_key": "attachments/65df5ee771892ddcc08bd28d/65e0a624d64aaae884abaaed",
 }
 
@@ -85,7 +85,7 @@ ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY = {
     **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "code": "report.txt",
+    "code": f"{ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY["entity_id"]}-report.txt",
     "title": None,
     "description": None,
 }
@@ -112,7 +112,7 @@ ATTACHMENT_POST_DATA_ALL_VALUES = {
 ATTACHMENT_IN_DATA_ALL_VALUES = {
     **ATTACHMENT_POST_DATA_ALL_VALUES,
     "id": str(ObjectId()),
-    "code": "report.pdf",
+    "code": f"{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}-report.pdf",
     "object_key": "attachments/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
 }
 
@@ -126,7 +126,7 @@ ATTACHMENT_GET_METADATA_ALL_VALUES = {
     **ATTACHMENT_POST_DATA_ALL_VALUES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "code": "report.pdf",
+    "code": f"{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}-report.pdf",
 }
 
 ATTACHMENT_GET_DATA_ALL_VALUES = {
@@ -137,7 +137,7 @@ ATTACHMENT_GET_DATA_ALL_VALUES = {
 ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH = {
     **ATTACHMENT_GET_METADATA_ALL_VALUES,
     **ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
-    "code": "laserdamage.pdf",
+    "code": f"{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}-laserdamage.pdf",
 }
 
 ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {
@@ -155,7 +155,7 @@ IMAGE_IN_DATA_REQUIRED_VALUES_ONLY = {
     **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
     "id": str(ObjectId()),
     "file_name": "image.jpg",
-    "code": "image.jpg",
+    "code": f"{IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY["entity_id"]}-image.jpg",
     "object_key": "images/65df5ee771892ddcc08bd28d/65e0a624d64aaae884abaaed",
     "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
 }
@@ -165,7 +165,7 @@ IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "file_name": "image.jpg",
-    "code": "image.jpg",
+    "code": f"{IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY["entity_id"]}-image.jpg",
     "primary": False,
     "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
     "title": None,
@@ -187,7 +187,7 @@ IMAGE_PATCH_METADATA_DATA_ALL_VALUES = {
 }
 
 IMAGE_POST_METADATA_DATA_ALL_VALUES = {
-    **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    "entity_id": str(ObjectId()),
     "title": "Report Title",
     "description": "A damage report.",
 }
@@ -197,7 +197,7 @@ IMAGE_IN_DATA_ALL_VALUES = {
     **IMAGE_POST_METADATA_DATA_ALL_VALUES,
     "id": str(ObjectId()),
     "file_name": "image.png",
-    "code": "image.png",
+    "code": f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]}-image.png",
     "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
     "thumbnail_base64": (
         "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAmywAVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZ"
@@ -210,7 +210,7 @@ IMAGE_GET_METADATA_DATA_ALL_VALUES = {
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "file_name": "image.png",
-    "code": "image.png",
+    "code": f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]}-image.png",
     "primary": False,
     "thumbnail_base64": (
         "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAmywAVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZ"
@@ -221,7 +221,7 @@ IMAGE_GET_METADATA_DATA_ALL_VALUES = {
 IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH = {
     **IMAGE_GET_METADATA_DATA_ALL_VALUES,
     **IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
-    "code": "picture.png",
+    "code": f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]}-picture.png",
 }
 
 IMAGE_GET_DATA_ALL_VALUES = {

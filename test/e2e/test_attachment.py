@@ -80,16 +80,19 @@ class CreateDSL:
                 **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
                 "entity_id": entity_id_a,
                 "id": attachment_a_id,
+                "code": f"{entity_id_a}-{ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY["file_name"]}",
             },
             {
                 **ATTACHMENT_GET_METADATA_ALL_VALUES,
                 "entity_id": entity_id_a,
                 "id": attachment_b_id,
+                "code": f"{entity_id_a}-{ATTACHMENT_GET_METADATA_ALL_VALUES["file_name"]}",
             },
             {
                 **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
                 "entity_id": entity_id_b,
                 "id": attachment_c_id,
+                "code": f"{entity_id_b}-{ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY["file_name"]}",
             },
         ]
 

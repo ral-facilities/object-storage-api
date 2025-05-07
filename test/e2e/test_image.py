@@ -98,9 +98,24 @@ class CreateDSL:
         )
 
         return [
-            {**IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_a, "id": image_a_id},
-            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_b_id},
-            {**IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_b, "id": image_c_id},
+            {
+                **IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
+                "entity_id": entity_id_a,
+                "id": image_a_id,
+                "code": f"{entity_id_a}-{IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY["file_name"]}",
+            },
+            {
+                **IMAGE_GET_METADATA_DATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+                "id": image_b_id,
+                "code": f"{entity_id_a}-{IMAGE_GET_METADATA_DATA_ALL_VALUES["file_name"]}",
+            },
+            {
+                **IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
+                "entity_id": entity_id_b,
+                "id": image_c_id,
+                "code": f"{entity_id_b}-{IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY["file_name"]}",
+            },
         ]
 
     def check_post_image_success(self, expected_image_get_data: dict) -> None:
@@ -396,7 +411,7 @@ class TestUpdate(UpdateDSL):
 
     def test_update_all_fields(self):
         """Test updating every field of an image."""
-        image_id = self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.png")
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
         self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES)
         self.check_patch_image_success(IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH)
 
@@ -418,25 +433,21 @@ class TestUpdate(UpdateDSL):
 
     def test_update_primary(self):
         """Test updating primary to True, triggering other database updates."""
-        image_id_a = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES}, "image.png")
-        entity_id = str(ObjectId())
-        image_id_b = self.post_image(
-            {**IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id}, "image.jpg"
-        )
-        image_id_c = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id}, "image.png")
 
-        self.patch_image(image_id_a, {"primary": True})
-        self.patch_image(image_id_b, {"primary": True})
-        self.patch_image(image_id_c, {"primary": True})
+        images = self.post_test_images()
 
-        self.get_image(image_id_a)
-        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True})
+        self.patch_image(images[0]["id"], {"primary": True})
+        self.patch_image(images[1]["id"], {"primary": True})
+        self.patch_image(images[2]["id"], {"primary": True})
 
-        self.get_image(image_id_b)
-        self.check_get_image_success({**IMAGE_GET_DATA_REQUIRED_VALUES_ONLY, "primary": False, "entity_id": entity_id})
+        self.get_image(images[0]["id"])
+        self.check_get_image_success({**IMAGE_GET_DATA_REQUIRED_VALUES_ONLY, **images[0], "primary": False})
 
-        self.get_image(image_id_c)
-        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True, "entity_id": entity_id})
+        self.get_image(images[1]["id"])
+        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, **images[1], "primary": True})
+
+        self.get_image(images[2]["id"])
+        self.check_get_image_success({**IMAGE_GET_DATA_REQUIRED_VALUES_ONLY, **images[2], "primary": True})
 
     def test_update_file_name_to_duplicate(self):
         """Test updating the name of an image to conflict with a pre-existing one."""

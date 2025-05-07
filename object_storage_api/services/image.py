@@ -93,7 +93,7 @@ class ImageService:
             **image_metadata.model_dump(),
             id=image_id,
             file_name=upload_file.filename,
-            code=utils.generate_code(upload_file.filename, "image"),
+            code=utils.generate_code(image_metadata.entity_id, upload_file.filename, "image"),
             object_key=self._image_store.get_object_key(image_id, image_metadata),
             thumbnail_base64=thumbnail_base64,
         )
@@ -157,7 +157,7 @@ class ImageService:
                     f"that of the stored image '{stored_image.file_name}'"
                 )
 
-            update_data["code"] = utils.generate_code(image.file_name, "image")
+            update_data["code"] = utils.generate_code(stored_image.entity_id, image.file_name, "image")
 
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
         updated_image = self._image_repository.update(

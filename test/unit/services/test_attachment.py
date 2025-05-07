@@ -105,7 +105,9 @@ class CreateDSL(AttachmentServiceDSL):
             self._expected_attachment_in = AttachmentIn(
                 **self._attachment_post.model_dump(),
                 id=str(self._expected_attachment_id),
-                code=utils.generate_code(self._attachment_post.file_name, "attachment"),
+                code=utils.generate_code(
+                    self._attachment_post.entity_id, self._attachment_post.file_name, "attachment"
+                ),
                 object_key=expected_object_key,
             )
 
@@ -142,7 +144,9 @@ class CreateDSL(AttachmentServiceDSL):
         self.mock_attachment_store.create_presigned_post.assert_called_once_with(
             str(self._expected_attachment_id), self._attachment_post
         )
-        self.wrapped_utils.generate_code.assert_called_once_with(self._expected_attachment.file_name, "attachment")
+        self.wrapped_utils.generate_code.assert_called_once_with(
+            str(self._expected_attachment_in.entity_id), self._expected_attachment.file_name, "attachment"
+        )
         self.mock_attachment_repository.count_by_entity_id.assert_called_once_with(
             str(self._expected_attachment_in.entity_id)
         )
@@ -328,7 +332,9 @@ class UpdateDSL(AttachmentServiceDSL):
                 **AttachmentIn(
                     **stored_attachment_post_data,
                     id=attachment_id,
-                    code=utils.generate_code(stored_attachment_post_data["file_name"], "attachment"),
+                    code=utils.generate_code(
+                        stored_attachment_post_data["entity_id"], stored_attachment_post_data["file_name"], "attachment"
+                    ),
                     # Actual values dont matter here
                     object_key="some/object/key",
                 ).model_dump(by_alias=True),
@@ -346,7 +352,9 @@ class UpdateDSL(AttachmentServiceDSL):
         self._expected_attachment_in = AttachmentIn(
             **merged_attachment_data,
             id=attachment_id,
-            code=utils.generate_code(merged_attachment_data["file_name"], "attachment"),
+            code=utils.generate_code(
+                self._stored_attachment.entity_id, merged_attachment_data["file_name"], "attachment"
+            ),
             # Actual values dont matter here
             object_key="some/object/key",
         )
@@ -390,7 +398,9 @@ class UpdateDSL(AttachmentServiceDSL):
 
         # Ensure new code was obtained if patching name
         if self._attachment_patch.file_name and self._stored_attachment.file_name != self._attachment_patch.file_name:
-            self.wrapped_utils.generate_code.assert_called_once_with(self._attachment_patch.file_name, "attachment")
+            self.wrapped_utils.generate_code.assert_called_once_with(
+                str(self._expected_attachment_in.entity_id), self._attachment_patch.file_name, "attachment"
+            )
         else:
             self.wrapped_utils.generate_code.assert_not_called()
 
