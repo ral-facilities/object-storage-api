@@ -3,7 +3,7 @@ on:
   workflow_dispatch:
     inputs:
       push-docker-image-to-harbor:
-        description: 'Push Docker Image to Harbor'
+        description: "Push Docker Image to Harbor"
         type: boolean
         default: false
   pull_request:
@@ -61,7 +61,7 @@ jobs:
 
       - name: Upload coverage reports to Codecov
         if: success()
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@ad3126e916f78f00edff4ed0317cf185271ccc2d # v5.4.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -103,7 +103,7 @@ jobs:
         run: docker logs object-storage-minio
 
   docker:
-    # This job triggers only if all the other jobs succeed. It builds the Docker image 
+    # This job triggers only if all the other jobs succeed. It builds the Docker image
     # and if run manually from Github Actions, it pushes to Harbor.
     needs: [linting, unit-tests, e2e-tests]
     name: Docker
