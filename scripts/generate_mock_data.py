@@ -68,12 +68,28 @@ def generate_random_image_metadata(entity_id: str):
     }
 
 
-def post(endpoint: str, json: dict) -> dict[str, Any]:
-    """Posts an entity's data to the given endpoint.
+def post_avoiding_duplicate_file_name(endpoint: str, json: dict) -> dict[str, Any]:
+    """Posts an entity's data to the given endpoint but adds - n to the end of a file name field to avoid duplicates
+    when a 409 is returned.
 
     :return: JSON data from the response.
     """
-    return requests.post(f"{API_URL}{endpoint}", json=json, timeout=10).json()
+    index = 0
+    status_code = 409
+    while status_code == 409:
+        file_name_and_extension = json["file_name"].split(".")
+        response = requests.post(
+            f"{API_URL}{endpoint}",
+            json=(
+                json
+                if index == 0
+                else {**json, "file_name": f"{file_name_and_extension[0]} - {index}.{file_name_and_extension[1]}"}
+            ),
+            timeout=10,
+        )
+        status_code = response.status_code
+        index += 1
+    return response.json()
 
 
 def create_attachment(attachment_metadata: dict) -> dict[str, Any]:
@@ -95,7 +111,7 @@ def create_attachment(attachment_metadata: dict) -> dict[str, Any]:
 
     file_name = fake.file_name(extension=extension)
 
-    attachment = post("/attachments", {**attachment_metadata, "file_name": file_name})
+    attachment = post_avoiding_duplicate_file_name("/attachments", {**attachment_metadata, "file_name": file_name})
     upload_info = attachment["upload_info"]
     requests.post(
         upload_info["url"],
@@ -132,14 +148,27 @@ def create_image(image_metadata: dict) -> dict[str, Any]:
 
     file_name = fake.file_name(extension=extension)
 
-    image = requests.post(
-        f"{API_URL}/images",
-        data=image_metadata,
-        files={"upload_file": (file_name, file, f"image/{extension}")},
-        timeout=5,
-    ).json()
+    # Retry if use a duplicate file name
+    index = 0
+    status_code = 409
+    while status_code == 409:
+        file_name_and_extension = file_name.split(".")
+        response = requests.post(
+            f"{API_URL}/images",
+            data=image_metadata,
+            files={
+                "upload_file": (
+                    file_name if index == 0 else f"{file_name_and_extension[0]} - {index}.{file_name_and_extension[1]}",
+                    file,
+                    f"image/{extension}",
+                )
+            },
+            timeout=5,
+        )
+        status_code = response.status_code
+        index += 1
 
-    return image
+    return response.json()
 
 
 def populate_random_attachments(existing_entity_ids: list[str], exclude_existence_check=False):
