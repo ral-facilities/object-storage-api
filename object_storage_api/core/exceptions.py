@@ -115,7 +115,7 @@ class DuplicateRecordError(DatabaseError):
     """The record being added to the database is a duplicate."""
 
     status_code = status.HTTP_409_CONFLICT
-    response_detail = "Duplicate record found in the database"
+    response_detail = "Duplicate record found"
 
     def __init__(self, detail: str, response_detail: Optional[str] = None, entity_type: Optional[str] = None):
         """
