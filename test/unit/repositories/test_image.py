@@ -422,7 +422,7 @@ class UpdateDSL(ImageRepoDSL):
                 [
                     UpdateOne(
                         {"_id": ObjectId(self._updated_image_id)},
-                        {"$set": self._image_in.model_dump(by_alias=True, exclude="primary")},
+                        {"$set": self._image_in.model_dump(by_alias=True, exclude={"primary"})},
                     ),
                     UpdateMany(
                         {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
@@ -468,7 +468,7 @@ class UpdateDSL(ImageRepoDSL):
                     [
                         UpdateOne(
                             {"_id": ObjectId(self._updated_image_id)},
-                            {"$set": self._image_in.model_dump(by_alias=True, exclude="primary")},
+                            {"$set": self._image_in.model_dump(by_alias=True, exclude={"primary"})},
                         ),
                         UpdateMany(
                             {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},

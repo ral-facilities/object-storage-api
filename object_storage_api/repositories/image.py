@@ -135,7 +135,7 @@ class ImageRepo:
             if update_primary:
                 bulkwrite_update = [
                     UpdateOne(
-                        filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True, exclude="primary")}
+                        filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True, exclude={"primary"})}
                     ),
                     UpdateMany(
                         filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}
