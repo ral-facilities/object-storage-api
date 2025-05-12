@@ -1,4 +1,4 @@
-FROM python:3.12.10-alpine3.21@sha256:e5956ba054e89858c706f038a980241ea38565176619f1a2695cb9b039ea1265 as dev
+FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4d54bc0719337d3e4ee552e as dev
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ COPY test/ test/
 CMD ["pytest",  "--config-file", "test/pytest.ini", "-v"]
 
 
-FROM python:3.12.10-alpine3.21@sha256:e5956ba054e89858c706f038a980241ea38565176619f1a2695cb9b039ea1265 as prod
+FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4d54bc0719337d3e4ee552e as prod
 
 WORKDIR /app
 
