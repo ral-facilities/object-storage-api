@@ -422,15 +422,15 @@ class UpdateDSL(ImageRepoDSL):
                 [
                     UpdateOne(
                         {"_id": ObjectId(self._updated_image_id)},
-                        {"$set": self._image_in.model_dump(by_alias=True, exclude={"primary"})},
+                        {"$set": self._image_in.model_dump(by_alias=True)},
                     ),
                     UpdateMany(
-                        {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
+                        {
+                            "_id": {"$ne": ObjectId(self._updated_image_id)},
+                            "primary": True,
+                            "entity_id": ObjectId(self._expected_image_out.entity_id),
+                        },
                         {"$set": {"primary": False}},
-                    ),
-                    UpdateOne(
-                        {"_id": ObjectId(self._updated_image_id)},
-                        {"$set": {"primary": self._image_in.primary}},
                     ),
                 ],
                 session=self.mock_session,
@@ -468,15 +468,15 @@ class UpdateDSL(ImageRepoDSL):
                     [
                         UpdateOne(
                             {"_id": ObjectId(self._updated_image_id)},
-                            {"$set": self._image_in.model_dump(by_alias=True, exclude={"primary"})},
+                            {"$set": self._image_in.model_dump(by_alias=True)},
                         ),
                         UpdateMany(
-                            {"primary": True, "entity_id": ObjectId(self._expected_image_out.entity_id)},
+                            {
+                                "_id": {"$ne": ObjectId(self._updated_image_id)},
+                                "primary": True,
+                                "entity_id": ObjectId(self._expected_image_out.entity_id),
+                            },
                             {"$set": {"primary": False}},
-                        ),
-                        UpdateOne(
-                            {"_id": ObjectId(self._updated_image_id)},
-                            {"$set": {"primary": self._image_in.primary}},
                         ),
                     ],
                     session=None,

@@ -134,13 +134,13 @@ class ImageRepo:
         try:
             if update_primary:
                 bulkwrite_update = [
-                    UpdateOne(
-                        filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True, exclude={"primary"})}
-                    ),
+                    # Update of code should be done first here if available to ensure no updates occur if a duplicate
+                    # is found
+                    UpdateOne(filter={"_id": image_id}, update={"$set": image.model_dump(by_alias=True)}),
                     UpdateMany(
-                        filter={"primary": True, "entity_id": image.entity_id}, update={"$set": {"primary": False}}
+                        filter={"_id": {"$ne": image_id}, "primary": True, "entity_id": image.entity_id},
+                        update={"$set": {"primary": False}},
                     ),
-                    UpdateOne(filter={"_id": image_id}, update={"$set": {"primary": image.primary}}),
                 ]
                 self._images_collection.bulk_write(bulkwrite_update, session=session)
             else:
