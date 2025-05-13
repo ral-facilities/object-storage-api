@@ -200,6 +200,33 @@ Instances of these can be started using the `docker-compose.yml` file.
 
 ### Outside of Docker
 
+#### Prerequisites
+
+##### MongoDB
+
+You must have access to a MongoDB instance with a database and be able to create the following indexes using either
+MongoDB Compass or a CLI e.g.
+
+```bash
+mongosh DATABASE_NAME --username USERNAME --password PASSWORD --authenticationDatabase=admin \
+   --eval 'db.attachments.createIndex({ "entity_id": 1, "code": 1 }, { name: "attachments_file_name_uniqueness_index", unique: true })' \
+   --eval 'db.images.createIndex({ "entity_id": 1, "code": 1 }, { name: "images_file_name_uniqueness_index", unique: true })'
+```
+
+These compound indexes ensure file names cannot be repeated within the same entity.
+
+This needs to be done for both the development and testing databases.
+By default the `.env.example` and `pyproject.toml` use `object-storage` and `test-object-storage` as their names, ensure
+they are modified as required.
+
+##### Object Storage
+
+You must also have access to an S3 object store, such as MinIO, and have created buckets for development and testing.
+By default the `.env.example` and `pyproject.toml` use `object-storage` and `test-object-storage` as their names, ensure
+they are modified as required.
+
+#### Running the api
+
 Ensure that Python is installed on your machine before proceeding.
 
 1. Create a Python virtual environment and activate it in the root of the project directory:

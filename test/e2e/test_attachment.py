@@ -310,7 +310,9 @@ class TestList(ListDSL):
 
         attachments = self.post_test_attachments()
         self.get_attachments(filters={"entity_id": attachments[0]["entity_id"]})
-        self.check_get_attachments_success(attachments[:2])
+        # Order is reversed to the order they were created (as due to indexing its order will be entity_id then code
+        # ascending)
+        self.check_get_attachments_success(attachments[:2][::-1])
 
     def test_list_with_entity_id_filter_with_no_matching_results(self):
         """

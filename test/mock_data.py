@@ -187,7 +187,7 @@ IMAGE_PATCH_METADATA_DATA_ALL_VALUES = {
 }
 
 IMAGE_POST_METADATA_DATA_ALL_VALUES = {
-    **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    "entity_id": str(ObjectId()),
     "title": "Report Title",
     "description": "A damage report.",
 }
