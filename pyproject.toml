@@ -34,7 +34,7 @@ test = [
 
 scripts = [
     "faker==37.1.0",
-    "faker-file[pdf,docx,images]==0.18.3",
+    "faker-file[pdf,docx,images]==0.18.4",
 ]
 
 dev = [
