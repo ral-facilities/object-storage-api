@@ -35,7 +35,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
 
   minio:
-    image: minio/minio:RELEASE.2025-04-08T15-41-24Z
+    image: minio/minio:RELEASE.2024-09-13T20-26-02Z
     container_name: object-storage-minio
     command: minio server /data
     volumes:
