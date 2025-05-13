@@ -74,26 +74,37 @@ ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY = {
     "file_name": "report.txt",
 }
 
-ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
+ATTACHMENT_IN_DATA_REQUIRED_VALUES_ONLY = {
+    **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
+    "id": str(ObjectId()),
+    "code": "report.txt",
+    "object_key": "attachments/65df5ee771892ddcc08bd28d/65e0a624d64aaae884abaaed",
+}
+
+ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY = {
     **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
-    **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
     "id": ANY,
+    "code": "report.txt",
     "title": None,
     "description": None,
 }
 
-# All values
-
-ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES = {
-    "title": "Shattered Laser",
-    "description": "A text attachment describing damage to a laser.",
-    "file_name": "laserDamage.txt",
+ATTACHMENT_GET_DATA_REQUIRED_VALUES_ONLY = {
+    **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
+    "download_url": ANY,
 }
+
+ATTACHMENT_POST_RESPONSE_DATA_REQUIRED_VALUES_ONLY = {
+    **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
+    **ATTACHMENT_UPLOAD_INFO_POST_RESPONSE_DATA_EXPECTED,
+}
+
+# All values
 
 ATTACHMENT_POST_DATA_ALL_VALUES = {
     "entity_id": str(ObjectId()),
-    "file_name": "report.txt",
+    "file_name": "report.pdf",
     "title": "Report Title",
     "description": "A damage report.",
 }
@@ -101,23 +112,21 @@ ATTACHMENT_POST_DATA_ALL_VALUES = {
 ATTACHMENT_IN_DATA_ALL_VALUES = {
     **ATTACHMENT_POST_DATA_ALL_VALUES,
     "id": str(ObjectId()),
+    "code": "report.pdf",
     "object_key": "attachments/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
 }
 
-ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY = {
-    **ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
-    "id": ANY,
-}
-
-ATTACHMENT_GET_DATA_REQUIRED_VALUES_ONLY = {
-    **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
-    "url": ANY,
+ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES = {
+    "title": "Shattered Laser",
+    "description": "A text attachment describing damage to a laser.",
+    "file_name": "laserDamage.pdf",
 }
 
 ATTACHMENT_GET_METADATA_ALL_VALUES = {
     **ATTACHMENT_POST_DATA_ALL_VALUES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
+    "code": "report.pdf",
 }
 
 ATTACHMENT_GET_DATA_ALL_VALUES = {
@@ -128,6 +137,7 @@ ATTACHMENT_GET_DATA_ALL_VALUES = {
 ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH = {
     **ATTACHMENT_GET_METADATA_ALL_VALUES,
     **ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
+    "code": "laserdamage.pdf",
 }
 
 ATTACHMENT_POST_RESPONSE_DATA_ALL_VALUES = {
@@ -141,11 +151,21 @@ IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY = {
     "entity_id": str(ObjectId()),
 }
 
+IMAGE_IN_DATA_REQUIRED_VALUES_ONLY = {
+    **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
+    "id": str(ObjectId()),
+    "file_name": "image.jpg",
+    "code": "image.jpg",
+    "object_key": "images/65df5ee771892ddcc08bd28d/65e0a624d64aaae884abaaed",
+    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
+}
+
 IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY = {
     **IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
     "file_name": "image.jpg",
+    "code": "image.jpg",
     "primary": False,
     "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
     "title": None,
@@ -154,14 +174,15 @@ IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY = {
 
 IMAGE_GET_DATA_REQUIRED_VALUES_ONLY = {
     **IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
-    "url": ANY,
+    "view_url": ANY,
+    "download_url": ANY,
 }
 
 
 IMAGE_PATCH_METADATA_DATA_ALL_VALUES = {
     "title": "Shattered Laser",
     "description": "An image of a shattered laser.",
-    "file_name": "picture.jpg",
+    "file_name": "picture.png",
     "primary": False,
 }
 
@@ -175,23 +196,32 @@ IMAGE_POST_METADATA_DATA_ALL_VALUES = {
 IMAGE_IN_DATA_ALL_VALUES = {
     **IMAGE_POST_METADATA_DATA_ALL_VALUES,
     "id": str(ObjectId()),
-    "file_name": "image.jpg",
+    "file_name": "image.png",
+    "code": "image.png",
     "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
-    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
+    "thumbnail_base64": (
+        "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAmywAVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZ"
+        "t7gA/v5HN3b9v7Icf/I53pUYAAAA"
+    ),
 }
 
 IMAGE_GET_METADATA_DATA_ALL_VALUES = {
     **IMAGE_POST_METADATA_DATA_ALL_VALUES,
     **CREATED_MODIFIED_GET_DATA_EXPECTED,
     "id": ANY,
-    "file_name": "image.jpg",
+    "file_name": "image.png",
+    "code": "image.png",
     "primary": False,
-    "thumbnail_base64": "UklGRjQAAABXRUJQVlA4ICgAAADQAQCdASoCAAEAAUAmJYwCdAEO/gOOAAD+qlQWHDxhNJOjVlqIb8AA",
+    "thumbnail_base64": (
+        "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAmywAVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZ"
+        "t7gA/v5HN3b9v7Icf/I53pUYAAAA"
+    ),
 }
 
 IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH = {
     **IMAGE_GET_METADATA_DATA_ALL_VALUES,
     **IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
+    "code": "picture.png",
 }
 
 IMAGE_GET_DATA_ALL_VALUES = {

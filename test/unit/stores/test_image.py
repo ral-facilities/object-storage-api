@@ -31,35 +31,71 @@ class ImageStoreDSL:
             yield
 
 
-class UploadDSL(ImageStoreDSL):
-    """Base class for `upload` tests."""
+class GetObjectKeyDSL(ImageStoreDSL):
+    """Base class for `get_object_key` tests."""
 
     _image_post_metadata: ImagePostMetadataSchema
-    _upload_file: UploadFile
     _image_id: str
     _expected_object_key: str
     _obtained_object_key: str
 
-    def mock_upload(self, image_post_metadata_data: dict) -> None:
+    def mock_get_object_key(self, image_post_metadata_data: dict) -> None:
         """
-        Mocks object store methods appropriately to test the `upload` store method.
+        Mocks object store methods appropriately to test the `get_object_key` store method.
 
         :param image_post_metadata_data: Dictionary containing the image metadata data as would be required for an
                                          `ImagePostMetadataSchema`.
         """
 
         self._image_post_metadata = ImagePostMetadataSchema(**image_post_metadata_data)
-        self._upload_file = UploadFile(MagicMock(), size=100, filename="test.png", headers=MagicMock())
         self._image_id = str(ObjectId())
 
         self._expected_object_key = f"images/{self._image_post_metadata.entity_id}/{self._image_id}"
 
+    def call_get_object_key(self) -> None:
+        """Calls the `ImageStore` `get_object_key` method with the appropriate data from a prior call to
+        `mock_get_object_key`."""
+
+        self._obtained_object_key = self.image_store.get_object_key(self._image_id, self._image_post_metadata)
+
+    def check_get_object_key_success(self) -> None:
+        """Checks that a prior call to `call_get_object_key` worked as expected."""
+        assert self._obtained_object_key == self._expected_object_key
+
+
+class TestGetObjectKey(GetObjectKeyDSL):
+    """Tests for getting the object key for an image."""
+
+    def test_get_object_key(self):
+        """Test getting the object key for an image."""
+
+        self.mock_get_object_key(IMAGE_POST_METADATA_DATA_ALL_VALUES)
+        self.call_get_object_key()
+        self.check_get_object_key_success()
+
+
+class UploadDSL(ImageStoreDSL):
+    """Base class for `upload` tests."""
+
+    _image_in: ImageIn
+    _upload_file: UploadFile
+    _expected_object_key: str
+
+    def mock_upload(self, image_in_data: dict) -> None:
+        """
+        Mocks object store methods appropriately to test the `upload` store method.
+
+        :param image_in_data: Dictionary containing the image data as would be required for an `ImageIn`
+                              database model (i.e. no created and modified times required).
+        """
+
+        self._image_in = ImageIn(**image_in_data)
+        self._upload_file = UploadFile(MagicMock(), size=100, filename="test.png", headers=MagicMock())
+
     def call_upload(self) -> None:
         """Calls the `ImageStore` `upload` method with the appropriate data from a prior call to `mock_upload`."""
 
-        self._obtained_object_key = self.image_store.upload(
-            self._image_id, self._image_post_metadata, self._upload_file
-        )
+        self.image_store.upload(self._image_in, self._upload_file)
 
     def check_upload_success(self) -> None:
         """Checks that a prior call to `call_upload` worked as expected."""
@@ -67,11 +103,9 @@ class UploadDSL(ImageStoreDSL):
         self.mock_s3_client.upload_fileobj.assert_called_once_with(
             self._upload_file.file,
             Bucket=object_storage_config.bucket_name.get_secret_value(),
-            Key=self._expected_object_key,
+            Key=self._image_in.object_key,
             ExtraArgs={"ContentType": self._upload_file.content_type},
         )
-
-        assert self._obtained_object_key == self._expected_object_key
 
 
 class TestUpload(UploadDSL):
@@ -80,7 +114,7 @@ class TestUpload(UploadDSL):
     def test_upload(self):
         """Test uploading an image."""
 
-        self.mock_upload(IMAGE_POST_METADATA_DATA_ALL_VALUES)
+        self.mock_upload(IMAGE_IN_DATA_ALL_VALUES)
         self.call_upload()
         self.check_upload_success()
 
@@ -153,7 +187,7 @@ class TestDeleteMany(DeleteManyDSL):
 
 
 class CreatePresignedURLDSL(ImageStoreDSL):
-    """Base class for `create` tests."""
+    """Base class for `create_presigned_get` tests."""
 
     _image_out: ImageOut
     _expected_presigned_view_url: str

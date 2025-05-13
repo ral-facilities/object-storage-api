@@ -2,6 +2,9 @@
 Unit tests for the `AttachmentService` service.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import (
     ATTACHMENT_IN_DATA_ALL_VALUES,
     ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
@@ -29,12 +32,14 @@ from object_storage_api.schemas.attachment import (
     AttachmentPostUploadInfoSchema,
     AttachmentSchema,
 )
+from object_storage_api.services import utils
 from object_storage_api.services.attachment import AttachmentService
 
 
 class AttachmentServiceDSL:
     """Base class for `AttachmentService` unit tests."""
 
+    wrapped_utils: Mock
     mock_attachment_repository: Mock
     mock_attachment_store: Mock
     attachment_service: AttachmentService
@@ -57,9 +62,11 @@ class AttachmentServiceDSL:
         self.mock_attachment_store = attachment_store_mock
         self.attachment_service = attachment_service
 
-        with patch("object_storage_api.services.attachment.ObjectId") as object_id_mock:
-            self.mock_object_id = object_id_mock
-            yield
+        with patch("object_storage_api.services.attachment.utils", wraps=utils) as wrapped_utils:
+            self.wrapped_utils = wrapped_utils
+            with patch("object_storage_api.services.attachment.ObjectId") as object_id_mock:
+                self.mock_object_id = object_id_mock
+                yield
 
 
 class CreateDSL(AttachmentServiceDSL):
@@ -72,7 +79,7 @@ class CreateDSL(AttachmentServiceDSL):
     _created_attachment: AttachmentPostResponseSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, attachment_post_data: dict, attachment_count: int) -> None:
+    def mock_create(self, attachment_post_data: dict, attachment_count: int = 0) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
@@ -86,8 +93,6 @@ class CreateDSL(AttachmentServiceDSL):
         self._expected_attachment_id = ObjectId()
         self.mock_object_id.return_value = self._expected_attachment_id
 
-        self.mock_attachment_repository.count_by_entity_id.return_value = attachment_count
-
         # Store
         expected_object_key = "some/object/key"
         expected_upload_info = AttachmentPostUploadInfoSchema(
@@ -100,8 +105,11 @@ class CreateDSL(AttachmentServiceDSL):
             self._expected_attachment_in = AttachmentIn(
                 **self._attachment_post.model_dump(),
                 id=str(self._expected_attachment_id),
+                code=utils.generate_code(self._attachment_post.file_name, "attachment"),
                 object_key=expected_object_key,
             )
+
+            self.mock_attachment_repository.count_by_entity_id.return_value = attachment_count
 
             # Repo (The contents of the returned output model does not matter here as long as its valid)
             expected_attachment_out = AttachmentOut(**self._expected_attachment_in.model_dump(by_alias=True))
@@ -131,18 +139,18 @@ class CreateDSL(AttachmentServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        self.mock_attachment_repository.count_by_entity_id.assert_called_once_with(
-            str(self._expected_attachment_in.entity_id)
-        )
-
         self.mock_attachment_store.create_presigned_post.assert_called_once_with(
             str(self._expected_attachment_id), self._attachment_post
+        )
+        self.wrapped_utils.generate_code.assert_called_once_with(self._expected_attachment.file_name, "attachment")
+        self.mock_attachment_repository.count_by_entity_id.assert_called_once_with(
+            str(self._expected_attachment_in.entity_id)
         )
         self.mock_attachment_repository.create.assert_called_once_with(self._expected_attachment_in)
 
         assert self._created_attachment == self._expected_attachment
 
-    def check_create_failed_with_exception(self, message: str, assert_count: bool = True) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_count=False) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
@@ -150,15 +158,19 @@ class CreateDSL(AttachmentServiceDSL):
         :param message: Message of the raised exception.
         :param assert_count: Whether the `count_by_entity_id` repo method is expected to be called or not.
         """
+
         if assert_count:
+            self.mock_attachment_store.create_presigned_post.assert_called_once_with(
+                str(self._expected_attachment_id), self._attachment_post
+            )
             self.mock_attachment_repository.count_by_entity_id.assert_called_once_with(
                 str(self._expected_attachment_in.entity_id)
             )
+            self.mock_attachment_repository.create.assert_not_called()
         else:
+            self.mock_attachment_store.create_presigned_post.assert_not_called()
             self.mock_attachment_repository.count_by_entity_id.assert_not_called()
-
-        self.mock_attachment_store.create_presigned_post.assert_not_called()
-        self.mock_attachment_repository.create.assert_not_called()
+            self.mock_attachment_repository.create.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
@@ -169,23 +181,23 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an attachment."""
 
-        self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES, 0)
+        self.mock_create(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.call_create()
         self.check_create_success()
 
     def test_create_with_file_extension_not_supported(self):
         """Test creating an attachment with a file extension that is not supported."""
         file_name = "test.html"
-        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": file_name}, 0)
+        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": file_name})
         self.call_create_expecting_error(UnsupportedFileExtensionException)
-        self.check_create_failed_with_exception(f"File extension of '{file_name}' is not supported", True)
+        self.check_create_failed_with_exception(f"File extension of '{file_name}' is not supported")
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an attachment with an invalid `entity_id`."""
 
-        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": "invalid-id"}, 0)
+        self.mock_create({**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": "invalid-id"})
         self.call_create_expecting_error(InvalidObjectIdError)
-        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'", False)
+        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
     def test_create_when_upload_limit_reached(self):
         """Test creating an attachment when the upload limit has been reached."""
@@ -195,7 +207,7 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception(
             "Unable to create an attachment as the upload limit for attachments with `entity_id` "
             f"'{ATTACHMENT_POST_DATA_ALL_VALUES["entity_id"]}' has been reached",
-            True,
+            assert_count=True,
         )
 
 
@@ -291,15 +303,18 @@ class UpdateDSL(AttachmentServiceDSL):
     _stored_attachment: Optional[AttachmentOut]
     _attachment_patch: AttachmentPatchMetadataSchema
     _expected_attachment_in: AttachmentIn
-    _expected_attachment_out: AttachmentOut
+    _expected_attachment_metadata_schema: AttachmentMetadataSchema
     _updated_attachment_id: str
     _updated_attachment: MagicMock
     _update_exception: pytest.ExceptionInfo
 
-    def mock_update(self, attachment_patch_data: dict, stored_attachment_post_data: Optional[dict]) -> None:
+    def mock_update(
+        self, attachment_id: str, attachment_patch_data: dict, stored_attachment_post_data: Optional[dict]
+    ) -> None:
         """
         Mocks the repository methods appropriately to test the `update` service method.
 
+        :param attachment_id: ID of the attachment that will be obtained.
         :param attachment_patch_data: Dictionary containing the patch data as would be required for an
             `AttachmentPatchMetadataSchema` (i.e. no created or modified times required).
         :param stored_attachment_post_data: Dictionary containing the attachment data for the existing stored
@@ -312,7 +327,11 @@ class UpdateDSL(AttachmentServiceDSL):
             AttachmentOut(
                 **AttachmentIn(
                     **stored_attachment_post_data,
-                ).model_dump(),
+                    id=attachment_id,
+                    code=utils.generate_code(stored_attachment_post_data["file_name"], "attachment"),
+                    # Actual values dont matter here
+                    object_key="some/object/key",
+                ).model_dump(by_alias=True),
             )
             if stored_attachment_post_data
             else None
@@ -324,16 +343,20 @@ class UpdateDSL(AttachmentServiceDSL):
 
         # Construct the expected input for the repository
         merged_attachment_data = {**(stored_attachment_post_data or {}), **attachment_patch_data}
-        self._expected_attachment_in = AttachmentIn(**merged_attachment_data)
+        self._expected_attachment_in = AttachmentIn(
+            **merged_attachment_data,
+            id=attachment_id,
+            code=utils.generate_code(merged_attachment_data["file_name"], "attachment"),
+            # Actual values dont matter here
+            object_key="some/object/key",
+        )
 
         # Updated attachment
-        attachment_out = AttachmentOut(
-            **self._expected_attachment_in.model_dump(),
-        )
+        attachment_out = AttachmentOut(**self._expected_attachment_in.model_dump())
 
         self.mock_attachment_repository.update.return_value = attachment_out
 
-        self._expected_attachment_out = AttachmentMetadataSchema(**attachment_out.model_dump())
+        self._expected_attachment_metadata_schema = AttachmentMetadataSchema(**attachment_out.model_dump())
 
     def call_update(self, attachment_id: str) -> None:
         """
@@ -365,13 +388,19 @@ class UpdateDSL(AttachmentServiceDSL):
         # Ensure obtained old attachment
         self.mock_attachment_repository.get.assert_called_once_with(attachment_id=self._updated_attachment_id)
 
+        # Ensure new code was obtained if patching name
+        if self._attachment_patch.file_name and self._stored_attachment.file_name != self._attachment_patch.file_name:
+            self.wrapped_utils.generate_code.assert_called_once_with(self._attachment_patch.file_name, "attachment")
+        else:
+            self.wrapped_utils.generate_code.assert_not_called()
+
         # Ensure updated with expected data
         self.mock_attachment_repository.update.assert_called_once_with(
             attachment_id=self._updated_attachment_id,
             attachment=self._expected_attachment_in,
         )
 
-        assert self._updated_attachment == self._expected_attachment_out
+        assert self._updated_attachment == self._expected_attachment_metadata_schema
 
     def check_update_failed_with_exception(self, message: str) -> None:
         """
@@ -395,8 +424,9 @@ class TestUpdate(UpdateDSL):
         attachment_id = str(ObjectId())
 
         self.mock_update(
+            attachment_id,
             attachment_patch_data=ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
-            stored_attachment_post_data=ATTACHMENT_IN_DATA_ALL_VALUES,
+            stored_attachment_post_data=ATTACHMENT_POST_DATA_ALL_VALUES,
         )
 
         self.call_update(attachment_id)
@@ -407,8 +437,9 @@ class TestUpdate(UpdateDSL):
         attachment_id = str(ObjectId())
 
         self.mock_update(
+            attachment_id,
             attachment_patch_data={**ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "report.mp3"},
-            stored_attachment_post_data=ATTACHMENT_IN_DATA_ALL_VALUES,
+            stored_attachment_post_data=ATTACHMENT_POST_DATA_ALL_VALUES,
         )
 
         self.call_update_expecting_error(attachment_id, FileTypeMismatchException)
@@ -501,10 +532,6 @@ class DeleteByEntityIdDSL(AttachmentServiceDSL):
             self.mock_attachment_repository.delete_by_entity_id.assert_not_called()
 
 
-# Expect some duplicate code inside tests as the tests for the different entities can be very similar
-# pylint: disable=duplicate-code
-
-
 class TestDeleteByEntityId(DeleteByEntityIdDSL):
     """Tests for deleting attachments by `entity_id`."""
 
@@ -519,6 +546,3 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
         self.mock_delete_by_entity_id([])
         self.call_delete_by_entity_id()
         self.check_delete_by_entity_id_success(False)
-
-
-# pylint: enable=duplicate-code

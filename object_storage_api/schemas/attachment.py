@@ -37,6 +37,7 @@ class AttachmentMetadataSchema(CreatedModifiedSchemaMixin, AttachmentPostSchema)
     """Schema model for an attachment's metadata."""
 
     id: str = Field(description="ID of the attachment")
+    code: str = Field(description="Code of the attachment")
 
 
 class AttachmentPostResponseSchema(AttachmentMetadataSchema):

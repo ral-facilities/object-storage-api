@@ -4,6 +4,7 @@ End-to-End tests for the image router.
 
 from test.mock_data import (
     IMAGE_GET_DATA_ALL_VALUES,
+    IMAGE_GET_DATA_REQUIRED_VALUES_ONLY,
     IMAGE_GET_METADATA_DATA_ALL_VALUES,
     IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH,
     IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY,
@@ -79,18 +80,27 @@ class CreateDSL:
         entity_id_a, entity_id_b = (str(ObjectId()) for _ in range(2))
 
         # First image
-        image_a_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
+        image_a_id = self.post_image(
+            {**IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_a},
+            IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY["file_name"],
+        )
 
         # Second image
-        image_b_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a}, "image.jpg")
+        image_b_id = self.post_image(
+            {**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a},
+            IMAGE_GET_METADATA_DATA_ALL_VALUES["file_name"],
+        )
 
         # Third image
-        image_c_id = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_b}, "image.jpg")
+        image_c_id = self.post_image(
+            {**IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_b},
+            IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY["file_name"],
+        )
 
         return [
-            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_a_id},
+            {**IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_a, "id": image_a_id},
             {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_a, "id": image_b_id},
-            {**IMAGE_GET_METADATA_DATA_ALL_VALUES, "entity_id": entity_id_b, "id": image_c_id},
+            {**IMAGE_GET_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_b, "id": image_c_id},
         ]
 
     def check_post_image_success(self, expected_image_get_data: dict) -> None:
@@ -102,7 +112,7 @@ class CreateDSL:
         """
 
         assert self._post_response_image.status_code == 201
-        assert self._post_response_image.json() == {**expected_image_get_data, "file_name": "image.jpg"}
+        assert self._post_response_image.json() == expected_image_get_data
 
     def check_post_image_failed_with_detail(self, status_code: int, detail: str) -> None:
         """
@@ -128,7 +138,7 @@ class TestCreate(CreateDSL):
     def test_create_with_all_values_provided(self):
         """Test creating an image with all values provided."""
 
-        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
         self.check_post_image_success(IMAGE_GET_METADATA_DATA_ALL_VALUES)
 
     def test_create_with_invalid_entity_id(self):
@@ -171,6 +181,15 @@ class TestCreate(CreateDSL):
             422, "Limit for the maximum number of images for the provided `entity_id` has been reached"
         )
 
+    def test_create_with_duplicate_file_name_within_parent(self):
+        """Test creating an attachment with the same name as another within the parent entity."""
+
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
+        self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.jpg")
+        self.check_post_image_failed_with_detail(
+            409, "An image with the same file name already exists within the parent entity."
+        )
+
 
 class GetDSL(CreateDSL):
     """Base class for get tests."""
@@ -211,7 +230,7 @@ class TestGet(GetDSL):
 
     def test_get_with_valid_image_id(self):
         """Test getting an image with a valid image ID."""
-        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
         self.get_image(image_id)
         self.check_get_image_success(IMAGE_GET_DATA_ALL_VALUES)
 
@@ -377,7 +396,7 @@ class TestUpdate(UpdateDSL):
 
     def test_update_all_fields(self):
         """Test updating every field of an image."""
-        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "image.png")
         self.patch_image(image_id, IMAGE_PATCH_METADATA_DATA_ALL_VALUES)
         self.check_patch_image_success(IMAGE_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH)
 
@@ -391,18 +410,20 @@ class TestUpdate(UpdateDSL):
         self.patch_image("invalid-id", {})
         self.check_patch_image_failed_with_detail(404, "Image not found")
 
-    def test_partial_update_with_file_extension_content_type_mismatch(self):
+    def test_update_with_file_extension_content_type_mismatch(self):
         """Test updating an image with a different extension."""
-        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.jpg")
-        self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"})
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
+        self.patch_image(image_id, {**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "image.jpg"})
         self.check_patch_image_failed_with_detail(422, "File extension and content type do not match")
 
     def test_update_primary(self):
         """Test updating primary to True, triggering other database updates."""
-        image_id_a = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES}, "image.jpg")
+        image_id_a = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES}, "image.png")
         entity_id = str(ObjectId())
-        image_id_b = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id}, "image.jpg")
-        image_id_c = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id}, "image.jpg")
+        image_id_b = self.post_image(
+            {**IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id}, "image.jpg"
+        )
+        image_id_c = self.post_image({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": entity_id}, "image.png")
 
         self.patch_image(image_id_a, {"primary": True})
         self.patch_image(image_id_b, {"primary": True})
@@ -412,10 +433,20 @@ class TestUpdate(UpdateDSL):
         self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True})
 
         self.get_image(image_id_b)
-        self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": False, "entity_id": entity_id})
+        self.check_get_image_success({**IMAGE_GET_DATA_REQUIRED_VALUES_ONLY, "primary": False, "entity_id": entity_id})
 
         self.get_image(image_id_c)
         self.check_get_image_success({**IMAGE_GET_DATA_ALL_VALUES, "primary": True, "entity_id": entity_id})
+
+    def test_update_file_name_to_duplicate(self):
+        """Test updating the name of an image to conflict with a pre-existing one."""
+
+        self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "image.png")
+        image_id = self.post_image(IMAGE_POST_METADATA_DATA_ALL_VALUES, "another_image.png")
+        self.patch_image(image_id, {"file_name": "image.png"})
+        self.check_patch_image_failed_with_detail(
+            409, "An image with the same file name already exists within the parent entity."
+        )
 
 
 class DeleteDSL(ListDSL):

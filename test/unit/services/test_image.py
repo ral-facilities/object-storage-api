@@ -2,10 +2,14 @@
 Unit tests for the `ImageService` service.
 """
 
+# Expect some duplicate code inside tests as the tests for the different entities can be very similar
+# pylint: disable=duplicate-code
+
 from test.mock_data import (
     IMAGE_IN_DATA_ALL_VALUES,
     IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
     IMAGE_POST_METADATA_DATA_ALL_VALUES,
+    IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
 )
 from typing import List, Optional
 from unittest.mock import MagicMock, Mock, patch
@@ -28,12 +32,14 @@ from object_storage_api.schemas.image import (
     ImagePostMetadataSchema,
     ImageSchema,
 )
+from object_storage_api.services import utils
 from object_storage_api.services.image import ImageService
 
 
 class ImageServiceDSL:
     """Base class for `ImageService` unit tests."""
 
+    wrapped_utils: Mock
     mock_image_repository: Mock
     mock_image_store: Mock
     image_service: ImageService
@@ -57,13 +63,15 @@ class ImageServiceDSL:
         self.mock_image_store = image_store_mock
         self.image_service = image_service
 
-        with patch("object_storage_api.services.image.ObjectId") as object_id_mock:
-            self.mock_object_id = object_id_mock
-            with patch(
-                "object_storage_api.services.image.generate_thumbnail_base64_str"
-            ) as generate_thumbnail_base64_str_mock:
-                self.mock_generate_thumbnail_base64_str = generate_thumbnail_base64_str_mock
-                yield
+        with patch("object_storage_api.services.image.utils", wraps=utils) as wrapped_utils:
+            self.wrapped_utils = wrapped_utils
+            with patch("object_storage_api.services.image.ObjectId") as object_id_mock:
+                self.mock_object_id = object_id_mock
+                with patch(
+                    "object_storage_api.services.image.generate_thumbnail_base64_str"
+                ) as generate_thumbnail_base64_str_mock:
+                    self.mock_generate_thumbnail_base64_str = generate_thumbnail_base64_str_mock
+                    yield
 
 
 class CreateDSL(ImageServiceDSL):
@@ -77,7 +85,7 @@ class CreateDSL(ImageServiceDSL):
     _created_image: ImageMetadataSchema
     _create_exception: pytest.ExceptionInfo
 
-    def mock_create(self, image_post_metadata_data: dict, filename: str, image_count: int) -> None:
+    def mock_create(self, image_post_metadata_data: dict, filename: str, image_count: int = 0) -> None:
         """
         Mocks repo & store methods appropriately to test the `create` service method.
 
@@ -94,25 +102,26 @@ class CreateDSL(ImageServiceDSL):
         self._expected_image_id = ObjectId()
         self.mock_object_id.return_value = self._expected_image_id
 
-        self.mock_image_repository.count_by_entity_id.return_value = image_count
-
         # Thumbnail
         expected_thumbnail_base64 = "some_thumbnail"
         self.mock_generate_thumbnail_base64_str.return_value = expected_thumbnail_base64
 
         # Store
         expected_object_key = "some/object/key"
-        self.mock_image_store.upload.return_value = expected_object_key
+        self.mock_image_store.get_object_key.return_value = expected_object_key
 
         # Expected model data with the object key defined (Ignore if invalid to avoid a premature error)
         if self._image_post_metadata.entity_id != "invalid-id":
             self._expected_image_in = ImageIn(
                 **self._image_post_metadata.model_dump(),
                 id=str(self._expected_image_id),
+                code=utils.generate_code(self._upload_file.filename, "image"),
                 object_key=expected_object_key,
                 file_name=self._upload_file.filename,
                 thumbnail_base64=expected_thumbnail_base64,
             )
+
+            self.mock_image_repository.count_by_entity_id.return_value = image_count
 
             # Repo (The contents of the returned output model does not matter here as long as its valid)
             expected_image_out = ImageOut(**self._expected_image_in.model_dump(by_alias=True))
@@ -140,16 +149,19 @@ class CreateDSL(ImageServiceDSL):
     def check_create_success(self) -> None:
         """Checks that a prior call to `call_create` worked as expected."""
 
-        self.mock_image_repository.count_by_entity_id.assert_called_once_with(str(self._expected_image_in.entity_id))
         self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
-        self.mock_image_store.upload.assert_called_once_with(
-            str(self._expected_image_id), self._image_post_metadata, self._upload_file
+        self.mock_image_store.get_object_key.assert_called_once_with(
+            str(self._expected_image_id), self._image_post_metadata
         )
+        self.wrapped_utils.generate_code.assert_called_once_with(self._expected_image_in.file_name, "image")
+        self.mock_image_repository.count_by_entity_id.assert_called_once_with(str(self._expected_image_in.entity_id))
         self.mock_image_repository.create.assert_called_once_with(self._expected_image_in)
+
+        self.mock_image_store.upload.assert_called_once_with(self._expected_image_in, self._upload_file)
 
         assert self._created_image == self._expected_image
 
-    def check_create_failed_with_exception(self, message: str, assert_count: bool = True) -> None:
+    def check_create_failed_with_exception(self, message: str, assert_count: bool = False) -> None:
         """
         Checks that a prior call to `call_create_expecting_error` worked as expected, raising an exception
         with the correct message.
@@ -157,16 +169,19 @@ class CreateDSL(ImageServiceDSL):
         :param message: Message of the raised exception.
         :param assert_count: Whether the `count_by_entity_id` repo method is expected to be called or not.
         """
+
         if assert_count:
+            self.mock_generate_thumbnail_base64_str.assert_called_once_with(self._upload_file)
             self.mock_image_repository.count_by_entity_id.assert_called_once_with(
                 str(self._expected_image_in.entity_id)
             )
+            self.mock_image_repository.create.assert_not_called()
+            self.mock_image_store.upload.assert_not_called()
         else:
+            self.mock_generate_thumbnail_base64_str.create.assert_not_called()
             self.mock_image_repository.count_by_entity_id.assert_not_called()
-
-        self.mock_generate_thumbnail_base64_str.create.assert_not_called()
-        self.mock_image_store.upload.create.assert_not_called()
-        self.mock_image_repository.create.assert_not_called()
+            self.mock_image_repository.create.assert_not_called()
+            self.mock_image_store.upload.assert_not_called()
 
         assert str(self._create_exception.value) == message
 
@@ -177,35 +192,32 @@ class TestCreate(CreateDSL):
     def test_create(self):
         """Test creating an image."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png", 0)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.png")
         self.call_create()
         self.check_create_success()
 
     def test_create_with_file_extension_content_type_mismatch(self):
         """Test creating an image with an inconsistent file extension and content type."""
 
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpeg", 0)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.jpg")
         self.call_create_expecting_error(FileTypeMismatchException)
         self.check_create_failed_with_exception(
             f"File extension of '{self._upload_file.filename}' does not match "
             f"content type '{self._upload_file.content_type}'",
-            assert_count=True,
         )
 
     def test_create_with_file_extension_not_supported(self):
         """Test creating an image with a file extension that is not supported."""
-        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif", 0)
+        self.mock_create(IMAGE_POST_METADATA_DATA_ALL_VALUES, "test.gif")
         self.call_create_expecting_error(UnsupportedFileExtensionException)
-        self.check_create_failed_with_exception(
-            f"File extension of '{self._upload_file.filename}' is not supported", assert_count=True
-        )
+        self.check_create_failed_with_exception(f"File extension of '{self._upload_file.filename}' is not supported")
 
     def test_create_with_invalid_entity_id(self):
         """Test creating an image with an invalid `entity_id`."""
 
-        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png", 0)
+        self.mock_create({**IMAGE_POST_METADATA_DATA_ALL_VALUES, "entity_id": "invalid-id"}, "test.png")
         self.call_create_expecting_error(InvalidObjectIdError)
-        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'", False)
+        self.check_create_failed_with_exception("Invalid ObjectId value 'invalid-id'")
 
     def test_create_when_upload_limit_reached(self):
         """Test creating an attachment when the upload limit has been reached."""
@@ -215,7 +227,7 @@ class TestCreate(CreateDSL):
         self.check_create_failed_with_exception(
             "Unable to create an image as the upload limit for images with `entity_id` "
             f"{IMAGE_POST_METADATA_DATA_ALL_VALUES["entity_id"]} has been reached",
-            True,
+            assert_count=True,
         )
 
 
@@ -321,24 +333,38 @@ class UpdateDSL(ImageServiceDSL):
     _updated_image: MagicMock
     _update_exception: pytest.ExceptionInfo
 
-    def mock_update(self, image_patch_data: dict, stored_image_post_data: Optional[dict]) -> None:
+    def mock_update(
+        self,
+        image_id: str,
+        image_patch_data: dict,
+        stored_image_post_metadata_data: Optional[dict],
+        stored_image_filename: str,
+    ) -> None:
         """
         Mocks the repository methods appropriately to test the `update` service method.
 
+        :param image_id: ID of the image that will be obtained.
         :param image_patch_data: Dictionary containing the patch data as would be required for an
             `ImagePatchMetadataSchema` (i.e. no created and modified times required).
         :param stored_image_post_data: Dictionary containing the image data for the existing stored
             image as would be required for an `ImagePostMetadataSchema` (i.e. no created and modified
             times required).
+        :param stored_image_filename: Stored filename of the image.
         """
         # Stored image
         self._stored_image = (
             ImageOut(
                 **ImageIn(
-                    **stored_image_post_data,
+                    **stored_image_post_metadata_data,
+                    id=image_id,
+                    file_name=stored_image_filename,
+                    code=utils.generate_code(stored_image_filename, "image"),
+                    # Actual values dont matter here
+                    object_key="some/object/key",
+                    thumbnail_base64="some_data",
                 ).model_dump(),
             )
-            if stored_image_post_data
+            if stored_image_post_metadata_data
             else None
         )
         self.mock_image_repository.get.return_value = self._stored_image
@@ -347,8 +373,19 @@ class UpdateDSL(ImageServiceDSL):
         self._image_patch = ImagePatchMetadataSchema(**image_patch_data)
 
         # Construct the expected input for the repository
-        merged_image_data = {**(stored_image_post_data or {}), **image_patch_data}
-        self._expected_image_in = ImageIn(**merged_image_data)
+        merged_image_data = {
+            **(stored_image_post_metadata_data or {}),
+            **{"file_name": stored_image_filename},
+            **image_patch_data,
+        }
+        self._expected_image_in = ImageIn(
+            **merged_image_data,
+            id=image_id,
+            code=utils.generate_code(merged_image_data["file_name"], "image"),
+            # Actual values dont matter here
+            object_key="some/object/key",
+            thumbnail_base64="some_data",
+        )
 
         # Updated image
         image_out = ImageOut(
@@ -418,8 +455,10 @@ class TestUpdate(UpdateDSL):
         image_id = str(ObjectId())
 
         self.mock_update(
+            image_id,
             image_patch_data=IMAGE_PATCH_METADATA_DATA_ALL_VALUES,
-            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
+            stored_image_post_metadata_data=IMAGE_POST_METADATA_DATA_REQUIRED_VALUES_ONLY,
+            stored_image_filename="name.png",
         )
         self.call_update(image_id)
         self.check_update_success()
@@ -429,8 +468,10 @@ class TestUpdate(UpdateDSL):
         image_id = str(ObjectId())
 
         self.mock_update(
+            image_id,
             image_patch_data={**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "primary": True},
-            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
+            stored_image_post_metadata_data=IMAGE_POST_METADATA_DATA_ALL_VALUES,
+            stored_image_filename=IMAGE_PATCH_METADATA_DATA_ALL_VALUES["file_name"],
         )
         self.call_update(image_id)
         self.check_update_success()
@@ -440,8 +481,10 @@ class TestUpdate(UpdateDSL):
         image_id = str(ObjectId())
 
         self.mock_update(
+            image_id,
             image_patch_data={**IMAGE_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "picture.png"},
-            stored_image_post_data=IMAGE_IN_DATA_ALL_VALUES,
+            stored_image_post_metadata_data=IMAGE_POST_METADATA_DATA_ALL_VALUES,
+            stored_image_filename="picture.jpg",
         )
         self.call_update_expecting_error(image_id, FileTypeMismatchException)
         self.check_update_failed_with_exception(
@@ -534,10 +577,6 @@ class DeleteByEntityIdDSL(ImageServiceDSL):
             self.mock_image_repository.delete_by_entity_id.assert_not_called()
 
 
-# Expect some duplicate code inside tests as the tests for the different entities can be very similar
-# pylint: disable=duplicate-code
-
-
 class TestDeleteByEntityId(DeleteByEntityIdDSL):
     """Tests for deleting images by `entity_id`."""
 
@@ -552,6 +591,3 @@ class TestDeleteByEntityId(DeleteByEntityIdDSL):
         self.mock_delete_by_entity_id([])
         self.call_delete_by_entity_id()
         self.check_delete_by_entity_id_success(False)
-
-
-# pylint: enable=duplicate-code

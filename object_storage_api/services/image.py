@@ -16,8 +16,8 @@ from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
     InvalidObjectIdError,
-    UploadLimitReachedError,
     UnsupportedFileExtensionException,
+    UploadLimitReachedError,
 )
 from object_storage_api.core.image import generate_thumbnail_base64_str
 from object_storage_api.models.image import ImageIn
@@ -28,6 +28,7 @@ from object_storage_api.schemas.image import (
     ImagePostMetadataSchema,
     ImageSchema,
 )
+from object_storage_api.services import utils
 from object_storage_api.stores.image import ImageStore
 
 logger = logging.getLogger()
@@ -60,9 +61,9 @@ class ImageService:
         :param upload_file: Upload file of the image to be created.
         :return: Created image with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the image has any invalid ID's in it.
-        :raises UploadLimitReachedError: If the upload limit has been reached.
         :raises UnsupportedFileExtensionException: If the file extension of the image is not supported.
         :raises FileTypeMismatchException: If the extension and content type of the image do not match.
+        :raises UploadLimitReachedError: If the upload limit has been reached.
         """
         try:
             CustomObjectId(image_metadata.entity_id)
@@ -70,13 +71,6 @@ class ImageService:
             # Provide more specific detail
             exc.response_detail = "Invalid `entity_id` given"
             raise exc
-
-        if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
-            raise UploadLimitReachedError(
-                detail="Unable to create an image as the upload limit for images with "
-                f"`entity_id` {image_metadata.entity_id} has been reached",
-                entity_name="image",
-            )
 
         file_extension = Path(upload_file.filename).suffix
         if not file_extension or file_extension.lower() not in config.image.allowed_file_extensions:
@@ -95,17 +89,27 @@ class ImageService:
         # Generate the thumbnail
         thumbnail_base64 = generate_thumbnail_base64_str(upload_file)
 
-        # Upload the full size image to object storage
-        object_key = self._image_store.upload(image_id, image_metadata, upload_file)
-
         image_in = ImageIn(
             **image_metadata.model_dump(),
             id=image_id,
             file_name=upload_file.filename,
-            object_key=object_key,
+            code=utils.generate_code(upload_file.filename, "image"),
+            object_key=self._image_store.get_object_key(image_id, image_metadata),
             thumbnail_base64=thumbnail_base64,
         )
+
+        # This should be checked as close to the actual create as possible to avoid concurrency issues
+        if self._image_repository.count_by_entity_id(image_metadata.entity_id) >= config.image.upload_limit:
+            raise UploadLimitReachedError(
+                detail="Unable to create an image as the upload limit for images with "
+                f"`entity_id` {image_metadata.entity_id} has been reached",
+                entity_type="image",
+            )
+
         image_out = self._image_repository.create(image_in)
+
+        # Upload the full size image to object storage
+        self._image_store.upload(image_in, upload_file)
 
         return ImageMetadataSchema(**image_out.model_dump())
 
@@ -140,9 +144,11 @@ class ImageService:
         :return: The updated image.
         :raises FileTypeMismatchException: If the extensions of the stored and updated image do not match.
         """
+        update_data = image.model_dump(exclude_unset=True)
+
         stored_image = self._image_repository.get(image_id=image_id)
 
-        if image.file_name is not None:
+        if "file_name" in update_data and image.file_name != stored_image.file_name:
             stored_type, _ = mimetypes.guess_type(stored_image.file_name)
             update_type, _ = mimetypes.guess_type(image.file_name)
             if update_type != stored_type:
@@ -151,10 +157,12 @@ class ImageService:
                     f"that of the stored image '{stored_image.file_name}'"
                 )
 
+            update_data["code"] = utils.generate_code(image.file_name, "image")
+
         update_primary = image.primary is not None and image.primary is True and stored_image.primary is False
         updated_image = self._image_repository.update(
             image_id=image_id,
-            image=ImageIn(**{**stored_image.model_dump(), **image.model_dump(exclude_unset=True)}),
+            image=ImageIn(**{**stored_image.model_dump(), **update_data}),
             update_primary=update_primary,
         )
 

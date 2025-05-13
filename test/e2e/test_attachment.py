@@ -6,6 +6,7 @@ from test.mock_data import (
     ATTACHMENT_GET_DATA_ALL_VALUES,
     ATTACHMENT_GET_METADATA_ALL_VALUES,
     ATTACHMENT_GET_METADATA_DATA_ALL_VALUES_AFTER_PATCH,
+    ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
     ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_ALL_VALUES,
     ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY,
@@ -15,8 +16,8 @@ from test.mock_data import (
 from typing import Optional
 
 import pytest
-from bson import ObjectId
 import requests
+from bson import ObjectId
 from fastapi.testclient import TestClient
 from httpx import Response
 
@@ -61,32 +62,35 @@ class CreateDSL:
 
         # First item
         attachment_a_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
+            {**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_a},
         )
 
         # Second item
         attachment_b_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_a,
-            },
+            {**ATTACHMENT_POST_DATA_ALL_VALUES, "entity_id": entity_id_a},
         )
 
         # Third item
         attachment_c_id = self.post_attachment(
-            {
-                **ATTACHMENT_POST_DATA_ALL_VALUES,
-                "entity_id": entity_id_b,
-            },
+            {**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": entity_id_b},
         )
 
         return [
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_a_id},
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_a, "id": attachment_b_id},
-            {**ATTACHMENT_GET_METADATA_ALL_VALUES, "entity_id": entity_id_b, "id": attachment_c_id},
+            {
+                **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
+                "entity_id": entity_id_a,
+                "id": attachment_a_id,
+            },
+            {
+                **ATTACHMENT_GET_METADATA_ALL_VALUES,
+                "entity_id": entity_id_a,
+                "id": attachment_b_id,
+            },
+            {
+                **ATTACHMENT_GET_METADATA_REQUIRED_VALUES_ONLY,
+                "entity_id": entity_id_b,
+                "id": attachment_c_id,
+            },
         ]
 
     def upload_attachment(self, file_data: str = "Some test data\nnew line") -> None:
@@ -194,6 +198,15 @@ class TestCreate(CreateDSL):
         self.post_attachment({**ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY, "entity_id": attachments[0]["entity_id"]})
         self.check_post_attachment_failed_with_detail(
             422, "Limit for the maximum number of attachments for the provided `entity_id` has been reached"
+        )
+
+    def test_create_with_duplicate_file_name_within_parent(self):
+        """Test creating an attachment with the same name as another within the parent entity."""
+
+        self.post_attachment(ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.post_attachment(ATTACHMENT_POST_DATA_REQUIRED_VALUES_ONLY)
+        self.check_post_attachment_failed_with_detail(
+            409, "An attachment with the same file name already exists within the parent entity."
         )
 
 
@@ -386,11 +399,21 @@ class TestUpdate(UpdateDSL):
         self.patch_attachment("invalid-id", {})
         self.check_patch_attachment_failed_with_detail(404, "Attachment not found")
 
-    def test_partial_update_with_file_extension_content_type_mismatch(self):
+    def test_update_with_file_extension_content_type_mismatch(self):
         """Test updating an attachment with a different extension."""
         attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
         self.patch_attachment(attachment_id, {**ATTACHMENT_PATCH_METADATA_DATA_ALL_VALUES, "file_name": "report.mp3"})
         self.check_patch_attachment_failed_with_detail(422, "File extension and content type do not match")
+
+    def test_update_file_name_to_duplicate(self):
+        """Test updating the name of an attachment to conflict with a pre-existing one."""
+
+        self.post_attachment({**ATTACHMENT_POST_DATA_ALL_VALUES, "file_name": "test.pdf"})
+        attachment_id = self.post_attachment(ATTACHMENT_POST_DATA_ALL_VALUES)
+        self.patch_attachment(attachment_id, {"file_name": "test.pdf"})
+        self.check_patch_attachment_failed_with_detail(
+            409, "An attachment with the same file name already exists within the parent entity."
+        )
 
 
 class DeleteDSL(ListDSL):

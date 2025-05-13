@@ -28,6 +28,7 @@ from object_storage_api.schemas.attachment import (
     AttachmentPostSchema,
     AttachmentSchema,
 )
+from object_storage_api.services import utils
 from object_storage_api.stores.attachment import AttachmentStore
 
 logger = logging.getLogger()
@@ -59,8 +60,8 @@ class AttachmentService:
         :param attachment: Attachment to be created.
         :return: Created attachment with a pre-signed upload URL.
         :raises InvalidObjectIdError: If the attachment has any invalid ID's in it.
-        :raises UploadLimitReachedError: If the upload limit has been reached.
         :raises UnsupportedFileExtensionException: If the file extension of the attachment is not supported.
+        :raises UploadLimitReachedError: If the upload limit has been reached.
         """
         try:
             CustomObjectId(attachment.entity_id)
@@ -68,13 +69,6 @@ class AttachmentService:
             # Provide more specific detail
             exc.response_detail = "Invalid `entity_id` given"
             raise exc
-
-        if self._attachment_repository.count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
-            raise UploadLimitReachedError(
-                detail="Unable to create an attachment as the upload limit for attachments "
-                f"with `entity_id` '{attachment.entity_id}' has been reached",
-                entity_name="attachment",
-            )
 
         file_extension = Path(attachment.file_name).suffix
         if not file_extension or file_extension.lower() not in config.attachment.allowed_file_extensions:
@@ -86,7 +80,21 @@ class AttachmentService:
 
         object_key, upload_info = self._attachment_store.create_presigned_post(attachment_id, attachment)
 
-        attachment_in = AttachmentIn(**attachment.model_dump(), id=attachment_id, object_key=object_key)
+        attachment_in = AttachmentIn(
+            **attachment.model_dump(),
+            id=attachment_id,
+            code=utils.generate_code(attachment.file_name, "attachment"),
+            object_key=object_key,
+        )
+
+        # This should be checked as close to the actual create as possible to avoid concurrency issues
+        if self._attachment_repository.count_by_entity_id(attachment.entity_id) >= config.attachment.upload_limit:
+            raise UploadLimitReachedError(
+                detail="Unable to create an attachment as the upload limit for attachments "
+                f"with `entity_id` '{attachment.entity_id}' has been reached",
+                entity_type="attachment",
+            )
+
         attachment_out = self._attachment_repository.create(attachment_in)
 
         return AttachmentPostResponseSchema(**attachment_out.model_dump(), upload_info=upload_info)
@@ -124,10 +132,11 @@ class AttachmentService:
         :return: The updated attachment.
         :raises FileTypeMismatchException: If the extensions of the stored and updated attachment do not match.
         """
+        update_data = attachment.model_dump(exclude_unset=True)
 
         stored_attachment = self._attachment_repository.get(attachment_id=attachment_id)
 
-        if attachment.file_name is not None:
+        if "file_name" in update_data and attachment.file_name != stored_attachment.file_name:
             stored_type, _ = mimetypes.guess_type(stored_attachment.file_name)
             update_type, _ = mimetypes.guess_type(attachment.file_name)
             if update_type != stored_type:
@@ -136,9 +145,11 @@ class AttachmentService:
                     f"that of the stored attachment '{stored_attachment.file_name}'"
                 )
 
+            update_data["code"] = utils.generate_code(attachment.file_name, "attachment")
+
         updated_attachment = self._attachment_repository.update(
             attachment_id=attachment_id,
-            attachment=AttachmentIn(**{**stored_attachment.model_dump(), **attachment.model_dump(exclude_unset=True)}),
+            attachment=AttachmentIn(**{**stored_attachment.model_dump(), **update_data}),
         )
 
         return AttachmentMetadataSchema(**updated_attachment.model_dump())
