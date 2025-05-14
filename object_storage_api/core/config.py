@@ -3,9 +3,10 @@ Module for the overall configuration for the application.
 """
 
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
-from pydantic import BaseModel, ConfigDict, Field, SecretStr, ValidationInfo, field_validator
+from ims_common.config import AuthenticationConfig
+from pydantic import BaseModel, ConfigDict, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -24,34 +25,6 @@ class APIConfig(BaseModel):
 
 # pylint:disable=fixme
 # TODO: Some of this file is identical to the one in inventory-management-system-api - Use common repo?
-
-
-class AuthenticationConfig(BaseModel):
-    """
-    Configuration model for the JWT access token authentication/authorization.
-    """
-
-    enabled: bool
-    public_key_path: Optional[str] = Field(default=None, validate_default=True)
-    jwt_algorithm: Optional[str] = Field(default=None, validate_default=True)
-
-    @field_validator("public_key_path", "jwt_algorithm")
-    @classmethod
-    def validate_optional_fields(cls, field_value: str, info: ValidationInfo) -> Optional[str]:
-        """
-        Validator for the `public_key_path` and `jwt_algorithm` fields to make them mandatory if the value of the
-        `enabled` is `True`
-
-        It checks if the `enabled` field has been set to `True` and raises a `TypeError` if this is the case.
-
-        :param field_value: The value of the field.
-        :param info: Validation info from pydantic.
-        :raises ValueError: If no value is provided for the field when `enabled` is set to `True`.
-        :return: The value of the field.
-        """
-        if ("enabled" in info.data and info.data["enabled"] is True) and field_value is None:
-            raise ValueError("Field required")
-        return field_value
 
 
 class DatabaseConfig(BaseModel):
