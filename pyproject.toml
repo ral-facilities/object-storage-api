@@ -11,7 +11,8 @@ dependencies = [
     "PyJWT",
     "pymongo",
     "boto3",
-    "Pillow"
+    "Pillow",
+    "ims-common@git+https://github.com/joelvdavies/common-repo-test#egg=main"
 ]
 
 [project.urls]
