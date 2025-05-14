@@ -1,5 +1,9 @@
 FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4d54bc0719337d3e4ee552e as dev
 
+# Ensure git is available to install common repo from github
+RUN apk update
+RUN apk add git
+
 WORKDIR /app
 
 COPY pyproject.toml requirements.txt ./
@@ -28,6 +32,10 @@ CMD ["pytest",  "--config-file", "test/pytest.ini", "-v"]
 
 
 FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4d54bc0719337d3e4ee552e as prod
+
+# Ensure git is available to install common repo from github
+RUN apk update
+RUN apk add git
 
 WORKDIR /app
 
