@@ -1,4 +1,4 @@
-FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4d54bc0719337d3e4ee552e as dev
+FROM python:3.13.0-slim as dev
 
 WORKDIR /app
 
@@ -27,7 +27,7 @@ COPY test/ test/
 CMD ["pytest",  "--config-file", "test/pytest.ini", "-v"]
 
 
-FROM python:3.12.10-alpine3.21@sha256:9c51ecce261773a684c8345b2d4673700055c513b4d54bc0719337d3e4ee552e as prod
+FROM python:3.13.0-slim as prod
 
 WORKDIR /app
 
@@ -40,8 +40,8 @@ RUN --mount=type=cache,target=/root/.cache \
     pip install --no-cache-dir --requirement requirements.txt; \
     \
     # Create a non-root user to run as \
-    addgroup -g 500 -S object-storage-api; \
-    adduser -S -D -G object-storage-api -H -u 500 -h /app object-storage-api;
+    groupadd -g 500 object-storage-api; \
+    useradd -u 500 -g object-storage-api -d /app -M -s /sbin/nologin object-storage-api;
 
 USER object-storage-api
 
