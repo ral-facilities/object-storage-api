@@ -129,7 +129,7 @@ Instances of these can be started using the `docker-compose.yml` file.
    ```bash
    docker run \
     --rm \
-    --name object-storage-api \
+    --name object-storage-api-test \
     --add-host localhost:host-gateway \
     --volume ./object_storage_api:/app/object_storage_api \
     --volume ./test:/app/test \
