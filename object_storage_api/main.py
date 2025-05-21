@@ -77,9 +77,9 @@ router_dependencies = []
 # Add authentication middleware & dependency if enabled
 if config.authentication.enabled is True:
     # pylint:disable=import-outside-toplevel
-    from object_storage_api.auth.jwt_middleware import JWTMiddleware, security
+    from ims_common.jwt_middleware import create_jwt_middleware, security
 
-    app.add_middleware(JWTMiddleware)
+    app.add_middleware(create_jwt_middleware(config.authentication))
 
     # This router dependency is still needed for the swagger docs show the authorise button, even though the actual
     # auth is done in the middleware
