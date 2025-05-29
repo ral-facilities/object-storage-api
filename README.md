@@ -66,21 +66,28 @@ configured to start
 Use the `Dockerfile`'s `dev` stage to run just the application itself in a container. Use this only for local
 development (not production)! Mounting the `object_storage_api` directory to the container via a volume means that
 FastAPI will watch for changes made to the code and automatically reload the application on the fly. The
-application requires a MongoDB instance to run against and one can be started using the `docker-compose.yml` file.
+application requires a MongoDB and a MinIO instance to run.
+Instances of these can be started using the `docker-compose.yml` file.
 
 1. Start a MongoDB instance:
 
    ```bash
-   docker compose up --detach mongo-db
+   docker compose up --detach mongo-db minio
    ```
 
-2. Build an image using the `Dockerfile`'s `dev` stage from the root of the project directory:
+2. Once the MongoDB and MinIO containers are running, run the container for creating the MinIO buckets:
+
+   ```bash
+   docker compose up minio-create-buckets
+   ```
+
+3. Build an image using the `Dockerfile`'s `dev` stage from the root of the project directory:
 
    ```bash
    docker build --file Dockerfile --target dev --tag object-storage-api:dev .
    ```
 
-3. Start the container using the image built and map it to port `8002` locally:
+4. Start the container using the image built and map it to port `8002` locally:
 
    ```bash
    docker run \
