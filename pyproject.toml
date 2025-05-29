@@ -43,5 +43,5 @@ dev = [
     "object-storage-api[scripts]",
 ]
 
-[tool.setuptools]
-packages = ["object_storage_api"]
+[tool.setuptools.packages.find]
+include  = ["object_storage_api", "object_storage_api*"]
