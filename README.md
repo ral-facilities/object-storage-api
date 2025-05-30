@@ -22,14 +22,14 @@ This microservice requires a MongoDB and S3 object storage instance to run again
    accordingly.
 
    ```bash
-   cp object_storage_api/.env.example object_storage_api/.env
+   cp .env.example .env
    ```
 
 2. Create a `logging.ini` file alongside the `logging.example.ini` file. Use the example file as a reference and modify
    it accordingly:
 
    ```bash
-   cp object_storage_api/logging.example.ini object_storage_api/logging.ini
+   cp logging.example.ini logging.ini
    ```
 
 3. (**Required only if JWT Auth is enabled**) Inside the `keys` directory in the root of the project directory, create
@@ -65,34 +65,40 @@ configured to start
 
 Use the `Dockerfile`'s `dev` stage to run just the application itself in a container. Use this only for local
 development (not production)! Mounting the `object_storage_api` directory to the container via a volume means that
-FastAPI will watch for changes made to the code and automatically reload the application on the fly.
+FastAPI will watch for changes made to the code and automatically reload the application on the fly. The
+application requires a MongoDB and a MinIO instance to run.
+Instances of these can be started using the `docker-compose.yml` file.
 
-1. Build an image using the `Dockerfile`'s `dev` stage from the root of the project directory:
+1. Start a MongoDB and MinIO instance:
+
+   ```bash
+   docker compose up --detach mongo-db minio
+   ```
+
+2. Once the MongoDB and MinIO containers are running, run the container for creating the MinIO buckets:
+
+   ```bash
+   docker compose up minio-create-buckets
+   ```
+
+3. Build an image using the `Dockerfile`'s `dev` stage from the root of the project directory:
 
    ```bash
    docker build --file Dockerfile --target dev --tag object-storage-api:dev .
    ```
 
-2. Start the container using the image built and map it to port `8002` locally:
+4. Start the container using the image built and map it to port `8002` locally (please note that the public key volume
+   is only needed if JWT Auth is enabled):
 
    ```bash
    docker run \
     --publish 8002:8000 \
     --name object-storage-api \
+    --env-file ./.env \
     --volume ./object_storage_api:/app/object_storage_api \
     --volume ./keys/jwt-key.pub:/app/keys/jwt-key.pub \
-    object-storage-api:dev
-   ```
-
-   or with values for the environment variables:
-
-   ```bash
-   docker run \
-    --publish 8002:8000 \
-    --name object-storage-api \
-    --env DATABASE__NAME=ims \
-    --volume ./object_storage_api:/app/object_storage_api \
-    --volume ./keys/jwt-key.pub:/app/keys/jwt-key.pub \
+    --volume ./logging.ini:/app/logging.ini \
+    --add-host localhost:host-gateway \
     object-storage-api:dev
    ```
 
@@ -133,6 +139,7 @@ Instances of these can be started using the `docker-compose.yml` file.
     --add-host localhost:host-gateway \
     --volume ./object_storage_api:/app/object_storage_api \
     --volume ./test:/app/test \
+    --volume ./logging.ini:/app/logging.ini \
     object-storage-api:test
    ```
 
@@ -153,9 +160,10 @@ be synced to the container next time you run the tests.
    ```bash
    docker run \
     --rm \
-    --name object-storage-api \
+    --name object-storage-api-test \
     --volume ./object_storage_api:/app/object_storage_api \
     --volume ./test:/app/test \
+    --volume ./logging.ini:/app/logging.ini \
     object-storage-api:test \
     pytest --config-file test/pytest.ini --cov object_storage_api --cov-report term-missing test/unit -v
    ```
@@ -190,10 +198,11 @@ Instances of these can be started using the `docker-compose.yml` file.
    ```bash
    docker run \
     --rm \
-    --name object-storage-api \
+    --name object-storage-api-test \
     --add-host localhost:host-gateway \
     --volume ./object_storage_api:/app/object_storage_api \
     --volume ./test:/app/test \
+    --volume ./logging.ini:/app/logging.ini \
     object-storage-api:test \
     pytest --config-file test/pytest.ini test/e2e -v
    ```

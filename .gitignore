@@ -4,7 +4,7 @@ mongodb/data/*
 !mongodb/data/.keep
 minio/data/*
 !minio/data/.keep
-object_storage_api/logging.ini
+logging.ini
 /keys/jwt-key.pub
 /mongodb/keys/rs_keyfile
 
