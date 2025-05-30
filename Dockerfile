@@ -39,6 +39,9 @@ WORKDIR /app
 RUN --mount=type=cache,target=/root/.cache \
     set -eux; \
     \
+    # Ensure the package gets installed properly using the pyproject.toml file \
+    pip install --no-cache-dir .; \
+    # Ensure the pinned versions of the production dependencies and subdependencies are installed \
     pip install --no-cache-dir --requirement requirements.txt; \
     \
     # Create a non-root user to run as \
