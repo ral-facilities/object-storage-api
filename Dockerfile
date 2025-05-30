@@ -36,9 +36,6 @@ FROM base AS prod
 
 WORKDIR /app
 
-COPY requirements.txt ./
-COPY object_storage_api/ object_storage_api/
-
 RUN --mount=type=cache,target=/root/.cache \
     set -eux; \
     \

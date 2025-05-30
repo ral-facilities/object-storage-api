@@ -69,7 +69,7 @@ FastAPI will watch for changes made to the code and automatically reload the app
 application requires a MongoDB and a MinIO instance to run.
 Instances of these can be started using the `docker-compose.yml` file.
 
-1. Start a MongoDB instance:
+1. Start a MongoDB and MinIO instance:
 
    ```bash
    docker compose up --detach mongo-db minio
@@ -87,7 +87,8 @@ Instances of these can be started using the `docker-compose.yml` file.
    docker build --file Dockerfile --target dev --tag object-storage-api:dev .
    ```
 
-4. Start the container using the image built and map it to port `8002` locally:
+4. Start the container using the image built and map it to port `8002` locally (please note that the public key volume
+   is only needed if JWT Auth is enabled):
 
    ```bash
    docker run \
@@ -97,6 +98,7 @@ Instances of these can be started using the `docker-compose.yml` file.
     --volume ./object_storage_api:/app/object_storage_api \
     --volume ./keys/jwt-key.pub:/app/keys/jwt-key.pub \
     --volume ./logging.ini:/app/logging.ini \
+    --add-host localhost:host-gateway \
     object-storage-api:dev
    ```
 
