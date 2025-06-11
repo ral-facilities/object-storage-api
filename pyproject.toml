@@ -1,5 +1,5 @@
 [project]
-name = "object-storage_api"
+name = "object-storage-api"
 description = "Python microservice providing an API for handling attachments and images in an S3 object store."
 readme = "README.md"
 requires-python = ">=3.12"
