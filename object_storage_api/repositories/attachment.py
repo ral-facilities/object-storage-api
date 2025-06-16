@@ -64,8 +64,10 @@ class AttachmentRepo:
         logger.info("Retrieving attachment with ID: %s from the database", attachment_id)
 
         try:
-            attachment_id = CustomObjectId(attachment_id)
-            attachment = self._attachments_collection.find_one({"_id": attachment_id}, session=session)
+            attachment = self._attachments_collection.find_one(
+                {"_id": CustomObjectId(attachment_id, entity_type="attachment", not_found_if_invalid=True)},
+                session=session,
+            )
         except InvalidObjectIdError as exc:
             exc.status_code = 404
             exc.response_detail = "Attachment not found"
@@ -73,7 +75,7 @@ class AttachmentRepo:
 
         if attachment:
             return AttachmentOut(**attachment)
-        raise MissingRecordError(detail=f"No attachment found with ID: {attachment_id}", entity_type="attachment")
+        raise MissingRecordError(entity_id=attachment_id, entity_type="attachment")
 
     def list(self, entity_id: Optional[str], session: Optional[ClientSession] = None) -> list[AttachmentOut]:
         """
@@ -121,24 +123,19 @@ class AttachmentRepo:
         :raises DuplicateRecordError: If a duplicate attachment is found within the parent entity.
         """
 
-        try:
-            attachment_id = CustomObjectId(attachment_id)
-        except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "Attachment not found"
-            raise exc
-
         logger.info("Updating attachment metadata with ID: %s", attachment_id)
         try:
             self._attachments_collection.update_one(
-                {"_id": attachment_id}, {"$set": attachment.model_dump(by_alias=True)}, session=session
+                {"_id": CustomObjectId(attachment_id, entity_type="attachment", not_found_if_invalid=True)},
+                {"$set": attachment.model_dump(by_alias=True)},
+                session=session,
             )
         except pymongo.errors.DuplicateKeyError as exc:
             raise DuplicateRecordError(
                 "Duplicate attachment found within the parent entity", entity_type="attachment"
             ) from exc
 
-        return self.get(attachment_id=str(attachment_id), session=session)
+        return self.get(attachment_id=attachment_id, session=session)
 
     def delete(self, attachment_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -150,15 +147,12 @@ class AttachmentRepo:
         :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
         logger.info("Deleting attachment with ID: %s from the database", attachment_id)
-        try:
-            attachment_id = CustomObjectId(attachment_id)
-        except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "Attachment not found"
-            raise exc
-        response = self._attachments_collection.delete_one(filter={"_id": attachment_id}, session=session)
+        response = self._attachments_collection.delete_one(
+            filter={"_id": CustomObjectId(attachment_id, entity_type="attachment", not_found_if_invalid=True)},
+            session=session,
+        )
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", entity_type="attachment")
+            raise MissingRecordError(entity_id=attachment_id, entity_type="attachment")
 
     def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -169,9 +163,8 @@ class AttachmentRepo:
         """
         logger.info("Deleting attachments with entity ID: %s from the database", entity_id)
         try:
-            entity_id = CustomObjectId(entity_id)
             # Given it is deleting multiple, we are not raising an exception if no attachments were found to be deleted
-            self._attachments_collection.delete_many(filter={"entity_id": entity_id}, session=session)
+            self._attachments_collection.delete_many(filter={"entity_id": CustomObjectId(entity_id)}, session=session)
         except InvalidObjectIdError:
             # As this method takes in an entity_id to delete multiple attachments, and to hide the database behaviour,
             # we treat any invalid entity_id the same as a valid one that has no attachments associated to it.
