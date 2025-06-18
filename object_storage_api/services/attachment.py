@@ -15,7 +15,6 @@ from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
-    InvalidObjectIdError,
     UnsupportedFileExtensionException,
     UploadLimitReachedError,
 )
@@ -63,12 +62,8 @@ class AttachmentService:
         :raises UnsupportedFileExtensionException: If the file extension of the attachment is not supported.
         :raises UploadLimitReachedError: If the upload limit has been reached.
         """
-        try:
-            CustomObjectId(attachment.entity_id)
-        except InvalidObjectIdError as exc:
-            # Provide more specific detail
-            exc.response_detail = "Invalid `entity_id` given"
-            raise exc
+        # Check the entity ID is valid
+        CustomObjectId(attachment.entity_id, response_detail="Invalid `entity_id` given")
 
         file_extension = Path(attachment.file_name).suffix
         if not file_extension or file_extension.lower() not in config.attachment.allowed_file_extensions:

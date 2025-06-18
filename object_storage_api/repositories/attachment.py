@@ -62,16 +62,10 @@ class AttachmentRepo:
         """
 
         logger.info("Retrieving attachment with ID: %s from the database", attachment_id)
-
-        try:
-            attachment = self._attachments_collection.find_one(
-                {"_id": CustomObjectId(attachment_id, entity_type="attachment", not_found_if_invalid=True)},
-                session=session,
-            )
-        except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "Attachment not found"
-            raise exc
+        attachment = self._attachments_collection.find_one(
+            {"_id": CustomObjectId(attachment_id, entity_type="attachment", not_found_if_invalid=True)},
+            session=session,
+        )
 
         if attachment:
             return AttachmentOut(**attachment)
