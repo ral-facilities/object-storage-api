@@ -10,8 +10,7 @@ updates:
     target-branch: "develop"
     ignore:
       - dependency-name: "python"
-        update-types:
-          ["version-update:semver-major", "version-update:semver-minor"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # Maintain Dockerfile dependencies on the `main` branch
   - package-ecosystem: "docker"
@@ -23,8 +22,7 @@ updates:
     target-branch: "main"
     ignore:
       - dependency-name: "python"
-        update-types:
-          ["version-update:semver-major", "version-update:semver-minor"]
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # Maintain dependencies for GitHub Actions on the `develop` branch
   - package-ecosystem: "github-actions"
