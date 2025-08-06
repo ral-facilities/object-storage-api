@@ -43,6 +43,7 @@ services:
     command: minio server /data
     volumes:
       - ./minio/data:/data
+    restart: always
     ports:
       - 9000:9000
       - 9001:9001
