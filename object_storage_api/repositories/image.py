@@ -60,16 +60,13 @@ class ImageRepo:
         :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
         logger.info("Retrieving image with ID: %s from the database", image_id)
-        try:
-            image_id = CustomObjectId(image_id)
-            image = self._images_collection.find_one({"_id": image_id}, session=session)
-        except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "Image not found"
-            raise exc
+        image = self._images_collection.find_one(
+            {"_id": CustomObjectId(image_id, entity_type="image", not_found_if_invalid=True)}, session=session
+        )
+
         if image:
             return ImageOut(**image)
-        raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_type="image")
+        raise MissingRecordError(entity_id=image_id, entity_type="image")
 
     def list(
         self, entity_id: Optional[str], primary: Optional[bool], session: Optional[ClientSession] = None
@@ -124,12 +121,7 @@ class ImageRepo:
         :raises DuplicateRecordError: If a duplicate attachment is found within the parent entity.
         """
 
-        try:
-            image_id = CustomObjectId(image_id)
-        except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "Image not found"
-            raise exc
+        image_id = CustomObjectId(image_id, entity_type="image", not_found_if_invalid=True)
 
         try:
             if update_primary:
@@ -165,15 +157,11 @@ class ImageRepo:
         :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
         logger.info("Deleting image with ID: %s from the database", image_id)
-        try:
-            image_id = CustomObjectId(image_id)
-        except InvalidObjectIdError as exc:
-            exc.status_code = 404
-            exc.response_detail = "Image not found"
-            raise exc
-        response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
+        response = self._images_collection.delete_one(
+            filter={"_id": CustomObjectId(image_id, entity_type="image", not_found_if_invalid=True)}, session=session
+        )
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No image found with ID: {image_id}", entity_type="image")
+            raise MissingRecordError(entity_id=image_id, entity_type="image")
 
     def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
         """
@@ -184,9 +172,8 @@ class ImageRepo:
         """
         logger.info("Deleting images with entity ID: %s from the database", entity_id)
         try:
-            entity_id = CustomObjectId(entity_id)
             # Given it is deleting multiple, we are not raising an exception if no images were found to be deleted
-            self._images_collection.delete_many(filter={"entity_id": entity_id}, session=session)
+            self._images_collection.delete_many(filter={"entity_id": CustomObjectId(entity_id)}, session=session)
         except InvalidObjectIdError:
             # As this method takes in an entity_id to delete multiple images, and to hide the database behaviour, we
             # treat any invalid entity_id the same as a valid one that has no images associated to it.

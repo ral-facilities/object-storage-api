@@ -15,7 +15,6 @@ from object_storage_api.core.config import config
 from object_storage_api.core.custom_object_id import CustomObjectId
 from object_storage_api.core.exceptions import (
     FileTypeMismatchException,
-    InvalidObjectIdError,
     UnsupportedFileExtensionException,
     UploadLimitReachedError,
 )
@@ -65,12 +64,9 @@ class ImageService:
         :raises FileTypeMismatchException: If the extension and content type of the image do not match.
         :raises UploadLimitReachedError: If the upload limit has been reached.
         """
-        try:
-            CustomObjectId(image_metadata.entity_id)
-        except InvalidObjectIdError as exc:
-            # Provide more specific detail
-            exc.response_detail = "Invalid `entity_id` given"
-            raise exc
+
+        # Check the entity ID is valid
+        CustomObjectId(image_metadata.entity_id, response_detail="Invalid `entity_id` given")
 
         file_extension = Path(upload_file.filename).suffix
         if not file_extension or file_extension.lower() not in config.image.allowed_file_extensions:

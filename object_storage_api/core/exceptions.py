@@ -22,13 +22,14 @@ class BaseAPIException(Exception):
 
     detail: str
 
-    def __init__(self, detail: str, response_detail: Optional[str] = None):
+    def __init__(self, detail: str, response_detail: Optional[str] = None, status_code: Optional[int] = None):
         """
         Initialise the exception.
 
         :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
                        and not returned in a response).
-        :param response_detail: Generic detail of the exception that will be returned in a response.
+        :param response_detail: Generic detail of the exception that will be returned in a response if left uncaught.
+        :param status_code: Status code that will be returned in a response.
         """
         super().__init__(detail)
 
@@ -36,6 +37,11 @@ class BaseAPIException(Exception):
 
         if response_detail is not None:
             self.response_detail = response_detail
+        # If there is no response detail defined just use the detail
+        elif not hasattr(self, "response_detail"):
+            self.response_detail = detail
+        if status_code is not None:
+            self.status_code = status_code
 
 
 class DatabaseError(BaseAPIException):
@@ -93,22 +99,19 @@ class UploadLimitReachedError(BaseAPIException):
 class MissingRecordError(DatabaseError):
     """A specific database record was requested but could not be found."""
 
-    status_code = status.HTTP_404_NOT_FOUND
-    response_detail = "Requested record was not found"
-
-    def __init__(self, detail: str, response_detail: Optional[str] = None, entity_type: Optional[str] = None):
+    def __init__(self, entity_id: str, entity_type: str, use_422=False):
         """
         Initialise the exception.
 
-        :param detail: Specific detail of the exception (just like Exception would take - this will only be logged
-                       and not returned in a response).
-        :param response_detail: Generic detail of the exception to be returned in the response.
-        :param entity_type: Name of the entity to include in the response detail.
+        :param entity_id: ID of the record that was found to be missing.
+        :param entity_type: Name of the entity type e.g. catalogue categories/systems (Used for logging).
+        :param use_422: Whether the error returned if uncaught should be a 422 (default is 404 when false).
         """
-        super().__init__(detail, response_detail)
-
-        if entity_type is not None:
-            self.response_detail = f"{entity_type.capitalize()} not found"
+        super().__init__(
+            detail=f"No {entity_type} found with ID: {entity_id}",
+            response_detail=f"{entity_type.capitalize()} not found",
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY if use_422 else status.HTTP_404_NOT_FOUND,
+        )
 
 
 class DuplicateRecordError(DatabaseError):
