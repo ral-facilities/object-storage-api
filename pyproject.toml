@@ -43,5 +43,11 @@ dev = [
     "object-storage-api[scripts]",
 ]
 
+[tool.coverage.run]
+omit = [
+    # Exclude routers from coverage measurement as they are tested in the e2e tests
+    "object_storage_api/v1/*"
+]
+
 [tool.setuptools.packages.find]
 include  = ["object_storage_api", "object_storage_api*"]

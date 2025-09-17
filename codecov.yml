@@ -9,3 +9,4 @@ coverage:
         target: 75
 ignore:
   - "test/"
+  - "object_storage_api/v1/*" # ignore routers as they are tested in the e2e tests
