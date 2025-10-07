@@ -60,7 +60,7 @@ def exit_with_error(message: str):
 def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
     """Runs a command using subprocess."""
 
-    logging.debug("Running command: %s", " ".join(args))
+    console.print(f"[cyan]Running command:[/] [green]{" ".join(args)}[/]")
     # Output using print to ensure order is correct for grouping on github actions (subprocess.run happens before print
     # for some reason)
     with subprocess.Popen(
@@ -68,10 +68,12 @@ def run_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: 
     ) as popen:
         if stdout is None:
             for stdout_line in iter(popen.stdout.readline, ""):
-                print(stdout_line, end="")
+                console.print(stdout_line, end="")
             popen.stdout.close()
         return_code = popen.wait()
-    return return_code
+
+    if return_code != 0:
+        exit_with_error("[red]An error occurred while running the last command![/]")
 
 
 def run_mongodb_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
