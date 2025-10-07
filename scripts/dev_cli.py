@@ -222,6 +222,8 @@ def generate(
     except ImportError:
         exit_with_error("Failed to find generate_mock_data.py")
 
+    console.print("Success! :party_popper:")
+
 
 @app.command()
 def clear(
@@ -233,7 +235,9 @@ def clear(
     yes: YesOption = False,
 ):
     """Clears all data in MongoDB and MinIO."""
+
     clear_existing_data(db_username, db_password, minio_host, minio_username, minio_password, yes)
+    console.print("Success! :party_popper:")
 
 
 def main():
