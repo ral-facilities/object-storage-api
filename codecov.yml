@@ -10,3 +10,4 @@ coverage:
 ignore:
   - "test/"
   - "object_storage_api/v1/*" # ignore routers as they are tested in the e2e tests
+  - "object_storage_api/main.py" # ignore main.py as contains router and is tested in the e2e tests
