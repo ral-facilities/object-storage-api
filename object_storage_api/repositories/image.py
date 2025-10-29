@@ -59,7 +59,7 @@ class ImageRepo:
         :raises MissingRecordError: If the supplied `image_id` is non-existent.
         :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
-        logger.info("Retrieving image with ID: %s from the database", image_id)
+        logger.info("Retrieving image with ID '%s' from the database", image_id)
         try:
             image_id = CustomObjectId(image_id)
             image = self._images_collection.find_one({"_id": image_id}, session=session)
@@ -164,7 +164,7 @@ class ImageRepo:
         :raises MissingRecordError: If the supplied `image_id` is non-existent.
         :raises InvalidObjectIdError: If the supplied `image_id` is invalid.
         """
-        logger.info("Deleting image with ID: %s from the database", image_id)
+        logger.info("Deleting image with ID '%s' from the database", image_id)
         try:
             image_id = CustomObjectId(image_id)
         except InvalidObjectIdError as exc:
@@ -182,7 +182,7 @@ class ImageRepo:
         :param entity_id: The entity ID of the images to delete.
         :param session: PyMongo ClientSession to use for database operations.
         """
-        logger.info("Deleting images with entity ID: %s from the database", entity_id)
+        logger.info("Deleting images with entity ID '%s' from the database", entity_id)
         try:
             entity_id = CustomObjectId(entity_id)
             # Given it is deleting multiple, we are not raising an exception if no images were found to be deleted
@@ -199,5 +199,5 @@ class ImageRepo:
         :param entity_id: The entity ID to use to select which documents to count.
         :param session: PyMongo ClientSession to use for database operations.
         """
-        logger.info("Counting number of images with entity ID: %s in the database", entity_id)
+        logger.info("Counting number of images with entity ID '%s' in the database", entity_id)
         return self._images_collection.count_documents(filter={"entity_id": CustomObjectId(entity_id)}, session=session)

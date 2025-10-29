@@ -65,7 +65,7 @@ def get_attachment(
     attachment_service: AttachmentServiceDep,
 ) -> AttachmentSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Getting attachment with ID: %s", attachment_id)
+    logger.info("Getting attachment with ID '%s'", attachment_id)
 
     return attachment_service.get(attachment_id)
 
@@ -81,7 +81,7 @@ def partial_update_attachment(
     attachment_service: AttachmentServiceDep,
 ) -> AttachmentMetadataSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Partially updating attachment with ID: %s", attachment_id)
+    logger.info("Partially updating attachment with ID '%s'", attachment_id)
     logger.debug("Attachment data: %s", attachment)
 
     return attachment_service.update(attachment_id, attachment)
@@ -98,7 +98,7 @@ def delete_attachment(
     attachment_service: AttachmentServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
-    logger.info("Deleting attachment with ID: %s", attachment_id)
+    logger.info("Deleting attachment with ID '%s'", attachment_id)
     attachment_service.delete(attachment_id)
 
 
@@ -113,5 +113,5 @@ def delete_attachments_by_entity_id(
     attachment_service: AttachmentServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
-    logger.info("Deleting attachments with entity ID: %s", entity_id)
+    logger.info("Deleting attachments with entity ID '%s'", entity_id)
     attachment_service.delete_by_entity_id(entity_id)

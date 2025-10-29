@@ -80,7 +80,7 @@ def get_image(
     image_service: ImageServiceDep,
 ) -> ImageSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Getting image with ID: %s", image_id)
+    logger.info("Getting image with ID '%s'", image_id)
 
     return image_service.get(image_id)
 
@@ -96,7 +96,7 @@ def partial_update_image(
     image_service: ImageServiceDep,
 ) -> ImageMetadataSchema:
     # pylint: disable=missing-function-docstring
-    logger.info("Partially updating image with ID: %s", image_id)
+    logger.info("Partially updating image with ID '%s'", image_id)
     logger.debug("Image data: %s", image)
 
     return image_service.update(image_id, image)
@@ -113,7 +113,7 @@ def delete_image(
     image_service: ImageServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
-    logger.info("Deleting image with ID: %s", image_id)
+    logger.info("Deleting image with ID '%s'", image_id)
     image_service.delete(image_id)
 
 
@@ -128,5 +128,5 @@ def delete_images_by_entity_id(
     image_service: ImageServiceDep,
 ) -> None:
     # pylint: disable=missing-function-docstring
-    logger.info("Deleting images with entity ID: %s", entity_id)
+    logger.info("Deleting images with entity ID '%s'", entity_id)
     image_service.delete_by_entity_id(entity_id)

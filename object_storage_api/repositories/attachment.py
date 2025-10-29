@@ -61,7 +61,7 @@ class AttachmentRepo:
         :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
 
-        logger.info("Retrieving attachment with ID: %s from the database", attachment_id)
+        logger.info("Retrieving attachment with ID '%s' from the database", attachment_id)
 
         try:
             attachment_id = CustomObjectId(attachment_id)
@@ -128,7 +128,7 @@ class AttachmentRepo:
             exc.response_detail = "Attachment not found"
             raise exc
 
-        logger.info("Updating attachment metadata with ID: %s", attachment_id)
+        logger.info("Updating attachment metadata with ID '%s'", attachment_id)
         try:
             self._attachments_collection.update_one(
                 {"_id": attachment_id}, {"$set": attachment.model_dump(by_alias=True)}, session=session
@@ -149,7 +149,7 @@ class AttachmentRepo:
         :raises MissingRecordError: If the supplied `attachment_id` is non-existent.
         :raises InvalidObjectIdError: If the supplied `attachment_id` is invalid.
         """
-        logger.info("Deleting attachment with ID: %s from the database", attachment_id)
+        logger.info("Deleting attachment with ID '%s' from the database", attachment_id)
         try:
             attachment_id = CustomObjectId(attachment_id)
         except InvalidObjectIdError as exc:
@@ -167,7 +167,7 @@ class AttachmentRepo:
         :param entity_id: The entity ID of the attachments to delete.
         :param session: PyMongo ClientSession to use for database operations.
         """
-        logger.info("Deleting attachments with entity ID: %s from the database", entity_id)
+        logger.info("Deleting attachments with entity ID '%s' from the database", entity_id)
         try:
             entity_id = CustomObjectId(entity_id)
             # Given it is deleting multiple, we are not raising an exception if no attachments were found to be deleted
@@ -184,7 +184,7 @@ class AttachmentRepo:
         :param entity_id: The entity ID to use to select which documents to count.
         :param session: PyMongo ClientSession to use for database operations.
         """
-        logger.info("Counting number of attachments with entity ID: %s in the database", str(entity_id))
+        logger.info("Counting number of attachments with entity ID '%s' in the database", str(entity_id))
         return self._attachments_collection.count_documents(
             filter={"entity_id": CustomObjectId(entity_id)}, session=session
         )
