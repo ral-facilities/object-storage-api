@@ -73,7 +73,7 @@ class AttachmentRepo:
 
         if attachment:
             return AttachmentOut(**attachment)
-        raise MissingRecordError(detail=f"No attachment found with ID: {attachment_id}", entity_type="attachment")
+        raise MissingRecordError(detail=f"No attachment found with ID '{attachment_id}'", entity_type="attachment")
 
     def list(self, entity_id: Optional[str], session: Optional[ClientSession] = None) -> list[AttachmentOut]:
         """
@@ -158,7 +158,7 @@ class AttachmentRepo:
             raise exc
         response = self._attachments_collection.delete_one(filter={"_id": attachment_id}, session=session)
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No attachment found with ID: {attachment_id}", entity_type="attachment")
+            raise MissingRecordError(f"No attachment found with ID '{attachment_id}'", entity_type="attachment")
 
     def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
         """

@@ -219,7 +219,7 @@ class TestGet(GetDSL):
 
         self.mock_get(image_id, None)
         self.call_get_expecting_error(image_id, MissingRecordError)
-        self.check_get_failed_with_exception(f"No image found with ID: {image_id}", True)
+        self.check_get_failed_with_exception(f"No image found with ID '{image_id}'", True)
 
     def test_get_with_invalid_id(self):
         """Test getting an image with an invalid image ID."""
@@ -645,7 +645,7 @@ class TestDelete(DeleteDSL):
 
         self.mock_delete(0)
         self.call_delete_expecting_error(image_id, MissingRecordError)
-        self.check_delete_failed_with_exception(f"No image found with ID: {image_id}", assert_delete=True)
+        self.check_delete_failed_with_exception(f"No image found with ID '{image_id}'", assert_delete=True)
 
     def test_delete_invalid_id(self):
         """Test deleting an image with an invalid ID."""

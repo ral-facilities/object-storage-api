@@ -69,7 +69,7 @@ class ImageRepo:
             raise exc
         if image:
             return ImageOut(**image)
-        raise MissingRecordError(detail=f"No image found with ID: {image_id}", entity_type="image")
+        raise MissingRecordError(detail=f"No image found with ID '{image_id}'", entity_type="image")
 
     def list(
         self, entity_id: Optional[str], primary: Optional[bool], session: Optional[ClientSession] = None
@@ -173,7 +173,7 @@ class ImageRepo:
             raise exc
         response = self._images_collection.delete_one(filter={"_id": image_id}, session=session)
         if response.deleted_count == 0:
-            raise MissingRecordError(f"No image found with ID: {image_id}", entity_type="image")
+            raise MissingRecordError(f"No image found with ID '{image_id}'", entity_type="image")
 
     def delete_by_entity_id(self, entity_id: str, session: Optional[ClientSession] = None) -> None:
         """
