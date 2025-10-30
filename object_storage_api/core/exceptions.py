@@ -45,21 +45,21 @@ class DatabaseError(BaseAPIException):
 class InvalidObjectIdError(DatabaseError):
     """The provided value is not a valid ObjectId."""
 
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     response_detail = "Invalid ID given"
 
 
 class InvalidImageFileError(BaseAPIException):
     """The provided image file is not valid."""
 
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     response_detail = "File given is not a valid image"
 
 
 class FileTypeMismatchException(BaseAPIException):
     """The extension and content type of the provided file do not match."""
 
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
     response_detail = "File extension and content type do not match"
 
 
@@ -73,7 +73,7 @@ class UnsupportedFileExtensionException(BaseAPIException):
 class UploadLimitReachedError(BaseAPIException):
     """The limit for the maximum number of attachments or images for the provided `entity_id` has been reached."""
 
-    status_code = status.HTTP_422_UNPROCESSABLE_ENTITY
+    status_code = status.HTTP_422_UNPROCESSABLE_CONTENT
 
     def __init__(self, detail: str, entity_type: str):
         """
