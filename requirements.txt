@@ -1,7 +1,7 @@
 annotated-types==0.7.0
 anyio==4.11.0
-boto3==1.40.62
-botocore==1.40.62
+boto3==1.35.99
+botocore==1.35.99
 certifi==2025.10.5
 cffi==2.0.0
 click==8.3.0
@@ -39,7 +39,7 @@ PyYAML==6.0.3
 rich==14.2.0
 rich-toolkit==0.15.1
 rignore==0.7.2
-s3transfer==0.14.0
+s3transfer==0.10.4
 sentry-sdk==2.43.0
 shellingham==1.5.4
 six==1.17.0
