@@ -20,7 +20,7 @@ dependencies = [
 [project.optional-dependencies]
 code-analysis = [
     "black==25.9.0",
-    "pylint==3.3.9",
+    "pylint==4.0.2",
     "object-storage-api[test]"
 ]
 
