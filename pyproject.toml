@@ -2,8 +2,8 @@
 name = "object-storage-api"
 description = "Python microservice providing an API for handling attachments and images in an S3 object store."
 readme = "README.md"
-requires-python = ">=3.12"
-version = "1.0.0"
+requires-python = ">=3.13"
+version = "1.1.0"
 
 dependencies = [
     "cryptography",
@@ -19,28 +19,36 @@ dependencies = [
 
 [project.optional-dependencies]
 code-analysis = [
-    "black==25.1.0",
-    "pylint==3.3.7",
+    "black==25.9.0",
+    "pylint==3.3.9",
     "object-storage-api[test]"
 ]
 
 test = [
-    "pytest==8.3.5",
-    "pytest-asyncio==0.26.0",
-    "pytest-cov==6.1.1",
-    "pytest-env==1.1.5",
-    "requests==2.32.3"
+    "pytest==8.4.2",
+    "pytest-asyncio==1.2.0",
+    "pytest-cov==7.0.0",
+    "pytest-env==1.2.0",
+    "requests==2.32.5"
 ]
 
 scripts = [
-    "faker==37.1.0",
-    "faker-file[pdf,docx,images]==0.18.3",
+    "faker==37.12.0",
+    "faker-file[pdf,docx,images]==0.18.4",
 ]
 
 dev = [
     "object-storage-api[code-analysis]",
     "object-storage-api[test]",
     "object-storage-api[scripts]",
+]
+
+[tool.coverage.run]
+omit = [
+    # Exclude test code from coverage measurement
+    "test/*",
+    # Exclude routers from coverage measurement as they are tested in the e2e tests
+    "object_storage_api/v1/*"
 ]
 
 [tool.setuptools.packages.find]
