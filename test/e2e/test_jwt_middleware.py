@@ -55,7 +55,7 @@ def test_jwt_middleware_allows_authenticated_request(test_client):
         ),
         pytest.param(
             {"Authorization": f"Invalid-Bearer {VALID_ACCESS_TOKEN}"},
-            "Invalid authentication credentials",
+            "Not authenticated",
             id="invalid_authorization_scheme",
         ),
     ],
