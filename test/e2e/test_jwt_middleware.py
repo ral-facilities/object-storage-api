@@ -72,7 +72,7 @@ def test_jwt_middleware_denies_unauthenticated_requests(test_client, headers, ex
         for method in ["GET", "DELETE", "PATCH", "POST", "PUT"]:
             if method in api_route.methods:
                 response = test_client.request(method, api_route.path, headers=headers)
-                assert response.status_code == 403
+                assert response.status_code == 401
                 assert response.json()["detail"] == expected_response_message
 
 
