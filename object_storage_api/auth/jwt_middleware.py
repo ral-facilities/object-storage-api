@@ -48,7 +48,7 @@ class JWTMiddleware(BaseHTTPMiddleware):
 
             if not self._is_jwt_access_token_valid(credentials.credentials):
                 return JSONResponse(
-                    status_code=status.HTTP_403_FORBIDDEN, content={"detail": "Invalid token or expired token"}
+                    status_code=status.HTTP_401_UNAUTHORIZED, content={"detail": "Invalid token or expired token"}
                 )
 
         return await call_next(request)

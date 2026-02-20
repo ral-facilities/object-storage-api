@@ -218,7 +218,7 @@ class CreatePresignedURLDSL(ImageStoreDSL):
             `mock_create_presigned_get`.
         """
 
-        (self._obtained_presigned_view_url, self._obtained_presigned_download_url) = (
+        self._obtained_presigned_view_url, self._obtained_presigned_download_url = (
             self.image_store.create_presigned_get(self._image_out)
         )
 
