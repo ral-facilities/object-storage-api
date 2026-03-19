@@ -10,7 +10,7 @@ from pymongo.database import Database
 
 from object_storage_api.core.config import config
 
-db_config = config.database
+db_config = config.os_database
 mongodb_client = MongoClient(
     f"{db_config.protocol.get_secret_value()}://"
     f"{db_config.username.get_secret_value()}:{db_config.password.get_secret_value()}@"
