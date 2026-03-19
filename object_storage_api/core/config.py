@@ -112,7 +112,7 @@ class Config(BaseSettings):
 
     api: APIConfig
     authentication: AuthenticationConfig
-    database: DatabaseConfig
+    os_database: DatabaseConfig
     object_storage: ObjectStorageConfig
     attachment: AttachmentConfig
     image: ImageConfig
