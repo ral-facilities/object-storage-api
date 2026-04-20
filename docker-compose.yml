@@ -24,7 +24,7 @@ services:
       - "localhost:host-gateway"
 
   mongo-db:
-    image: mongo:7.0-jammy
+    image: mongo:8.0-noble
     container_name: object-storage-api-mongodb
     entrypoint: mongodb_entrypoint.sh
     volumes:
