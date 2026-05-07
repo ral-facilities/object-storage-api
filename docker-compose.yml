@@ -62,6 +62,7 @@ services:
       - minio
     entrypoint: >
       /bin/sh -c "
+      sleep 10;
       /usr/bin/mc alias set object-storage http://localhost:9000 root example_password;
       /usr/bin/mc mb object-storage/object-storage;
       /usr/bin/mc mb object-storage/test-object-storage;
