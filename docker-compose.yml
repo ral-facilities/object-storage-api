@@ -38,7 +38,7 @@ services:
       MONGO_INITDB_ROOT_PASSWORD: example
 
   minio:
-    image: minio/minio:RELEASE.2024-09-13T20-26-02Z
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
     container_name: object-storage-minio
     command: minio server /data
     volumes:
@@ -62,6 +62,7 @@ services:
       - minio
     entrypoint: >
       /bin/sh -c "
+      sleep 10;
       /usr/bin/mc alias set object-storage http://localhost:9000 root example_password;
       /usr/bin/mc mb object-storage/object-storage;
       /usr/bin/mc mb object-storage/test-object-storage;
