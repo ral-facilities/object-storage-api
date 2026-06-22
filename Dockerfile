@@ -96,6 +96,9 @@ RUN set -eux; \
     addgroup -g 500 -S object-storage-api; \
     adduser -S -D -G object-storage-api -H -u 500 -h /app object-storage-api;
 
+# Copy the application from the prod-build stage
+COPY --from=prod-build /app /app
+
 USER object-storage-api
 
 CMD ["/app/.venv/bin/fastapi", "run", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
