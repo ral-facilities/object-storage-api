@@ -6,41 +6,48 @@ requires-python = ">=3.13"
 version = "1.3.1"
 
 dependencies = [
-    "cryptography",
-    "fastapi[all]",
-    "PyJWT",
-    "pymongo",
-    "boto3",
-    "Pillow"
+    "cryptography>=48.0.0",
+    "fastapi[all]>=0.136.1",
+    "PyJWT>=2.12.1",
+    "pymongo>=4.17.0",
+    "boto3>=1.43.6",
+    "pillow>=12.2.0",
 ]
 
 [project.urls]
-"Repository" = "https://github.com/ral-facilities/object-storage-api"
+Repository = "https://github.com/ral-facilities/object-storage-api"
 
-[project.optional-dependencies]
-code-analysis = [
-    "black==26.3.1",
-    "pylint==4.0.5",
-    "object-storage-api[test]"
-]
+[tool.uv.sources]
+object-storage-api = { workspace = true }
+
+[build-system]
+requires = ["uv_build>=0.11.13,<0.12.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-root = "."
+
+[dependency-groups]
+code-analysis = [{ include-group = "test" }, "black>=26.3.1", "pylint>=4.0.5"]
 
 test = [
-    "pytest==9.0.3",
-    "pytest-asyncio==1.3.0",
-    "pytest-cov==7.1.0",
-    "pytest-env==1.6.0",
-    "requests==2.33.1"
+    "pytest>=9.0.3",
+    "pytest-asyncio>=1.3.0",
+    "pytest-cov>=7.1.0",
+    "pytest-env>=1.6.0",
+    "requests>=2.33.1",
 ]
 
 scripts = [
-    "faker==40.15.0",
-    "faker-file[pdf,docx,images]==0.19.1",
+    "faker>=40.15.0",
+    "faker-file[pdf,docx,images]>=0.19.1",
+
 ]
 
 dev = [
-    "object-storage-api[code-analysis]",
-    "object-storage-api[test]",
-    "object-storage-api[scripts]",
+    { include-group = "code-analysis" },
+    { include-group = "test" },
+    { include-group = "scripts" },
 ]
 
 [tool.coverage.run]
@@ -48,8 +55,11 @@ omit = [
     # Exclude test code from coverage measurement
     "test/*",
     # Exclude routers from coverage measurement as they are tested in the e2e tests
-    "object_storage_api/v1/*"
+    "object_storage_api/v1/*",
 ]
 
 [tool.setuptools.packages.find]
-include  = ["object_storage_api", "object_storage_api*"]
+include  = [
+    "object_storage_api",
+    "object_storage_api*",
+]
