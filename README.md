@@ -10,7 +10,8 @@ This microservice requires a MongoDB and S3 object storage instance to run again
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.13, MongoDB 7.0 and MinIO installed on your machine (if you are not using Docker)
+- Python 3.13 and and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
+- MongoDB 8.0 and MinIO installed on your machine (if you are not using Docker)
 - Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorization is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
   a GUI)
@@ -165,7 +166,7 @@ be synced to the container next time you run the tests.
     --volume ./test:/app/test \
     --volume ./logging.ini:/app/logging.ini \
     object-storage-api:test \
-    pytest --config-file test/pytest.ini --cov object_storage_api --cov-report term-missing test/unit -v
+    /app/.venv/bin/pytest --config-file test/pytest.ini --cov object_storage_api --cov-report term-missing test/unit -v
    ```
 
 #### Using `Dockerfile` for running the e2e tests
@@ -204,7 +205,7 @@ Instances of these can be started using the `docker-compose.yml` file.
     --volume ./test:/app/test \
     --volume ./logging.ini:/app/logging.ini \
     object-storage-api:test \
-    pytest --config-file test/pytest.ini test/e2e -v
+    /app/.venv/bin/pytest --config-file test/pytest.ini test/e2e -v
    ```
 
 ### Outside of Docker
@@ -234,32 +235,42 @@ You must also have access to an S3 object store, such as MinIO, and have created
 By default the `.env.example` and `pyproject.toml` use `object-storage` and `test-object-storage` as their names, ensure
 they are modified as required.
 
-#### Running the api
+#### Running the API
 
-Ensure that Python is installed on your machine before proceeding.
+Ensure that Python & uv is installed on your machine before proceeding.
 
-1. Create a Python virtual environment and activate it in the root of the project directory:
+1. Install the required dependencies and create a virtual environment with
 
    ```bash
-   python -m venv venv
-   source venv/bin/activate
+   uv sync
    ```
 
-2. Install the required dependencies using pip:
+2. Start the application:
 
    ```bash
-   pip install .[dev]
-   pip install -r requirements.txt
-   ```
-
-3. Start the application:
-
-   ```bash
-   fastapi dev object_storage_api/main.py --host 0.0.0.0 --port 8002
+   uv run fastapi dev object_storage_api/main.py --host 0.0.0.0 --port 8002
    ```
 
    The microservice should now be running locally at http://localhost:8002. The Swagger UI can be accessed
    at http://localhost:8002/docs.
+
+3. To run the unit tests, run:
+
+   ```bash
+   uv run pytest -c test/pytest.ini test/unit/
+   ```
+
+4. To run the e2e tests, run:
+
+   ```bash
+   uv run pytest -c test/pytest.ini test/e2e/
+   ```
+
+5. To run all the tests, run:
+
+   ```bash
+   uv run pytest -c test/pytest.ini test/
+   ```
 
 ## Using mock data for testing [Optional]
 
@@ -269,7 +280,7 @@ To populate the database and object storage with mock data for testing IMS first
 and `object-storage-api` are running in docker and then run.
 
 ```bash
-python ./scripts/dev_cli.py generate -c
+uv run ./scripts/dev_cli.py generate -c
 ```
 
 This will clear the database and MinIO storage, fetch existing entities from the `inventory-management-system-api` and

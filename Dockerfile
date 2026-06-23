@@ -1,55 +1,106 @@
-FROM python:3.13.13-alpine3.23@sha256:420cd0bf0f3998275875e02ecd5808168cf0843cbb4d3c536432f729247b2acc AS base
+########################################################################################################################
+# Base stage, includes uv
+########################################################################################################################
+FROM python:3.13.14-alpine3.24@sha256:db66119d6609a3a941a9433b225f4e13d33c459cede097cf3ec2fc4d1bd314b2 AS base
+COPY --from=ghcr.io/astral-sh/uv:0.11.21@sha256:ff07b86af50d4d9391d9daf4ff89ce427bc544f9aae87057e69a1cc0aa369946 /uv /uvx /bin/
+
+# Enable bytecode compilation
+ENV UV_COMPILE_BYTECODE=1
+# Copy from the cache instead of linking since it's a mounted volume
+ENV UV_LINK_MODE=copy
+# Disable use of uv-managed Python versions
+ENV UV_NO_MANAGED_PYTHON=1
+# Disable Python downloads so that the system interpreter is used across images
+ENV UV_PYTHON_DOWNLOADS=0
 
 WORKDIR /app
 
-COPY pyproject.toml requirements.txt ./
-COPY object_storage_api/ object_storage_api/
+COPY pyproject.toml uv.lock README.md ./
 
 
+########################################################################################################################
+# Stage for local development
+########################################################################################################################
 FROM base AS dev
 
 WORKDIR /app
 
-RUN --mount=type=cache,target=/root/.cache \
+RUN --mount=type=cache,target=/root/.cache/uv \
     set -eux; \
     \
-    pip install --no-cache-dir .[dev]; \
-    # Ensure the pinned versions of the production dependencies and subdependencies are installed \
-    pip install --no-cache-dir --requirement requirements.txt;
+    # Lock and install all dependencies but do not install the project \
+    uv sync --locked --no-install-project;
+
+COPY object_storage_api/ object_storage_api/
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    set -eux; \
+    \
+    # Install the project \
+    uv sync --locked;
 
 
-CMD ["fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/.venv/bin/fastapi", "dev", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
 
 EXPOSE 8000
 
 
+########################################################################################################################
+# Stage for running tests
+########################################################################################################################
 FROM dev AS test
 
 WORKDIR /app
 
 COPY test/ test/
 
-CMD ["pytest",  "--config-file", "test/pytest.ini", "-v"]
+CMD ["/app/.venv/bin/pytest",  "--config-file", "test/pytest.ini", "-v"]
 
 
-FROM base AS prod
+########################################################################################################################
+# Stage for production-ready build of the project
+########################################################################################################################
+FROM base AS prod-build
+
+# Omit development dependencies
+ENV UV_NO_DEV=1
 
 WORKDIR /app
 
-RUN --mount=type=cache,target=/root/.cache \
+RUN --mount=type=cache,target=/root/.cache/uv \
     set -eux; \
     \
-    # Ensure the package gets installed properly using the pyproject.toml file \
-    pip install --no-cache-dir .; \
-    # Ensure the pinned versions of the production dependencies and subdependencies are installed \
-    pip install --no-cache-dir --requirement requirements.txt; \
+    # Lock and install all dependencies but do not install the project \
+    uv sync --locked --no-install-project;
+
+COPY object_storage_api/ object_storage_api/
+
+RUN --mount=type=cache,target=/root/.cache/uv \
+    set -eux; \
+    \
+    # Install the project \
+    uv sync --locked;
+
+
+########################################################################################################################
+# Minimal production-ready image
+########################################################################################################################
+# The same image that matches the build stage must be used as the path to the Python executable must be the same.
+FROM python:3.13.14-alpine3.24@sha256:db66119d6609a3a941a9433b225f4e13d33c459cede097cf3ec2fc4d1bd314b2 AS prod
+
+WORKDIR /app
+
+RUN set -eux; \
     \
     # Create a non-root user to run as \
     addgroup -g 500 -S object-storage-api; \
     adduser -S -D -G object-storage-api -H -u 500 -h /app object-storage-api;
 
+# Copy the application from the prod-build stage
+COPY --from=prod-build /app /app
+
 USER object-storage-api
 
-CMD ["fastapi", "run", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["/app/.venv/bin/fastapi", "run", "object_storage_api/main.py", "--host", "0.0.0.0", "--port", "8000"]
 
 EXPOSE 8000
