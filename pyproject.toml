@@ -10,7 +10,7 @@ dependencies = [
     "fastapi[all]>=0.137.1",
     "PyJWT>=2.12.1",
     "pymongo>=4.17.0",
-    "boto3>=1.43.30",
+    "boto3>=1.43.32",
     "pillow>=12.2.0",
 ]
 
