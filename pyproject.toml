@@ -7,10 +7,10 @@ version = "1.3.1"
 
 dependencies = [
     "cryptography>=48.0.0",
-    "fastapi[all]>=0.137.1",
+    "fastapi[all]>=0.138.0",
     "PyJWT>=2.12.1",
     "pymongo>=4.17.0",
-    "boto3>=1.43.30",
+    "boto3>=1.43.34",
     "pillow>=12.2.0",
 ]
 
@@ -34,7 +34,7 @@ module-root = "."
 code-analysis = [{ include-group = "test" }, "black>=26.3.1", "pylint>=4.0.5"]
 
 test = [
-    "pytest>=9.0.3",
+    "pytest>=9.1.1",
     "pytest-asyncio>=1.3.0",
     "pytest-cov>=7.1.0",
     "pytest-env>=1.6.0",
