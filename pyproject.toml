@@ -7,11 +7,11 @@ version = "1.4.0"
 
 dependencies = [
     "cryptography>=48.0.0",
-    "fastapi[all]>=0.138.0",
+    "fastapi[all]>=0.139.0",
     "pyjwt>=2.13.0",
     "pymongo>=4.17.0",
-    "boto3>=1.43.34",
-    "pillow>=12.2.0",
+    "boto3>=1.43.48",
+    "pillow>=12.3.0",
 ]
 
 [project.urls]
@@ -42,7 +42,7 @@ test = [
 ]
 
 scripts = [
-    "faker>=40.15.0",
+    "faker>=40.31.0",
     "faker-file[pdf,docx,images]>=0.19.1",
 
 ]
