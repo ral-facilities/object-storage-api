@@ -3,15 +3,15 @@ name = "object-storage-api"
 description = "Python microservice providing an API for handling attachments and images in an S3 object store."
 readme = "README.md"
 requires-python = ">=3.13"
-version = "1.4.0"
+version = "1.4.1"
 
 dependencies = [
     "cryptography>=48.0.0",
-    "fastapi[all]>=0.138.0",
+    "fastapi[all]>=0.139.0",
     "pyjwt>=2.13.0",
     "pymongo>=4.17.0",
-    "boto3>=1.43.34",
-    "pillow>=12.2.0",
+    "boto3>=1.43.48",
+    "pillow>=12.3.0",
 ]
 
 [project.urls]
@@ -24,7 +24,7 @@ exclude-newer = "7 days"
 object-storage-api = { workspace = true }
 
 [build-system]
-requires = ["uv_build>=0.11.23,<0.12.0"]
+requires = ["uv_build>=0.11.28,<0.12.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
@@ -42,7 +42,7 @@ test = [
 ]
 
 scripts = [
-    "faker>=40.15.0",
+    "faker>=40.31.0",
     "faker-file[pdf,docx,images]>=0.19.1",
 
 ]
