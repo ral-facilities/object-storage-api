@@ -3,7 +3,7 @@ name = "object-storage-api"
 description = "Python microservice providing an API for handling attachments and images in an S3 object store."
 readme = "README.md"
 requires-python = ">=3.13"
-version = "1.4.0"
+version = "1.4.1"
 
 dependencies = [
     "cryptography>=48.0.0",
