@@ -10,7 +10,7 @@ This microservice requires a MongoDB and S3 object storage instance to run again
 ### Prerequisites
 
 - Docker and Docker Compose installed (if you want to run the microservice inside Docker)
-- Python 3.13 and and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
+- Python 3.14 and an install of [uv](https://docs.astral.sh/uv/) (if you are not using Docker)
 - MongoDB 8.0 and MinIO installed on your machine (if you are not using Docker)
 - Public key (must be OpenSSH encoded) to decode JWT access tokens (if JWT authentication/authorization is enabled)
 - [MongoDB Compass](https://www.mongodb.com/products/compass) installed (if you want to interact with the database using
@@ -271,6 +271,25 @@ Ensure that Python & uv is installed on your machine before proceeding.
    ```bash
    uv run pytest -c test/pytest.ini test/
    ```
+
+## Developer environment setup
+
+To setup a local virtual environment with all the dependencies run the following in a clone of this repo
+
+```bash
+uv sync
+```
+
+This will create a virtual environment for the required python version and install all of the dev dependencies into it.
+
+### Common operations
+
+Where `uv run` is used below you can also activate the venv e.g. using `source .venv/bin/activate` and then omit it in
+all further commands, it is just a shortcut for when the virtual environment is not active in the current shell.
+
+- Use `uv sync` whenever dependencies change as a result of a pull/merge to update your local environment to use.
+- Use `uv run pylint object_storage_api test` to manually run the linter and find any issues.
+- Use `uv run black --line-length 120 object_storage_api test` to manually run the formatter and autoformat any changes.
 
 ## Using mock data for testing [Optional]
 
