@@ -2,8 +2,8 @@
 .vscode/
 mongodb/data/*
 !mongodb/data/.keep
-minio/data/*
-!minio/data/.keep
+rustfs/data/*
+!rustfs/data/.keep
 logging.ini
 /keys/jwt-key.pub
 /mongodb/keys/rs_keyfile
