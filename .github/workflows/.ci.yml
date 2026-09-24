@@ -74,14 +74,19 @@ jobs:
       - name: Create logging configuration file
         run: cp logging.example.ini logging.ini
 
+      - name: Create RustFS volume directory
+        run: | 
+          mkdir -p rustfs/data
+          sudo chown -R 10001:10001 rustfs/data
+
       # Sleep 10 seconds to give time for containers to start
-      - name: Start MongoDB and MinIO
+      - name: Start MongoDB and RustFS
         run: |
-          docker compose up --detach mongo-db minio
+          docker compose up --detach mongo-db rustfs
           sleep 10
-      - name: Create MinIO buckets
+      - name: Create RustFS buckets
         run: |
-          docker compose up minio-create-buckets
+          docker compose up rustfs-create-buckets
 
       - name: Run e2e tests
         run: |
@@ -97,9 +102,9 @@ jobs:
         if: failure()
         run: docker logs object-storage-api-mongodb
 
-      - name: Output docker logs (minio)
+      - name: Output docker logs (rustfs)
         if: failure()
-        run: docker logs object-storage-minio
+        run: docker logs object-storage-rustfs
 
   docker:
     # This job triggers only if all the other jobs succeed. It builds the Docker image
