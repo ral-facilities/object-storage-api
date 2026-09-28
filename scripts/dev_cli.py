@@ -22,18 +22,18 @@ DatabasePasswordOption = Annotated[
     str,
     typer.Option("--db-password", "-dbp", help="Password for MongoDB authentication.", default_factory="example"),
 ]
-MinIOHostOption = Annotated[
+RustFSHostOption = Annotated[
     str,
-    typer.Option("--minio-host", "-mh", help="Host for MinIO.", default_factory="http://localhost:9000"),
+    typer.Option("--rustfs-host", "-mh", help="Host for RustFS.", default_factory="http://localhost:9000"),
 ]
-MinIOUsernameOption = Annotated[
+RustFSUsernameOption = Annotated[
     str,
-    typer.Option("--minio-username", "-mu", help="Username for MinIO authentication.", default_factory="root"),
+    typer.Option("--rustfs-username", "-mu", help="Username for RustFS authentication.", default_factory="root"),
 ]
-MinIOPasswordOption = Annotated[
+RustFSPasswordOption = Annotated[
     str,
     typer.Option(
-        "--minio-password", "-mp", help="Password for MinIO authentication.", default_factory="example_password"
+        "--rustfs-password", "-mp", help="Password for RustFS authentication.", default_factory="example_password"
     ),
 ]
 YesOption = Annotated[
@@ -104,35 +104,42 @@ def get_mongodb_auth_args(db_username: str, db_password: str):
     ]
 
 
-def set_minio_alias(minio_host: str, minio_username: str, minio_password: str):
-    """Sets a MinIO alias named `object_storage` for use before MinIO commands."""
+def set_rustfs_alias(rustfs_host: str, rustfs_username: str, rustfs_password: str):
+    """Sets a RustFS alias named `object_storage` for use before RustFS commands."""
 
     run_command(
         [
             "docker",
-            "exec",
-            "-i",
-            "object-storage-minio",
-            "mc",
+            "run",
+            "--rm",
+            "--network",
+            "host",
+            "--volume",
+            "./rustfs/rc-config:/home/rc/.config/rc", # Required to retain rc configuration and credentials
+            "rustfs/rc:v0.1.36",
             "alias",
             "set",
             "object-storage",
-            minio_host,
-            minio_username,
-            minio_password,
+            rustfs_host,
+            rustfs_username,
+            rustfs_password,
         ],
     )
 
 
-def run_minio_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
-    """Runs a command within the minio container."""
+def run_rustfs_command(args: list[str], stdin: Optional[TextIOWrapper] = None, stdout: Optional[TextIOWrapper] = None):
+    """Runs a command within the rustfs container."""
 
     return run_command(
         [
             "docker",
-            "exec",
-            "-i",
-            "object-storage-minio",
+            "run",
+            "--rm",
+            "--network",
+            "host",
+            "--volume",
+            "./rustfs/rc-config:/home/rc/.config/rc",
+            "rustfs/rc:v0.1.36",
         ]
         + args,
         stdin=stdin,
@@ -143,12 +150,12 @@ def run_minio_command(args: list[str], stdin: Optional[TextIOWrapper] = None, st
 def clear_existing_data(
     db_username: DatabaseUsernameOption,
     db_password: DatabasePasswordOption,
-    minio_host: MinIOHostOption,
-    minio_username: MinIOUsernameOption,
-    minio_password: MinIOPasswordOption,
+    rustfs_host: RustFSHostOption,
+    rustfs_username: RustFSUsernameOption,
+    rustfs_password: RustFSPasswordOption,
     yes: YesOption,
 ):
-    """Clears any existing data in the database/MinIO. Requires confirmation if yes is false."""
+    """Clears any existing data in the database/RustFS. Requires confirmation if yes is false."""
 
     # Firstly confirm if ok with deleting
     if not yes:
@@ -166,24 +173,24 @@ def clear_existing_data(
             "db.dropDatabase()",
         ]
     )
-    console.print("Deleting MinIO bucket contents...")
+    console.print("Deleting RustFS bucket contents...")
 
     # Not ideal that this runs here - would either have to setup once as part of some sort of init (e.g.
-    # could have an init for creating the buckets instead of using the minio/mc image) or would have to
+    # could have an init for creating the buckets instead of using the rustfs/rc image) or would have to
     # somehow detect if it has already been done. Doesn't seem to be any harm in setting it again here
     # though.
-    set_minio_alias(minio_host, minio_username, minio_password)
+    set_rustfs_alias(rustfs_host, rustfs_username, rustfs_password)
 
-    run_minio_command(["mc", "rm", "--recursive", "--force", "object-storage/object-storage"])
+    run_rustfs_command(["rm", "--recursive", "--force", "object-storage/object-storage"])
 
 
 @app.command()
 def generate(
     db_username: DatabaseUsernameOption,
     db_password: DatabasePasswordOption,
-    minio_host: MinIOHostOption,
-    minio_username: MinIOUsernameOption,
-    minio_password: MinIOPasswordOption,
+    rustfs_host: RustFSHostOption,
+    rustfs_username: RustFSUsernameOption,
+    rustfs_password: RustFSPasswordOption,
     yes: YesOption = False,
     clear_existing: Annotated[
         bool,
@@ -209,7 +216,7 @@ def generate(
     """Generates new test data for the database and object storage (runs_generate_mock_data.py)."""
 
     if clear_existing:
-        clear_existing_data(db_username, db_password, minio_host, minio_username, minio_password, yes)
+        clear_existing_data(db_username, db_password, rustfs_host, rustfs_username, rustfs_password, yes)
 
     # Generate new data
     console.print("Generating new mock data...")
@@ -229,14 +236,14 @@ def generate(
 def clear(
     db_username: DatabaseUsernameOption,
     db_password: DatabasePasswordOption,
-    minio_host: MinIOHostOption,
-    minio_username: MinIOUsernameOption,
-    minio_password: MinIOPasswordOption,
+    rustfs_host: RustFSHostOption,
+    rustfs_username: RustFSUsernameOption,
+    rustfs_password: RustFSPasswordOption,
     yes: YesOption = False,
 ):
-    """Clears all data in MongoDB and MinIO."""
+    """Clears all data in MongoDB and RustFS."""
 
-    clear_existing_data(db_username, db_password, minio_host, minio_username, minio_password, yes)
+    clear_existing_data(db_username, db_password, rustfs_host, rustfs_username, rustfs_password, yes)
     console.print("Success! :party_popper:")
 
 
