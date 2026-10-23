@@ -3,7 +3,7 @@ name = "object-storage-api"
 description = "Python microservice providing an API for handling attachments and images in an S3 object store."
 readme = "README.md"
 requires-python = ">=3.14"
-version = "1.4.2"
+version = "1.4.3"
 
 dependencies = [
     "cryptography>=50.0.1",
@@ -19,6 +19,9 @@ Repository = "https://github.com/ral-facilities/object-storage-api"
 
 [tool.uv]
 exclude-newer = "7 days"
+
+[tool.uv.exclude-newer-package]
+certifi = false
 
 [tool.uv.sources]
 object-storage-api = { workspace = true }
@@ -41,11 +44,7 @@ test = [
     "requests>=2.33.1",
 ]
 
-scripts = [
-    "faker>=40.38.0",
-    "faker-file[pdf,docx,images]>=0.19.1",
-
-]
+scripts = ["faker>=40.38.0", "faker-file[pdf,docx,images]>=0.19.1"]
 
 dev = [
     { include-group = "code-analysis" },
@@ -62,7 +61,4 @@ omit = [
 ]
 
 [tool.setuptools.packages.find]
-include  = [
-    "object_storage_api",
-    "object_storage_api*",
-]
+include = ["object_storage_api", "object_storage_api*"]
