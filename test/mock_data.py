@@ -200,8 +200,8 @@ IMAGE_IN_DATA_ALL_VALUES = {
     "code": "image.png",
     "object_key": "images/65df5ee771892ddcc08bd28f/65e0a624d64aaae884abaaee",
     "thumbnail_base64": (
-        "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAmywAVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZ"
-        "t7gA/v5HN3b9v7Icf/I53pUYAAAA"
+        "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAiB8AVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZt7gA"
+        "/v4Sud//b+yHH/yOwhuwQAAA"
     ),
 }
 
@@ -213,8 +213,8 @@ IMAGE_GET_METADATA_DATA_ALL_VALUES = {
     "code": "image.png",
     "primary": False,
     "thumbnail_base64": (
-        "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAmywAVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZ"
-        "t7gA/v5HN3b9v7Icf/I53pUYAAAA"
+        "UklGRlIAAABXRUJQVlA4WAoAAAAQAAAAAQAAAAAAQUxQSAMAAAAAiB8AVlA4ICgAAACQAQCdASoCAAEAAUAmJYwAAudZt7gA"
+        "/v4Sud//b+yHH/yOwhuwQAAA"
     ),
 }
 
