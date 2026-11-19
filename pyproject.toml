@@ -3,7 +3,7 @@ name = "object-storage-api"
 description = "Python microservice providing an API for handling attachments and images in an S3 object store."
 readme = "README.md"
 requires-python = ">=3.14"
-version = "1.4.4"
+version = "1.4.5"
 
 dependencies = [
     "cryptography>=50.0.1",
@@ -27,7 +27,7 @@ certifi = false
 object-storage-api = { workspace = true }
 
 [build-system]
-requires = ["uv_build>=0.11.28,<0.13.0"]
+requires = ["uv_build>=0.11.28,<0.14.0"]
 build-backend = "uv_build"
 
 [tool.uv.build-backend]
